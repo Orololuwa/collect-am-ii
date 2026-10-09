@@ -7,21 +7,45 @@ import { z } from "zod";
 
 const internalServerErrorStatusCode = 500;
 
-const resendErrorSchema = z.union([
-  z.object({
-    message: z.string(),
-    name: z.string(),
-    statusCode: z.number(),
-  }),
-  z.object({
-    cause: z.any(),
-    message: z.literal("Unknown Error"),
-    name: z.literal("UnknownError"),
-    statusCode: z.literal(internalServerErrorStatusCode),
-  }),
-]);
+const resendErrorSchema = z.object({
+  message: z.string(),
+  name: z.string().optional(),
+  statusCode: z.number().optional(),
+});
 
-type ResendError = z.infer<typeof resendErrorSchema>;
+type ResendError = {
+  cause?: unknown;
+  message: string;
+  name: string;
+  statusCode: number;
+};
+
+function toResendError(data: unknown, statusCode: number): ResendError {
+  const parsed = resendErrorSchema.safeParse(data);
+  if (parsed.success) {
+    return {
+      message: parsed.data.message,
+      name: parsed.data.name ?? "ResendError",
+      statusCode: parsed.data.statusCode ?? statusCode,
+    };
+  }
+
+  if (typeof data === "string" && data.trim()) {
+    return {
+      cause: data,
+      message: data.trim().slice(0, 300),
+      name: "UnknownError",
+      statusCode,
+    };
+  }
+
+  return {
+    cause: data,
+    message: "Unknown Error",
+    name: "UnknownError",
+    statusCode,
+  };
+}
 
 const resendSuccessSchema = z.object({
   id: z.string(),
@@ -37,7 +61,9 @@ export async function sendEmail({
   | { html: string; text: string; react?: never }
   | { react: ReactElement; html?: never; text?: never }
 )) {
-  const from = "hello@react-router-saas-template.com";
+  // Resend only delivers from a verified domain. The test sender can email
+  // the Resend account owner until EMAIL_FROM uses that domain.
+  const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
 
   const email = {
     from,
@@ -72,27 +98,26 @@ export async function sendEmail({
     },
     method: "POST",
   });
-  const data = await response.json();
+  const rawBody = await response.text();
+  let data: unknown = rawBody;
+  try {
+    data = JSON.parse(rawBody);
+  } catch {
+    data = rawBody;
+  }
   const parsedData = resendSuccessSchema.safeParse(data);
 
   if (response.ok && parsedData.success) {
     return { data: parsedData, status: "success" } as const;
-  } else {
-    const parseResult = resendErrorSchema.safeParse(data);
-    if (parseResult.success) {
-      return { error: parseResult.data, status: "error" } as const;
-    } else {
-      return {
-        error: {
-          cause: data,
-          message: "Unknown Error",
-          name: "UnknownError",
-          statusCode: 500,
-        } satisfies ResendError,
-        status: "error",
-      } as const;
-    }
   }
+
+  return {
+    error: toResendError(
+      data,
+      response.status || internalServerErrorStatusCode,
+    ),
+    status: "error",
+  } as const;
 }
 
 async function renderReactEmail(react: ReactElement) {

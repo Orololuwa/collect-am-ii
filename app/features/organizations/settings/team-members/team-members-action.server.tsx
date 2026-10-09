@@ -9,7 +9,10 @@ import {
   retrieveOrganizationMembershipFromDatabaseByUserIdAndOrganizationId,
   updateOrganizationMembershipInDatabase,
 } from "../../organization-membership-model.server";
-import { saveOrganizationEmailInviteLinkToDatabase } from "../../organizations-email-invite-link-model.server";
+import {
+  saveOrganizationEmailInviteLinkToDatabase,
+  updateEmailInviteLinkInDatabaseById,
+} from "../../organizations-email-invite-link-model.server";
 import { getOrganizationIsFull } from "../../organizations-helpers.server";
 import {
   retrieveLatestInviteLinkFromDatabaseByOrganizationId,
@@ -352,6 +355,11 @@ export async function teamMembersAction({
         });
 
         if (result.status === "error") {
+          await updateEmailInviteLinkInDatabaseById({
+            emailInviteLink: { deactivatedAt: new Date() },
+            id: emailInvite.id,
+          });
+
           return badRequest({
             result: report(submission, {
               error: {

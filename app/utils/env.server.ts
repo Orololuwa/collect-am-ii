@@ -5,6 +5,7 @@ const schema = z.object({
   API_KEY_ENCRYPTION_KEY: z.string().optional(), // Optional, falls back to COOKIE_SECRET
   APP_URL: z.url(),
   COOKIE_SECRET: z.string(),
+  EMAIL_FROM: z.string().optional(),
   DATABASE_URL: z.string(),
   HONEYPOT_SECRET: z.string(),
   MOCKS: z.literal("true").optional(),
