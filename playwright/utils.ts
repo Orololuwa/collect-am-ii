@@ -20,13 +20,13 @@ import {
 } from "~/features/organizations/organizations-model.server";
 import { createPopulatedUserAccount } from "~/features/user-accounts/user-accounts-factories.server";
 import { saveUserAccountToDatabase } from "~/features/user-accounts/user-accounts-model.server";
+import {
+  createUserSessionCookie,
+  USER_SESSION_NAME,
+} from "~/features/user-authentication/auth-session.server";
 import type { Organization, UserAccount } from "~/generated/client";
 import { OrganizationMembershipRole } from "~/generated/client";
-import { setMockSession } from "~/test/mocks/handlers/supabase/mock-sessions";
-import {
-  createMockSupabaseSession,
-  createTestSubscriptionForUserAndOrganization,
-} from "~/test/test-utils";
+import { createTestSubscriptionForUserAndOrganization } from "~/test/test-utils";
 
 dotenv.config();
 
@@ -42,20 +42,26 @@ export const getPath = (page: Page | APIResponse) => {
 };
 
 /**
- * Fake logs in a user by setting the necessary Supabase auth cookies.
- * This allows testing authenticated routes without going through the actual
- * login flow.
- *
- * NOTE: You need to activate the MSW mocks for Supabase (`getUser`) for this
- * to work. You need to run the server mocks (`npm run dev-with-server-mocks`)
- * and have the MSW interceptor for `getUser` enabled (see `startMockServer`).
+ * Returns the signed value of the app's session cookie for the given user.
+ */
+async function getUserSessionCookieValue(userId: UserAccount["id"]) {
+  const setCookie = await createUserSessionCookie(userId);
+  const match = new RegExp(`^${USER_SESSION_NAME}=([^;]+)`).exec(setCookie);
+  if (!match?.[1]) {
+    throw new Error("Failed to extract session cookie value");
+  }
+  return match[1];
+}
+
+/**
+ * Fake logs in a user by setting the app's signed session cookie. This allows
+ * testing authenticated routes without going through the actual login flow.
  *
  * @param options - The options for logging in.
  * @param options.page - The Playwright page to set cookies on.
- * @param options.superbaseUserId - Optional Supabase user ID to set in the
- * session.
- * @param options.email - Optional email to set in the session.
- * @returns A promise that resolves when the cookies have been set.
+ * @param options.user - The user to log in. Must exist in the database for
+ * authenticated routes to load.
+ * @returns A promise that resolves when the cookie has been set.
  */
 export async function loginByCookie({
   page,
@@ -64,60 +70,36 @@ export async function loginByCookie({
   page: Page;
   user?: UserAccount;
 }) {
-  // Create a mock session with the provided user details
-  const mockSession = createMockSupabaseSession({ user });
-  await setMockSession(mockSession.access_token, mockSession);
-
-  // Set the Supabase session cookie
-  const projectReference =
-    /https:\/\/([^.]+)/.exec(process.env.VITE_SUPABASE_URL)?.[1] ?? "default";
-
-  // Set the cookie with the session data
   await page.context().addCookies([
     {
       domain: "localhost",
-      name: `sb-${projectReference}-auth-token`,
+      httpOnly: true,
+      name: USER_SESSION_NAME,
       path: "/",
-      value: JSON.stringify(mockSession),
+      sameSite: "Lax",
+      value: await getUserSessionCookieValue(user.id),
     },
   ]);
 }
 
 /**
- * Creates an authenticated Playwright request context with a Supabase auth cookie.
- * Useful for testing API endpoints that require authentication via cookies.
+ * Creates an authenticated Playwright request context with the app's session
+ * cookie. Useful for testing API endpoints that require authentication.
  *
  * @param options - The options for creating the authenticated request.
- * @param options.supabaseUserId - The Supabase user ID to set in the session.
- * @param options.email - The email to set in the session.
+ * @param options.userId - The id of the user account to sign in as.
  * @returns A promise that resolves to an authenticated APIRequestContext.
  */
 export async function createAuthenticatedRequest({
-  supabaseUserId,
-  email,
+  userId,
 }: {
-  supabaseUserId: UserAccount["supabaseUserId"];
-  email: UserAccount["email"];
+  userId: UserAccount["id"];
 }) {
-  // Create a mock session with the provided user details
-  const user = createPopulatedUserAccount({ email, supabaseUserId });
-  const mockSession = createMockSupabaseSession({ user });
-  await setMockSession(mockSession.access_token, mockSession);
-
-  // Determine the Supabase project reference for the cookie name
-  const projectReference =
-    /https:\/\/([^.]+)/.exec(process.env.VITE_SUPABASE_URL)?.[1] ?? "default";
-  const cookieName = `sb-${projectReference}-auth-token`;
-  const cookieValue = JSON.stringify(mockSession);
-
-  // Create a new request context with the auth cookie
-  const authenticatedRequest = await request.newContext({
+  return await request.newContext({
     extraHTTPHeaders: {
-      Cookie: `${cookieName}=${encodeURIComponent(cookieValue)}`,
+      Cookie: `${USER_SESSION_NAME}=${await getUserSessionCookieValue(userId)}`,
     },
   });
-
-  return authenticatedRequest;
 }
 
 /**

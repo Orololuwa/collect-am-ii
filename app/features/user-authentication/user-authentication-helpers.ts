@@ -1,18 +1,16 @@
-import type { AuthOtpResponse } from "@supabase/supabase-js";
-
+/**
+ * Checks whether an auth action response means a sign-in code was emailed and
+ * the user should now enter it.
+ *
+ * @param data - The action data of the login or register route.
+ * @returns `true` if the response carries the email the code was sent to.
+ */
 export function getIsAwaitingEmailConfirmation(
   data: unknown,
-): data is AuthOtpResponse["data"] & { email: string } {
+): data is { email: string } {
   if (typeof data !== "object" || data === null) {
     return false;
   }
 
-  return (
-    "session" in data &&
-    "user" in data &&
-    "email" in data &&
-    data.session === null &&
-    data.user === null &&
-    typeof data.email === "string"
-  );
+  return "email" in data && typeof data.email === "string";
 }

@@ -30,12 +30,16 @@ async function initializeMockServer() {
   }
 
   if (process.env.MOCKS === "true") {
-    const { supabaseHandlers } = await import("~/test/mocks/handlers/supabase");
+    const { auth0Handlers } = await import("~/test/mocks/handlers/auth0");
+    const { cloudinaryHandlers } = await import(
+      "~/test/mocks/handlers/cloudinary"
+    );
     const { resendHandlers } = await import("~/test/mocks/handlers/resend");
     const { stripeHandlers } = await import("~/test/mocks/handlers/stripe");
     const { startMockServer } = await import("~/test/mocks/server");
     startMockServer([
-      ...supabaseHandlers,
+      ...auth0Handlers,
+      ...cloudinaryHandlers,
       ...resendHandlers,
       ...stripeHandlers,
     ]);
@@ -43,6 +47,11 @@ async function initializeMockServer() {
 
   mockServerInitialized = true;
 }
+
+// Start the mocks as soon as the server build loads, not on the first document
+// render: resource routes (e.g. `/auth/callback`) never reach `handleRequest`,
+// so their outgoing requests would otherwise escape the mocks.
+await initializeMockServer();
 
 export default async function handleRequest(
   request: Request,

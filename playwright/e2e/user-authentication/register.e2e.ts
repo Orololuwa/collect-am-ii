@@ -19,8 +19,10 @@ import { saveOrganizationInviteLinkToDatabase } from "~/features/organizations/o
 import { createPopulatedUserAccount } from "~/features/user-accounts/user-accounts-factories.server";
 import {
   deleteUserAccountFromDatabaseById,
+  retrieveUserAccountFromDatabaseByEmail,
   saveUserAccountToDatabase,
 } from "~/features/user-accounts/user-accounts-model.server";
+import { requireEmail } from "~/test/mocks/utils";
 import {
   createUserWithOrgAndAddAsMember,
   teardownOrganizationAndMember,
@@ -135,18 +137,34 @@ test.describe("register page", () => {
       await emailInput.fill(userAccount.email);
       await registerButton.click();
 
-      // Check that the verification form is shown. The button
-      // should be disabled because you can only request a new link every 60
-      // seconds.
+      // Check that the code entry form is shown. The resend button should be
+      // disabled because you can only request a new code every 60 seconds.
       await expect(page.getByText(/verify your email/i)).toBeVisible();
       await expect(
         page.getByText(
-          /if you haven't received the email within 60 seconds, you may request another verification link./i,
+          /if you haven't received the email within 60 seconds, you may request another verification code./i,
         ),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: /request new verification link/i }),
+        page.getByRole("button", { name: /request new code/i }),
       ).toBeDisabled();
+
+      // The code from the email creates the account and starts onboarding.
+      const { text } = await requireEmail(userAccount.email);
+      const code = /\b(\d{6})\b/.exec(text)?.[1] ?? "";
+      await page
+        .getByRole("textbox", { name: /verification code/i })
+        .fill(code);
+      await page.getByRole("button", { name: /verify and continue/i }).click();
+      await expect(page).toHaveURL(/\/onboarding/);
+
+      const createdUser = await retrieveUserAccountFromDatabaseByEmail(
+        userAccount.email,
+      );
+      expect(createdUser).not.toBeNull();
+      if (createdUser) {
+        await deleteUserAccountFromDatabaseById(createdUser.id);
+      }
     });
   });
 
@@ -154,14 +172,19 @@ test.describe("register page", () => {
     test("given: a logged out user, should: log the user and redirect to the google login page", async ({
       page,
     }) => {
-      // Mock the Supabase OAuth authorize endpoint to return a mock Google sign-in page
-      await page.route("**/auth/v1/authorize*", async (route) => {
-        const url = new URL(route.request().url());
-        const provider = url.searchParams.get("provider");
+      // Mock Auth0's authorize endpoint (which would forward to Google) with
+      // a fake Google sign-in page.
+      await page.route(
+        (url) =>
+          url.hostname === process.env.AUTH0_DOMAIN &&
+          url.pathname === "/authorize",
+        async (route) => {
+          const url = new URL(route.request().url());
+          const connection = url.searchParams.get("connection");
 
-        if (provider === "google") {
-          await route.fulfill({
-            body: `
+          if (connection === "google-oauth2") {
+            await route.fulfill({
+              body: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -170,16 +193,17 @@ test.describe("register page", () => {
 <body>
   <h1>Sign in</h1>
   <p>Sign in with Google</p>
-  <p>to continue to vpszwsdvgeeazuheoxfw.supabase.co</p>
+  <p>to continue to Auth0</p>
 </body>
 </html>
-            `,
-            contentType: "text/html",
-          });
-        } else {
-          await route.continue();
-        }
-      });
+              `,
+              contentType: "text/html",
+            });
+          } else {
+            await route.continue();
+          }
+        },
+      );
 
       await page.goto(path);
 

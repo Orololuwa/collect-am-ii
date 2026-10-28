@@ -37,6 +37,7 @@ z.config({ jitless: true });
 
 export const LOGIN_WITH_EMAIL_INTENT = loginIntents.loginWithEmail;
 export const LOGIN_WITH_GOOGLE_INTENT = loginIntents.loginWithGoogle;
+export const VERIFY_LOGIN_CODE_INTENT = loginIntents.verifyCode;
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const i18n = getInstance(context);
@@ -81,14 +82,19 @@ export default function LoginRoute({
     navigation.formData?.get("intent") === LOGIN_WITH_EMAIL_INTENT;
   const isLoggingInWithGoogle =
     navigation.formData?.get("intent") === LOGIN_WITH_GOOGLE_INTENT;
-  const isSubmitting = isLoggingInWithEmail || isLoggingInWithGoogle;
+  const isVerifyingCode =
+    navigation.formData?.get("intent") === VERIFY_LOGIN_CODE_INTENT;
+  const isSubmitting =
+    isLoggingInWithEmail || isLoggingInWithGoogle || isVerifyingCode;
 
   if (isAwaitingEmailConfirmation) {
     return (
       <LoginVerificationAwaiting
-        email={actionData?.email}
+        email={actionData.email}
         isResending={isLoggingInWithEmail}
         isSubmitting={isSubmitting}
+        isVerifying={isVerifyingCode}
+        lastResult={actionData.result}
       />
     );
   }

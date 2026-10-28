@@ -10,7 +10,6 @@ export default defineConfig({
   fullyParallel: true,
 
   globalSetup: "./playwright/global-setup.ts",
-  globalTeardown: "./playwright/global-tear-down.ts",
 
   /* Configure projects for major browsers */
   projects: [
@@ -29,7 +28,7 @@ export default defineConfig({
   testMatch: "*.e2e.ts",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    baseURL: process.env.APP_URL ?? "http://localhost:3000",
+    baseURL: process.env.APP_URL ?? "http://localhost:3001",
     trace: process.env.CI ? "on-first-retry" : "retain-on-failure",
   },
 
@@ -37,7 +36,7 @@ export default defineConfig({
   webServer: {
     command: process.env.CI ? "npm run start:mocks" : "npm run dev:mocks",
     env: { NODE_ENV: "test" },
-    port: 3000,
+    port: 3001,
     reuseExistingServer: !process.env.CI,
   },
   /* Opt out of parallel tests. */

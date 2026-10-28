@@ -63,28 +63,15 @@ export async function retrieveUserAccountWithActiveMembershipsFromDatabaseByEmai
 }
 
 /**
- * Retrieves a user account by their Supabase ID.
+ * Retrieves a user account and their active organization memberships by id.
  *
- * @param supabaseUserId The Supabase ID of the user account.
- * @returns The user account or null.
- */
-export async function retrieveUserAccountFromDatabaseBySupabaseUserId(
-  supabaseUserId: UserAccount["supabaseUserId"],
-) {
-  return prisma.userAccount.findUnique({ where: { supabaseUserId } });
-}
-
-/**
- * Retrieves a user account and their active organization memberships by
- * Supabase ID.
- *
- * @param supabaseUserId The Supabase ID of the user account.
+ * @param id The id of the user account.
  * @returns The user account with active memberships or null. Active memberships
  * are those that are either not deactivated or have a deactivation date in the
  * future.
  */
-export async function retrieveUserAccountWithMembershipsFromDatabaseBySupabaseUserId(
-  supabaseUserId: UserAccount["supabaseUserId"],
+export async function retrieveUserAccountWithMembershipsFromDatabaseById(
+  id: UserAccount["id"],
 ) {
   return prisma.userAccount.findUnique({
     include: {
@@ -140,21 +127,21 @@ export async function retrieveUserAccountWithMembershipsFromDatabaseBySupabaseUs
         },
       },
     },
-    where: { supabaseUserId },
+    where: { id },
   });
 }
 
 /**
  * Retrieves a user account, their active organization memberships, and the count
- * of members in each organization by Supabase ID.
+ * of members in each organization by id.
  *
- * @param supabaseUserId The Supabase ID of the user account.
+ * @param id The id of the user account.
  * @returns The user account with active memberships and member counts or null.
  * Active memberships are those that are either not deactivated or have a
  * deactivation date in the future.
  */
-export async function retrieveUserAccountWithMembershipsAndMemberCountsFromDatabaseBySupabaseUserId(
-  supabaseUserId: UserAccount["supabaseUserId"],
+export async function retrieveUserAccountWithMembershipsAndMemberCountsFromDatabaseById(
+  id: UserAccount["id"],
 ) {
   return prisma.userAccount.findUnique({
     include: {
@@ -189,22 +176,22 @@ export async function retrieveUserAccountWithMembershipsAndMemberCountsFromDatab
         },
       },
     },
-    where: { supabaseUserId },
+    where: { id },
   });
 }
 
 /**
  * Retrieves a user account, their active organization memberships, and the
- * count of members in each organization by Supabase ID. Also includes the
+ * count of members in each organization by id. Also includes the
  * organization's subscription.
  *
- * @param supabaseUserId The Supabase ID of the user account.
+ * @param id The id of the user account.
  * @returns The user account with active memberships and member counts or null.
  * Active memberships are those that are either not deactivated or have a
  * deactivation date in the future.
  */
-export async function retrieveUserAccountWithMembershipsAndMemberCountsAndSubscriptionsFromDatabaseBySupabaseUserId(
-  supabaseUserId: UserAccount["supabaseUserId"],
+export async function retrieveUserAccountWithMembershipsAndMemberCountsAndSubscriptionsFromDatabaseById(
+  id: UserAccount["id"],
 ) {
   return prisma.userAccount.findUnique({
     include: {
@@ -254,7 +241,7 @@ export async function retrieveUserAccountWithMembershipsAndMemberCountsAndSubscr
         },
       },
     },
-    where: { supabaseUserId },
+    where: { id },
   });
 }
 

@@ -15,8 +15,8 @@ explaining the template.
 - 🔒 [TypeScript](https://www.typescriptlang.org/) by default
 - 🎉 [TailwindCSS](https://tailwindcss.com/) for styling
 - 🎨 [Shadcn UI](https://ui.shadcn.com/) components
-- 🗄️ [Postgres](https://www.postgresql.org/) with
-  [Supabase](https://supabase.com/) & [Prisma](https://www.prisma.io/)
+- 🗄️ [Postgres](https://www.postgresql.org/) (Docker) with
+  [Prisma](https://www.prisma.io/)
 - 🧹 [Biome](https://biomejs.dev/) for linting and formatting
 - ⚡️ [Vitest](https://vitest.dev/) for testing
 - 🎭 [Playwright](https://playwright.dev/) for E2E testing
@@ -26,12 +26,10 @@ explaining the template.
 
 ## Features
 
-- 🔒 Authentication with [Supabase](https://supabase.com/docs/guides/auth)
-  (Email Magic Link, Google OAuth)
-- 📦 Postgres with
-  [Supabase](https://supabase.com/docs/guides/database/overview)
-- 🗃️ File upload with
-  [Supabase Storage](https://supabase.com/docs/guides/storage)
+- 🔒 Authentication with [Auth0](https://auth0.com/) (email sign-in code
+  delivered through Resend, Google OAuth) and app-managed cookie sessions
+- 📦 Postgres in Docker (`docker compose`)
+- 🗃️ Image uploads with [Cloudinary](https://cloudinary.com/)
 - 💳 Billing with [Stripe](https://stripe.com/)
 - 📧 Emails with [Resend](https://resend.com/)
 - 👥 Multi-tenant organizations with role-based memberships
@@ -81,7 +79,8 @@ npm run quickstart
 
 This command will:
 1. Copy `.env.example` to `.env`
-2. Set up Prisma (generate client, run migrations, push schema)
+2. Start the Postgres container (`docker compose up -d db`) and set up Prisma
+   (generate client, run migrations, push schema)
 3. Seed the database with demo data
 4. Start the development server with mocks enabled
 
@@ -102,10 +101,13 @@ project to see all the variables you need to set.
 Start by setting the environment variables that you can configure without
 setting up a service:
 
-- `DATABASE_URL` – The URL of your local Postgres database. You can just
-  download the [Postgres.app](https://postgresapp.com/) and use it to create a
-  local database.
-- `APP_URL` – The URL of your app, e.g. `http://localhost:3000`.
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` – Credentials for the
+  Postgres container. Start it with `npm run db:up` (data lives in the `pgdata`
+  Docker volume).
+- `DATABASE_URL` – The URL of that database, e.g.
+  `postgresql://postgres:postgres@localhost:5433/app` (Postgres is published on
+  host port `POSTGRES_PORT`, default 5433).
+- `APP_URL` – The URL of your app, e.g. `http://localhost:3001`.
 - `COOKIE_SECRET` – A random string of characters. This is used for signing
   cookies including sessions, toast notifications, and other cookie-based data.
 - `HONEYPOT_SECRET` – A random string of characters. This is used for the
@@ -114,186 +116,82 @@ setting up a service:
 To run the app, you'll need to obtain the remaining environment variables by
 setting up the required services.
 
-### Supabase
+### Database (Docker)
 
-1. Create a [new Supabase organization](https://supabase.com/dashboard/new).
-2. Create a new project.
-   - Generate a password and save it somewhere.
-   - Choose the Region closest to your users.
-   - Keep the defaults like Postgres.
-3. Go to your project's API settings, e.g.
-   `https://supabase.com/dashboard/project/<project-id>/settings/api`. From this
-   screen, you can grab:
+Postgres runs as the `db` service in `docker-compose.yml`, with its data in the
+named `pgdata` volume.
 
-- `SUPABASE_PROJECT_ID` - The ID of your Supabase project. You can grab it from
-  the URL of your project, e.g.
-  `https://supabase.com/dashboard/project/<project-id>`.
-- `SUPABASE_REGION` - The region of your Supabase project.
-- `VITE_SUPABASE_URL` - The URL of your Supabase project. NOTE: If you won't use
-  client side uploads, you can also call it `SUPABASE_URL` instead. The `VITE_`
-  prefix is used for client side variables.
-
-4. From `https://supabase.com/dashboard/project/<project-id>/settings/api-keys`, you can grab:
-
-- `VITE_SUPABASE_ANON_KEY` - The anonymous key of your Supabase project. It's
-  marked as `anon` and `public` in your dashboard. NOTE: If you won't use client
-  side uploads, you can also call it `SUPABASE_URL` instead. The `VITE_` prefix
-  is used for client side variables.
-- `SUPABASE_SERVICE_ROLE_KEY` - The service role key of your Supabase project.
-  It's marked as `service_role` and `secret` in your dashboard. It must only be
-  used on the server side.
-
-5. Go to your project's storage settings, e.g.
-   `https://supabase.com/dashboard/project/<project-id>/storage/s3`.
-   You'll need to click on "New access key". Then you can grab from this screen:
-
-- `STORAGE_ACCESS_KEY_ID` - The access key ID of your Supabase project.
-- `STORAGE_SECRET_ACCESS_KEY` - The secret access key of your Supabase project.
-
-#### Configuring Site URL at the Correct Location
-
-Now you need to configure the emails for the magic link authentication flow.
-
-Here’s how to set the Site URL under **URL Configuration** for your Supabase
-project:
-
-1. **Access the Supabase Dashboard**:
-   - Go to `https://supabase.com/dashboard/`.
-2. **Navigate to URL Configuration**:
-   - In the left sidebar, click **Authentication**.
-   - Then select **URL Configuration** (the direct URL would be
-     `https://supabase.com/dashboard/project/[your-project-ref]/auth/url-configuration`).
-3. **Set the Site URL**:
-   - On the **URL Configuration** page, you'll see a field labeled **Site URL**.
-   - Enter your application's base URL here (e.g., `https://yourapp.com` or
-     `http://localhost:3000` for local development).
-   - This is the base URL that Supabase will use as the `{{ .SiteURL }}`
-     variable in your email templates (like the magic link template you
-     provided).
-4. **Save the Configuration**:
-   - Click **Save** or the equivalent button to apply your changes.
-
-Next, configure the email templates by clicking on **Emails** then on **Confirm
-Sign Up** (under
-`https://supabase.com/dashboard/project/[your-project-ref]/auth/templates`) in
-the Supabase Dashboard.
-
-```html
-<h2>Create Your Account For The React Router Starter App</h2>
-
-<p>Follow this link to register:</p>
-<p>
-  <a
-    href="{{ .SiteURL }}/register/confirm?token_hash={{ .TokenHash }}&type=email"
-    >Sign Up</a
-  >
-</p>
+```bash
+npm run db:up    # start Postgres (waits until it is healthy)
+npm run db:down  # stop it (data is kept)
 ```
 
-Next, configure the email templates by clicking on **Emails** then on **Magic
-Link** (under
-`https://supabase.com/dashboard/project/[your-project-ref]/auth/templates`) in
-the Supabase Dashboard.
+In production, `docker compose up -d` starts `db`, then a one-off `migrate`
+service that runs `prisma migrate deploy`, then the `app`.
 
-```html
-<h2>Log In To The React Router Starter App</h2>
+#### Migrating data from Supabase
 
-<p>Follow this link to login:</p>
-<p>
-  <a href="{{ .SiteURL }}/login/confirm?token_hash={{ .TokenHash }}&type=email"
-    >Log In</a
-  >
-</p>
+`scripts/migrate-supabase-db.sh` copies an existing Supabase database into the
+container: it dumps the `public` schema, restores it, applies the remaining
+Prisma migrations and compares row counts per table.
+
+```bash
+SUPABASE_DB_URL="postgresql://postgres.<ref>:<password>@<region>.pooler.supabase.com:5432/postgres" \
+  npm run db:migrate-from-supabase
 ```
 
-Click **Save Changes** to apply your changes.
+Use the session pooler (port 5432) or the direct connection string. Pass
+`-- --force` to wipe a non-empty local database first. The dump is kept in
+`backups/` (git-ignored).
 
-#### Google OAuth
+### Auth0
 
-This section is based on the Supabase documentation for
-[**Login With Google**](https://supabase.com/docs/guides/auth/social-login/auth-google),
-but has been enhanced for clarity because the Supabase documentation does not
-work out of the box.
+Sign-in uses Auth0, but the UI stays in the app: for email sign-in the server
+asks Auth0 to email a 6-digit code (passwordless) and the user types it in;
+Google sign-in redirects to Auth0's `/authorize` with the `google-oauth2`
+connection. After either flow the app sets its own signed `__session` cookie
+(`app/features/user-authentication/auth-session.server.ts`). Users are matched
+to their `UserAccount` by verified email.
 
-1. Create a new Google Cloud project. Go to the
-   [Google Cloud Platform](https://console.cloud.google.com/home/dashboard) and
-   create a new project if necessary.
+1. Create a tenant and a **Regular Web Application**. Set:
+   - `AUTH0_DOMAIN` – e.g. `your-tenant.eu.auth0.com` (or a custom domain).
+   - `AUTH0_CLIENT_ID` and `AUTH0_CLIENT_SECRET`.
+2. In the application's settings:
+   - **Allowed Callback URLs**: `${APP_URL}/auth/callback`.
+   - **Advanced Settings → Grant Types**: enable _Authorization Code_,
+     _Passwordless OTP_ and _Client Credentials_.
+3. **Authentication → Passwordless → Email**: enable it, choose **Code**
+   (OTP length 6), customize the email template, and enable the connection for
+   your application.
+4. **Authentication → Social → Google**: add your Google OAuth client ID and
+   secret (create them in the Google Cloud console with the authorized
+   redirect URI `https://<AUTH0_DOMAIN>/login/callback`), and enable the
+   connection for your application.
+5. **Branding → Email Provider**: use a custom SMTP provider so the codes are
+   sent through Resend:
+   - Host `smtp.resend.com`, port `465`, username `resend`, password: your
+     Resend API key.
+   - From: an address on a domain verified in Resend (same as `EMAIL_FROM`).
+6. **Applications → APIs → Auth0 Management API → Machine to Machine
+   Applications**: authorize your application with the `read:users` and
+   `delete:users` scopes. This is used to delete a user's Auth0 identities
+   when they delete their account.
 
-- After creating the project, click on `Get Started`, enter your app name,
-  choose your audience, provide your contact information, and agree to the
-  Google API Services.
+### Cloudinary
 
-2. Create your OAuth client.
-   - Under **Clients**, click `Create Credentials`.
-   - Choose `OAuth client ID`.
-   - Choose `Web application`.
-   - Click Create.
-3. Now edit your OAuth client with your URLs.
-   - Under **Authorized JavaScript origins**, add your site URL. (E.g.
-     `http://localhost:3000`, and your production site URL.)
-   - Under **Authorized redirect URIs**, enter the callback URL from the
-     [Supabase dashboard](https://supabase.com/dashboard/project/_/auth/providers).
-     Expand the Google Auth Provider section to display it.
-     - You need to enter the Client ID and Client Secret in the Google Auth
-       Provider section of the Supabase Dashboard, which you can find under
-       **Additional Information** your OAuth client.
-     - The redirect URL is visible to your users. You can customize it by
-       configuring
-       [custom domains](https://supabase.com/docs/guides/platform/custom-domains).
-4. In the Google Cloud console, under **Data Access**, click
-   `ADD OR REMOVE SCOPES`.
-   - Configure the following non-sensitive scopes:
-     - `.../auth/userinfo.email`
-     - `...auth/userinfo.profile`
-     - `openid`
-   - Click `Update`.
-5. In the Google Cloud console, Under **Branding** and then **Authorized
-   Domains**, add your Supabase project's domain, which has the form
-   `<PROJECT_ID>.supabase.co`.
-6. In your `.env` file, set the `APP_URL` to your local development URL (by
-   default it's `http://localhost:3000`) or your production site URL.
+Avatars and organization logos are uploaded server-side to Cloudinary
+(`app/utils/storage.server.ts`) into the `user-avatars` and
+`organization-logos` folders.
 
-**Note:**
-[Here](https://supabase.com/docs/guides/auth/social-login/auth-google?queryGroups=environment&environment=server&queryGroups=framework&framework=remix#google-consent-screen)
-are more details on how to configure the Google consent screen to show your
-custom domain, and even your app's name and logo.
+1. Create a [Cloudinary](https://cloudinary.com/) account.
+2. Copy the **API environment variable** from the dashboard into
+   `CLOUDINARY_URL` (`cloudinary://<api_key>:<api_secret>@<cloud_name>`).
 
-#### Uploading Directly to Supabase From the Client
+Static images (brand logo, template placeholder logos, seed data) are
+referenced from `app/utils/static-assets.ts`; point `STATIC_ASSETS_BASE_URL`
+at wherever you host them.
 
-Create a bucket in Supabase Storage.
-
-1. Visit your project in the Supabase UI:
-   https://supabase.com/dashboard/project/[your-project-ref].
-2. Go to the Storage section.
-3. Click on the "New Bucket" button.
-4. Enter a name for the bucket, e.g. `"app-images"` if you want to use a special
-   bucket for images, which we recommend.
-5. Keep the bucket as "Private" to ensure that only authenticated users can
-   access the files.
-6. Click on "Additional configuration", set the maximum upload sizeto 1MB, and
-   set the allowed MIME types to `image/*` to only allow image files.
-7. Click on "Save".
-8. Set the bucket name to the correct variable in your code. (By default, this
-   is NOT an environment variable in this template, but you can easily change it
-   to an environment variable.) Do a fuzzy search for `BUCKET` to find all the
-   places you need to change the value to your bucket name.
-
-#### Uploading to Supabase From the Server
-
-This approach uses the
-[S3 compatible API](https://supabase.com/docs/guides/storage/s3/compatibility)
-of Supabase Storage.
-
-Simply
-[follow the instructions in the documentation](https://supabase.com/docs/guides/storage/s3/authentication)
-and set the following environment variables in your `.env` file:
-
-- `STORAGE_ACCESS_KEY_ID`
-- `STORAGE_SECRET_ACCESS_KEY`
-- `STORAGE_REGION`
-- `SUPABASE_PROJECT_ID`
-
-The upload to Supabase Storage is done using `parseFormData` from
+The upload is parsed with `parseFormData` from
 [`@remix-run/form-data-parser`](https://github.com/remix-run/form-data-parser).
 This function is under the hood in `validateFormData` in
 `app/utils/validate-form-data.server.ts`.
@@ -331,7 +229,7 @@ Learn more about Stripe testing [here](https://docs.stripe.com/testing).
 In a new terminal, forward webhooks to your local server:
 
 ```bash
-stripe listen --forward-to http://localhost:3000/api/v1/stripe/webhooks
+stripe listen --forward-to http://localhost:3001/api/v1/stripe/webhooks
 ```
 
 Keep this terminal open. This will print out your local webhook secret. You'll
@@ -380,7 +278,7 @@ Do a fuzzy search for these limits.
 
 For local development, run your app with `npm run dev` and forward webhooks to
 your local server with
-`stripe listen --forward-to http://localhost:3000/api/v1/stripe/webhooks`.
+`stripe listen --forward-to http://localhost:3001/api/v1/stripe/webhooks`.
 
 For production, follow the same instructions, but us the production URL of your
 app and make sure your app is deployed so it will accept the webhooks of the
@@ -547,7 +445,7 @@ Start the development server with HMR:
 npm run dev
 ```
 
-Your application will be available at `http://localhost:3000`.
+Your application will be available at `http://localhost:3001`.
 
 If you haven't done it yet, with both your dev server and webhook forwarding
 terminal open, replay the Stripe events in a third terminal.
@@ -668,7 +566,7 @@ steps should be:
 1. Run `npm run build-with-mocks`.
 2. Run `npm run start-with-server-mocks`.
 3. In another terminal, run `npm run test:e2e` UI.
-4. Visit `localhost:3000` in your browser once. You should see
+4. Visit `localhost:3001` in your browser once. You should see
    `🔶 MSW mock server running ...` in the terminal running your app.
 5. (Optionally) In a new terminal, run `npm run prisma:wipe` and
    `npm run stripe:resend-events` to reset the database and replay the Stripe
@@ -678,7 +576,7 @@ steps should be:
 ### Local Development with Mocks
 
 For local development without connecting to real external services (Stripe,
-Supabase, etc.), you can use the mock mode. This uses
+Auth0, Cloudinary, Resend), you can use the mock mode. This uses
 [MSW (Mock Service Worker)](https://mswjs.io/) to intercept API calls.
 
 **Setup:**
@@ -701,13 +599,13 @@ Supabase, etc.), you can use the mock mode. This uses
 
 **Logging In:**
 
-When running with `MOCKS=true`, authentication is handled by mocked Supabase
+When running with `MOCKS=true`, authentication is handled by mocked Auth0
 endpoints. To log in as one of the seeded users:
 
 1. Navigate to the login page
 2. Enter one of the demo email addresses (e.g., `hobby@example.com`)
-3. Click the magic link button
-4. The mock will automatically "send" the email and you can access the app
+3. Enter the code `123456` (the mock also writes the email to
+   `app/tests/mocks/fixtures/email/<address>.json`)
 
 **Resetting Data:**
 
@@ -728,7 +626,7 @@ npm run prisma:reset-dev  # Wipes, seeds, and starts dev server
 **Note:** The seed script creates demo users with subscriptions that include
 seats, Stripe customer IDs, and all necessary billing data. This allows you to
 test billing flows, team management, and subscription features without
-connecting to real Stripe or Supabase instances.
+connecting to real Stripe or Auth0 instances.
 
 ### Routing
 
@@ -992,7 +890,7 @@ docker build -f Dockerfile.pnpm -t my-app .
 docker build -f Dockerfile.bun -t my-app .
 
 # Run the container
-docker run -p 3000:3000 my-app
+docker run -p 3001:3001 my-app
 ```
 
 The containerized application can be deployed to any platform that supports

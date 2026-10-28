@@ -19,12 +19,11 @@ import {
 import type { Route } from ".react-router/types/app/routes/_authenticated-routes+/organizations_+/$organizationSlug+/settings+/+types/general";
 import { updateStripeCustomer } from "~/features/billing/stripe-helpers.server";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
-import { authContext } from "~/features/user-authentication/user-authentication-middleware.server";
 import { OrganizationMembershipRole } from "~/generated/client";
 import { combineHeaders } from "~/utils/combine-headers.server";
 import { forbidden } from "~/utils/http-responses.server";
 import { slugify } from "~/utils/slugify.server";
-import { removeImageFromStorage } from "~/utils/storage-helpers.server";
+import { removeImageFromStorage } from "~/utils/storage.server";
 import { createToastHeaders, redirectWithToast } from "~/utils/toast.server";
 import { validateFormData } from "~/utils/validate-form-data.server";
 
@@ -72,7 +71,6 @@ export async function generalOrganizationSettingsAction({
       }
 
       if (result.data.logo) {
-        const { supabase } = context.get(authContext);
         // Remove old logo if it exists
         if (organization.imageUrl) {
           await removeImageFromStorage(organization.imageUrl);
@@ -81,7 +79,6 @@ export async function generalOrganizationSettingsAction({
         const imageUrl = await uploadOrganizationLogo({
           file: result.data.logo,
           organizationId: organization.id,
-          supabase,
         });
         updates.imageUrl = imageUrl;
       }

@@ -1,13 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { FaStripe } from "react-icons/fa6";
 import {
+  SiAuth0,
+  SiCloudinary,
   SiEslint,
   SiMockserviceworker,
   SiPostgresql,
   SiPrettier,
   SiPrisma,
   SiShadcnui,
-  SiSupabase,
   SiTailwindcss,
   SiTestinglibrary,
   SiTypescript,
@@ -39,8 +40,12 @@ export function Logos() {
               key: "typescript",
             },
             {
-              icon: <SiSupabase className="size-16" title="Supabase" />,
-              key: "supabase",
+              icon: <SiAuth0 className="size-16" title="Auth0" />,
+              key: "auth0",
+            },
+            {
+              icon: <SiCloudinary className="size-16" title="Cloudinary" />,
+              key: "cloudinary",
             },
             {
               icon: <FaStripe className="size-16" title="Stripe" />,

@@ -48,7 +48,7 @@ const rootConfig = defineConfig({
     sudoFilesPlugin,
   ],
   server: {
-    port: 3000,
+    port: 3001,
     // Paystack webhooks / tunneling: ngrok sends Host: *.ngrok-free.app
     allowedHosts: [".ngrok-free.app", ".ngrok.io", ".ngrok.app"],
   },

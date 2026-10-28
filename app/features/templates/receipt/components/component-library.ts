@@ -1,4 +1,5 @@
 import type { ComponentDefinition } from "../../shared/types";
+import { PLACEHOLDER_LOGO_URLS } from "~/utils/static-assets";
 
 export const receiptComponentLibrary: Record<string, ComponentDefinition> = {
   "receipt-header": {
@@ -13,8 +14,7 @@ export const receiptComponentLibrary: Record<string, ComponentDefinition> = {
       "transactionId",
     ],
     defaultData: {
-      storeLogo:
-        "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/logoipsum-404.svg",
+      storeLogo: PLACEHOLDER_LOGO_URLS.logoipsum404,
       storeName: "",
       storeAddress: "",
       storeEmail: "",

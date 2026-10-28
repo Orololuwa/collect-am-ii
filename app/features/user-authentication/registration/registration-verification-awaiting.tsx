@@ -1,89 +1,27 @@
-import { TriangleAlertIcon } from "lucide-react";
-import { Trans, useTranslation } from "react-i18next";
-import { Form } from "react-router";
+import type { SubmissionResult } from "@conform-to/react/future";
 
-import { useCountdown } from "../use-countdown";
+import { EmailCodeVerification } from "../email-code-verification";
 import { registerIntents } from "../user-authentication-constants";
-import { Alert, AlertDescription } from "~/components/ui/alert";
-import { Button } from "~/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import { Spinner } from "~/components/ui/spinner";
+import { verifyRegistrationCodeSchema } from "./registration-schemas";
 
 export type RegistrationVerificationAwaitingProps = {
   email: string;
+  lastResult?: SubmissionResult<string> | null;
   isResending?: boolean;
   isSubmitting?: boolean;
+  isVerifying?: boolean;
 };
 
-export function RegistrationVerificationAwaiting({
-  email,
-  isResending = false,
-  isSubmitting = false,
-}: RegistrationVerificationAwaitingProps) {
-  const { t } = useTranslation("userAuthentication", {
-    keyPrefix: "register.magicLink",
-  });
-
-  const { secondsLeft, reset } = useCountdown(60);
-
-  const waitingToResend = secondsLeft !== 0;
-
+export function RegistrationVerificationAwaiting(
+  props: RegistrationVerificationAwaitingProps,
+) {
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-xl">{t("cardTitle")}</CardTitle>
-
-        <CardDescription className="text-center">
-          {t("cardDescription")}
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent>
-        <div className="grid gap-4">
-          <p className="text-muted-foreground text-xs">
-            <Trans
-              components={{ 1: <b /> }}
-              count={secondsLeft}
-              i18nKey="register.magicLink.countdownMessage"
-              ns="userAuthentication"
-            />
-          </p>
-
-          <Form method="post" onSubmit={() => reset()}>
-            <fieldset disabled={waitingToResend || isSubmitting || isResending}>
-              <input name="email" type="hidden" value={email} />
-
-              <Button
-                className="w-full"
-                name="intent"
-                type="submit"
-                value={registerIntents.registerWithEmail}
-              >
-                {isResending ? (
-                  <>
-                    <Spinner />
-                    {t("resendButtonLoading")}
-                  </>
-                ) : (
-                  t("resendButton")
-                )}
-              </Button>
-            </fieldset>
-          </Form>
-
-          <Alert>
-            <TriangleAlertIcon />
-
-            <AlertDescription>{t("alertDescription")}</AlertDescription>
-          </Alert>
-        </div>
-      </CardContent>
-    </Card>
+    <EmailCodeVerification
+      {...props}
+      keyPrefix="register"
+      resendIntent={registerIntents.registerWithEmail}
+      schema={verifyRegistrationCodeSchema}
+      verifyIntent={registerIntents.verifyCode}
+    />
   );
 }

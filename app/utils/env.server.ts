@@ -4,22 +4,21 @@ const schema = z.object({
   ALLOW_INDEXING: z.enum(["true", "false"]).optional(),
   API_KEY_ENCRYPTION_KEY: z.string().optional(), // Optional, falls back to COOKIE_SECRET
   APP_URL: z.url(),
+  AUTH0_CLIENT_ID: z.string(),
+  AUTH0_CLIENT_SECRET: z.string(),
+  AUTH0_DOMAIN: z.string(),
+  CLOUDINARY_URL: z.string().startsWith("cloudinary://"),
   COOKIE_SECRET: z.string(),
   EMAIL_FROM: z.string().optional(),
   DATABASE_URL: z.string(),
   HONEYPOT_SECRET: z.string(),
+  MAILGUN_API_KEY: z.string().optional(),
+  MAILGUN_DOMAIN: z.string().optional(),
   MOCKS: z.literal("true").optional(),
   NODE_ENV: z.enum(["production", "development", "test"] as const),
   RESEND_API_KEY: z.string().optional(),
-  STORAGE_ACCESS_KEY_ID: z.string(),
-  STORAGE_REGION: z.string(),
-  STORAGE_SECRET_ACCESS_KEY: z.string(),
   STRIPE_SECRET_KEY: z.string(),
   STRIPE_WEBHOOK_SECRET: z.string(),
-  SUPABASE_PROJECT_ID: z.string(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string(),
-  VITE_SUPABASE_ANON_KEY: z.string(),
-  VITE_SUPABASE_URL: z.url(),
 });
 
 declare global {

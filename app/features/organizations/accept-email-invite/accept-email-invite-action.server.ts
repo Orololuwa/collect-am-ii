@@ -11,8 +11,8 @@ import { getEmailInviteToken } from "./accept-email-invite-helpers.server";
 import { createEmailInviteInfoHeaders } from "./accept-email-invite-session.server";
 import type { Route } from ".react-router/types/app/routes/organizations_+/+types/email-invite";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
-import { requireSupabaseUserExists } from "~/features/user-accounts/user-accounts-helpers.server";
-import { createSupabaseServerClient } from "~/features/user-authentication/supabase.server";
+import { requireUserSession } from "~/features/user-accounts/user-accounts-helpers.server";
+import { getUserIdFromSession } from "~/features/user-authentication/auth-session.server";
 import { combineHeaders } from "~/utils/combine-headers.server";
 import { getErrorMessage } from "~/utils/get-error-message";
 import { getIsDataWithResponseInit } from "~/utils/get-is-data-with-response-init.server";
@@ -37,10 +37,8 @@ export async function acceptEmailInviteAction({
 
     switch (data.intent) {
       case ACCEPT_EMAIL_INVITE_INTENT: {
-        const { supabase, headers } = createSupabaseServerClient({ request });
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const headers = new Headers();
+        const userId = await getUserIdFromSession(request);
 
         const token = getEmailInviteToken(request);
 
@@ -81,8 +79,8 @@ export async function acceptEmailInviteAction({
           );
         }
 
-        if (user) {
-          const userAccount = await requireSupabaseUserExists(request, user.id);
+        if (userId) {
+          const userAccount = await requireUserSession(request);
 
           try {
             await acceptEmailInvite({

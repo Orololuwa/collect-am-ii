@@ -37,6 +37,7 @@ z.config({ jitless: true });
 
 export const REGISTER_WITH_EMAIL_INTENT = registerIntents.registerWithEmail;
 export const REGISTER_WITH_GOOGLE_INTENT = registerIntents.registerWithGoogle;
+export const VERIFY_REGISTRATION_CODE_INTENT = registerIntents.verifyCode;
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const i18n = getInstance(context);
@@ -83,14 +84,19 @@ export default function RegisterRoute({
     navigation.formData?.get("intent") === REGISTER_WITH_EMAIL_INTENT;
   const isRegisteringWithGoogle =
     navigation.formData?.get("intent") === REGISTER_WITH_GOOGLE_INTENT;
-  const isSubmitting = isRegisteringWithEmail || isRegisteringWithGoogle;
+  const isVerifyingCode =
+    navigation.formData?.get("intent") === VERIFY_REGISTRATION_CODE_INTENT;
+  const isSubmitting =
+    isRegisteringWithEmail || isRegisteringWithGoogle || isVerifyingCode;
 
   if (isAwaitingEmailConfirmation) {
     return (
       <RegistrationVerificationAwaiting
-        email={actionData?.email}
+        email={actionData.email}
         isResending={isRegisteringWithEmail}
         isSubmitting={isSubmitting}
+        isVerifying={isVerifyingCode}
+        lastResult={actionData.result}
       />
     );
   }

@@ -159,8 +159,10 @@ COPY ./prisma.config.ts /app/prisma.config.ts
 COPY --from=build-env /app/app/generated /app/app/generated
 WORKDIR /app
 
-# Expose port (Railway will set PORT env var)
-EXPOSE 3000
+# The app listens on PORT (react-router-serve). Railway overrides it.
+ENV PORT=3001
+EXPOSE 3001
 
-# Run Prisma migrations and generate client, then start the app
+# Migrations are applied by the `migrate` service in docker-compose.yml
+# (the runtime image has no Prisma CLI), then the app starts.
 CMD ["sh", "-c", "npm run start"]

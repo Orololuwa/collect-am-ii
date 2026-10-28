@@ -3,11 +3,7 @@ import { describe, expect, test } from "vitest";
 
 import { createPopulatedUserAccount } from "./user-accounts-factories.server";
 import { throwIfUserAccountIsMissing } from "./user-accounts-helpers.server";
-import { supabaseHandlers } from "~/test/mocks/handlers/supabase";
-import { setupMockServerLifecycle } from "~/test/msw-test-utils";
 import { createAuthenticatedRequest } from "~/test/test-utils";
-
-setupMockServerLifecycle(...supabaseHandlers);
 
 describe("throwIfUserAccountIsMissing()", () => {
   test("given: a request and a user account, should: return the user account", async () => {
@@ -34,7 +30,7 @@ describe("throwIfUserAccountIsMissing()", () => {
         expect(error.status).toEqual(302);
         expect(error.headers.get("Location")).toEqual("/login");
         expect(error.headers.get("Set-Cookie")).toMatch(
-          /sb-.*-auth-token=; Max-Age=0; Path=\/; SameSite=Lax/,
+          /^__session=; Path=\/; Expires=Thu, 01 Jan 1970 00:00:00 GMT/,
         );
       }
     }

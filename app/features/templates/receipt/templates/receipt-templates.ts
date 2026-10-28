@@ -1,4 +1,5 @@
 import type { Template } from "../../shared/types";
+import { PLACEHOLDER_LOGO_URLS } from "~/utils/static-assets";
 
 export const receiptTemplates: Template[] = [
   {
@@ -17,8 +18,7 @@ export const receiptTemplates: Template[] = [
     sections: [
       {
         data: {
-          storeLogo:
-            "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/logoipsum-397.svg",
+          storeLogo: PLACEHOLDER_LOGO_URLS.logoipsum397,
           storeName: "Your Store Name",
           storeAddress: "123 Main Street\nCity, State 12345",
           storeEmail: "info@store.com",
@@ -107,8 +107,7 @@ export const receiptTemplates: Template[] = [
     sections: [
       {
         data: {
-          storeLogo:
-            "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/logoipsum-350.svg",
+          storeLogo: PLACEHOLDER_LOGO_URLS.logoipsum350,
           storeName: "Your Store Name",
           storeAddress:
             "123 Main Street\nSuite 200\nCity, State 12345\nUnited States",

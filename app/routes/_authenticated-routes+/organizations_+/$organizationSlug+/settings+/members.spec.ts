@@ -33,9 +33,10 @@ import {
 } from "~/features/user-accounts/user-accounts-model.server";
 import type { Organization, UserAccount } from "~/generated/client";
 import { OrganizationMembershipRole } from "~/generated/client";
+import { auth0Handlers } from "~/test/mocks/handlers/auth0";
+import { cloudinaryHandlers } from "~/test/mocks/handlers/cloudinary";
 import { resendHandlers } from "~/test/mocks/handlers/resend";
 import { stripeHandlers } from "~/test/mocks/handlers/stripe";
-import { supabaseHandlers } from "~/test/mocks/handlers/supabase";
 import { setupMockServerLifecycle } from "~/test/msw-test-utils";
 import {
   setupUserWithOrgAndAddAsMember,
@@ -116,7 +117,8 @@ async function setupMultipleMembers({
 }
 
 const server = setupMockServerLifecycle(
-  ...supabaseHandlers,
+  ...auth0Handlers,
+  ...cloudinaryHandlers,
   ...resendHandlers,
   ...stripeHandlers,
 );

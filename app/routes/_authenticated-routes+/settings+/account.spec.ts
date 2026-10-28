@@ -12,10 +12,7 @@ import {
   DELETE_USER_ACCOUNT_INTENT,
   UPDATE_USER_ACCOUNT_INTENT,
 } from "~/features/user-accounts/settings/account/account-settings-constants";
-import {
-  AVATAR_PATH_PREFIX,
-  BUCKET_NAME,
-} from "~/features/user-accounts/user-account-constants";
+import { AVATAR_FOLDER } from "~/features/user-accounts/user-account-constants";
 import { createPopulatedUserAccount } from "~/features/user-accounts/user-accounts-factories.server";
 import {
   deleteUserAccountFromDatabaseById,
@@ -24,8 +21,12 @@ import {
 } from "~/features/user-accounts/user-accounts-model.server";
 import type { UserAccount } from "~/generated/client";
 import { OrganizationMembershipRole } from "~/generated/client";
+import { auth0Handlers } from "~/test/mocks/handlers/auth0";
+import {
+  cloudinaryHandlers,
+  getMockCloudinaryUrl,
+} from "~/test/mocks/handlers/cloudinary";
 import { stripeHandlers } from "~/test/mocks/handlers/stripe";
-import { supabaseHandlers } from "~/test/mocks/handlers/supabase";
 import { setupMockServerLifecycle } from "~/test/msw-test-utils";
 import { setupUserWithOrgAndAddAsMember } from "~/test/server-test-utils";
 import {
@@ -75,7 +76,11 @@ async function setup() {
   return user;
 }
 
-const server = setupMockServerLifecycle(...supabaseHandlers, ...stripeHandlers);
+const server = setupMockServerLifecycle(
+  ...auth0Handlers,
+  ...cloudinaryHandlers,
+  ...stripeHandlers,
+);
 
 describe("/settings/account route action", () => {
   test("given: an unauthenticated request, should: throw a redirect to the login page", async () => {
@@ -157,9 +162,10 @@ describe("/settings/account route action", () => {
       // Verify user account was updated in the database
       const updatedUser = await retrieveUserAccountFromDatabaseById(user.id);
       expect(updatedUser?.name).toEqual(newName);
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const expectedKey = `${AVATAR_PATH_PREFIX}/${user.id}.png`;
-      const expectedUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET_NAME}/${expectedKey}`;
+      const expectedUrl = getMockCloudinaryUrl({
+        format: "png",
+        publicId: `${AVATAR_FOLDER}/${user.id}`,
+      });
       expect(updatedUser?.imageUrl).toEqual(expectedUrl);
 
       const maybeToast = (actual.init?.headers as Headers).get("Set-Cookie");
@@ -187,9 +193,10 @@ describe("/settings/account route action", () => {
       // Verify only avatar was updated in the database
       const updatedUser = await retrieveUserAccountFromDatabaseById(user.id);
       expect(updatedUser?.name).toEqual(user.name);
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const expectedKey = `${AVATAR_PATH_PREFIX}/${user.id}.png`;
-      const expectedUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET_NAME}/${expectedKey}`;
+      const expectedUrl = getMockCloudinaryUrl({
+        format: "png",
+        publicId: `${AVATAR_FOLDER}/${user.id}`,
+      });
       expect(updatedUser?.imageUrl).toEqual(expectedUrl);
 
       const maybeToast = (actual.init?.headers as Headers).get("Set-Cookie");

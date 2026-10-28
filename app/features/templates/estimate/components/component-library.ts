@@ -1,4 +1,5 @@
 import type { ComponentDefinition } from "../../shared/types";
+import { PLACEHOLDER_LOGO_URLS } from "~/utils/static-assets";
 
 export const estimateComponentLibrary: Record<string, ComponentDefinition> = {
   "estimate-header": {
@@ -17,8 +18,7 @@ export const estimateComponentLibrary: Record<string, ComponentDefinition> = {
       "shipToAddress",
     ],
     defaultData: {
-      companyLogo:
-        "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/logoipsum-404.svg",
+      companyLogo: PLACEHOLDER_LOGO_URLS.logoipsum404,
       companyName: "",
       companyAddress: "",
       companyEmail: "",

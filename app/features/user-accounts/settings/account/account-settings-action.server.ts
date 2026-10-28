@@ -21,10 +21,11 @@ import {
   deleteUserAccountFromDatabaseById,
   updateUserAccountInDatabaseById,
 } from "~/features/user-accounts/user-accounts-model.server";
-import { supabaseAdminClient } from "~/features/user-authentication/supabase.server";
+import { destroyUserSession } from "~/features/user-authentication/auth-session.server";
+import { deleteAuth0UsersByEmail } from "~/features/user-authentication/auth0.server";
 import { combineHeaders } from "~/utils/combine-headers.server";
 import { badRequest } from "~/utils/http-responses.server";
-import { removeImageFromStorage } from "~/utils/storage-helpers.server";
+import { removeImageFromStorage } from "~/utils/storage.server";
 import { createToastHeaders, redirectWithToast } from "~/utils/toast.server";
 import { validateFormData } from "~/utils/validate-form-data.server";
 
@@ -39,7 +40,7 @@ export async function accountSettingsAction({
   context,
   request,
 }: Route.ActionArgs) {
-  const { user, headers, supabase } =
+  const { user, headers } =
     await requireAuthenticatedUserWithMembershipsAndSubscriptionsExists({
       context,
       request,
@@ -67,7 +68,6 @@ export async function accountSettingsAction({
 
         const publicUrl = await uploadUserAvatar({
           file: result.data.avatar,
-          supabase,
           userId: user.id,
         });
         updates.imageUrl = publicUrl;
@@ -153,20 +153,18 @@ export async function accountSettingsAction({
           }),
       );
 
-      // Sign out the user before deleting their account
-      await supabase.auth.signOut();
-
       // Delete the user account (this will cascade delete their memberships)
       await deleteUserAccountFromDatabaseById(user.id);
-      await supabaseAdminClient.auth.admin.deleteUser(user.supabaseUserId);
+      await deleteAuth0UsersByEmail(user.email);
 
+      // Sign the user out by clearing their session cookie
       return redirectWithToast(
         "/",
         {
           title: i18n.t("settings:userAccount.toast.userAccountDeleted"),
           type: "success",
         },
-        { headers },
+        { headers: combineHeaders(headers, await destroyUserSession(request)) },
       );
     }
   }

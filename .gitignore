@@ -28,3 +28,6 @@ stripe-events.txt
 
 # Prisma
 /app/generated/
+
+# Database dumps (scripts/migrate-supabase-db.sh)
+/backups/

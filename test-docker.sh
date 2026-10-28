@@ -38,7 +38,7 @@ docker-compose build
 
 echo ""
 echo "🚀 Starting container..."
-echo "   The app will be available at http://localhost:3000"
+echo "   The app will be available at http://localhost:3001"
 echo "   Press Ctrl+C to stop"
 echo ""
 

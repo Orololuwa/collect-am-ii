@@ -111,11 +111,10 @@ test.describe("onboarding user account page", () => {
       const updatedUser = await retrieveUserAccountFromDatabaseById(id);
       expect(updatedUser?.name).toEqual(newName);
 
-      // Verify image URL is in the correct Supabase storage format
-      const supabaseUrl = process.env.VITE_SUPABASE_URL as string;
+      // Verify image URL is a Cloudinary upload in the avatars folder
       expect(updatedUser?.imageUrl).toMatch(
         new RegExp(
-          `${supabaseUrl}/storage/v1/object/public/app-images/user-avatars/${id}\\.jpg$`,
+          `^https://res\\.cloudinary\\.com/[^/]+/image/upload/v\\d+/user-avatars/${id}\\.\\w+$`,
         ),
       );
 

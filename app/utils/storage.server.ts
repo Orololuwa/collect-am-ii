@@ -1,108 +1,70 @@
-import type { Readable } from "node:stream";
-import type { S3Client } from "@aws-sdk/client-s3";
-import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
-import type { FileUpload } from "@remix-run/form-data-parser";
+import { v2 as cloudinary } from "cloudinary";
+
+import { getPublicIdFromCloudinaryUrl } from "./storage-helpers.server";
+
+// The SDK reads its credentials from the `CLOUDINARY_URL` environment variable.
+cloudinary.config({ secure: true });
 
 /**
- * Downloads a file from Supabase Storage using the S3 compatible API.
+ * Uploads an image to Cloudinary, replacing any existing image with the same
+ * public id.
  *
- * @param bucket - The name of the bucket to download from.
- * @param client - The S3 client to use.
- * @param key - The key of the file to download.
- * @returns The file as a Readable stream.
+ * @param file - The image to upload.
+ * @param folder - The Cloudinary folder, e.g. `user-avatars`.
+ * @param publicId - The id of the image inside the folder (no extension).
+ * @returns The HTTPS URL of the uploaded image.
  */
-export async function downloadFromStorage({
-  bucket,
-  client,
-  key,
-}: {
-  bucket: string;
-  client: S3Client;
-  key: string;
-}) {
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-  const response = await client.send(command);
-  return response.Body;
-}
-
-/**
- * Our “uploadable” body types, matching
- * what @aws-sdk/client-s3 actually accepts.
- */
-export type Uploadable =
-  | File
-  | FileUpload
-  | Buffer
-  | Uint8Array
-  | Readable
-  | ReadableStream<Uint8Array>;
-
-/**
- * Type‐guard to detect your FileUpload objects.
- */
-function isFileUpload(file: Uploadable): file is FileUpload {
-  return typeof (file as FileUpload).stream === "function";
-}
-
-/**
- * Uploads a file to Supabase Storage using the S3 compatible API.
- * Uses the multipart Upload helper to avoid upstream stream hashing issues.
- *
- * @param bucket - The name of the bucket to upload to.
- * @param client - The S3 client to use.
- * @param contentType - The content type of the file.
- * @param file - The file to upload.
- * @param key - The key of the file to upload.
- * @returns The key of the uploaded file.
- */
-export async function uploadToStorage({
-  bucket,
-  client,
-  contentType,
+export async function uploadImage({
   file,
-  key,
+  folder,
+  publicId,
 }: {
-  bucket: string;
-  client: S3Client;
-  contentType: string;
-  file: Uploadable;
-  key: string;
+  file: File;
+  folder: string;
+  publicId: string;
 }) {
-  // Normalize custom FileUpload -> Readable; everything else we pass straight through
-  const body = isFileUpload(file) ? file.stream() : file;
+  const buffer = Buffer.from(await file.arrayBuffer());
 
-  // Use multipart upload helper to avoid stream hashing errors
-  const uploader = new Upload({
-    client,
-    params: {
-      Body: body,
-      Bucket: bucket,
-      ContentType: contentType,
-      Key: key,
+  const result = await new Promise<{ secure_url: string }>(
+    (resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          invalidate: true,
+          overwrite: true,
+          public_id: publicId,
+          resource_type: "image",
+        },
+        (error, uploadResult) => {
+          if (error || !uploadResult) {
+            reject(error ?? new Error("Cloudinary upload failed"));
+            return;
+          }
+          resolve(uploadResult);
+        },
+      );
+      stream.end(buffer);
     },
-  });
+  );
 
-  await uploader.done();
-  return key;
+  return result.secure_url;
 }
 
 /**
- * Deletes a file from Supabase Storage using the S3 compatible API.
+ * Deletes an image from Cloudinary by its delivery URL. URLs that don't point
+ * to Cloudinary (e.g. legacy URLs) are ignored.
  *
- * @param bucket - The name of the bucket to delete from.
- * @param client - The S3 client to use.
- * @param key - The key of the file to delete.
+ * @param imageUrl - The URL of the image to remove.
  */
-export async function deleteFromStorage({
-  bucket,
-  client,
-  key,
-}: {
-  bucket: string;
-  client: S3Client;
-  key: string;
-}) {
-  const command = new DeleteObjectCommand({ Bucket: bucket, Key: key });
-  await client.send(command);
+export async function removeImageFromStorage(imageUrl?: string | null) {
+  const publicId = getPublicIdFromCloudinaryUrl(imageUrl);
+
+  if (!publicId) {
+    return;
+  }
+
+  await cloudinary.uploader.destroy(publicId, {
+    invalidate: true,
+    resource_type: "image",
+  });
 }

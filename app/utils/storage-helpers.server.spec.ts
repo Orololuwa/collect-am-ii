@@ -1,61 +1,45 @@
 import { describe, expect, test } from "vitest";
 
-import { getBucketAndKeyFromUrl } from "./storage-helpers.server";
+import { getPublicIdFromCloudinaryUrl } from "./storage-helpers.server";
 
-describe("getBucketAndKeyFromUrl()", () => {
-  test("given: a null url, should: return undefined bucket and key", () => {
-    const actual = getBucketAndKeyFromUrl(null);
-    const expected = { bucket: undefined, key: undefined };
+describe("getPublicIdFromCloudinaryUrl()", () => {
+  test("given: a null url, should: return undefined", () => {
+    expect(getPublicIdFromCloudinaryUrl(null)).toBeUndefined();
+  });
 
-    expect(actual).toEqual(expected);
+  test("given: an invalid url, should: return undefined", () => {
+    expect(getPublicIdFromCloudinaryUrl("not a url")).toBeUndefined();
+  });
+
+  test("given: a non-Cloudinary url, should: return undefined", () => {
+    expect(
+      getPublicIdFromCloudinaryUrl(
+        "https://example.com/storage/v1/object/public/app-images/user-avatars/abc.png",
+      ),
+    ).toBeUndefined();
   });
 
   test.each([
     {
-      expected: {
-        bucket: "app-images",
-        key: "user-avatars/gfcqufunx7kdf20k54bdhpez/jan-2.png",
-      },
-      url: "https://project-ref.supabase.co/storage/v1/object/public/app-images/user-avatars/gfcqufunx7kdf20k54bdhpez/jan-2.png",
+      expected: "user-avatars/gfcqufunx7kdf20k54bdhpez",
+      url: "https://res.cloudinary.com/demo/image/upload/v1712345678/user-avatars/gfcqufunx7kdf20k54bdhpez.png",
     },
     {
-      expected: {
-        bucket: "app-images",
-        key: "organization-logos/oxws924a0m8zq86ui9yogg6n/maxresdefault.jpg",
-      },
-      url: "https://project-ref.supabase.co/storage/v1/object/public/app-images/organization-logos/oxws924a0m8zq86ui9yogg6n/maxresdefault.jpg",
+      expected: "organization-logos/oxws924a0m8zq86ui9yogg6n",
+      url: "https://res.cloudinary.com/demo/image/upload/v1/organization-logos/oxws924a0m8zq86ui9yogg6n.JPG",
     },
     {
-      expected: {
-        bucket: "app-files",
-        key: "organization-logos/oxws924a0m8zq86ui9yogg6n/maxresdefault.jpg",
-      },
-      url: "https://project-ref.supabase.co/storage/v1/object/public/app-files/organization-logos/oxws924a0m8zq86ui9yogg6n/maxresdefault.jpg",
+      expected: "user-avatars/abc",
+      url: "https://res.cloudinary.com/demo/image/upload/w_128,h_128,c_fill/v1712345678/user-avatars/abc.webp",
     },
     {
-      expected: {
-        bucket: "app-images",
-        key: "user-avatars/gfcqufunx7kdf20k54bdhpez.JPG",
-      },
-      url: "https://project-ref.supabase.co/storage/v1/object/public/app-images/user-avatars/gfcqufunx7kdf20k54bdhpez.JPG",
+      expected: "user-avatars/abc",
+      url: "https://res.cloudinary.com/demo/image/upload/user-avatars/abc.png",
     },
-    {
-      expected: {
-        bucket: "app-images",
-        key: "user-avatars/gfcqufunx7kdf20k54bdhpez/avatar.png",
-      },
-      url: "https://project-ref.supabase.co/storage/v1/render/image/public/app-images/user-avatars/gfcqufunx7kdf20k54bdhpez/avatar.png?width=128&height=128&resize=cover",
-    },
-  ])("given: a url $url, should: return bucket $expected.bucket and key $expected.key", ({
+  ])("given: a url $url, should: return public id $expected", ({
     url,
     expected,
   }) => {
-    const actual = getBucketAndKeyFromUrl(url);
-    expect(actual).toEqual(expected);
-  });
-
-  test('given: an invalid URL string, should: throw error "Invalid URL"', () => {
-    const url = "not a url";
-    expect(() => getBucketAndKeyFromUrl(url)).toThrow("Invalid URL");
+    expect(getPublicIdFromCloudinaryUrl(url)).toEqual(expected);
   });
 });

@@ -3,8 +3,8 @@ import { describe, expect, test } from "vitest";
 import { getIsAwaitingEmailConfirmation } from "./user-authentication-helpers";
 
 describe("getIsAwaitingEmailConfirmation()", () => {
-  test("given: a valid AuthOtpResponse data with email, should: return true", () => {
-    const data = { email: "test@example.com", session: null, user: null };
+  test("given: action data with an email, should: return true", () => {
+    const data = { email: "test@example.com", result: undefined };
 
     const actual = getIsAwaitingEmailConfirmation(data);
     const expected = true;
@@ -12,8 +12,8 @@ describe("getIsAwaitingEmailConfirmation()", () => {
     expect(actual).toEqual(expected);
   });
 
-  test("given: an object missing session property, should: return false", () => {
-    const data = { email: "test@example.com", user: null };
+  test("given: an object missing the email property, should: return false", () => {
+    const data = { result: undefined };
 
     const actual = getIsAwaitingEmailConfirmation(data);
     const expected = false;
@@ -21,48 +21,8 @@ describe("getIsAwaitingEmailConfirmation()", () => {
     expect(actual).toEqual(expected);
   });
 
-  test("given: an object missing user property, should: return false", () => {
-    const data = { email: "test@example.com", session: null };
-
-    const actual = getIsAwaitingEmailConfirmation(data);
-    const expected = false;
-
-    expect(actual).toEqual(expected);
-  });
-
-  test("given: an object missing email property, should: return false", () => {
-    const data = { session: null, user: null };
-
-    const actual = getIsAwaitingEmailConfirmation(data);
-    const expected = false;
-
-    expect(actual).toEqual(expected);
-  });
-
-  test("given: an object with non-null session, should: return false", () => {
-    const data = { email: "test@example.com", session: {}, user: null };
-
-    const actual = getIsAwaitingEmailConfirmation(data);
-    const expected = false;
-
-    expect(actual).toEqual(expected);
-  });
-
-  test("given: an object with non-null user, should: return false", () => {
-    const data = {
-      email: "test@example.com",
-      session: null,
-      user: {},
-    };
-
-    const actual = getIsAwaitingEmailConfirmation(data);
-    const expected = false;
-
-    expect(actual).toEqual(expected);
-  });
-
-  test("given: an object with non-string email, should: return false", () => {
-    const data = { email: 123, session: null, user: null };
+  test("given: an object with a non-string email, should: return false", () => {
+    const data = { email: 123 };
 
     const actual = getIsAwaitingEmailConfirmation(data);
     const expected = false;
@@ -71,18 +31,21 @@ describe("getIsAwaitingEmailConfirmation()", () => {
   });
 
   test("given: null, should: return false", () => {
-    const data = null;
-
-    const actual = getIsAwaitingEmailConfirmation(data);
+    const actual = getIsAwaitingEmailConfirmation(null);
     const expected = false;
 
     expect(actual).toEqual(expected);
   });
 
   test("given: undefined, should: return false", () => {
-    const data = undefined;
+    const actual = getIsAwaitingEmailConfirmation(undefined);
+    const expected = false;
 
-    const actual = getIsAwaitingEmailConfirmation(data);
+    expect(actual).toEqual(expected);
+  });
+
+  test("given: a string, should: return false", () => {
+    const actual = getIsAwaitingEmailConfirmation("test@example.com");
     const expected = false;
 
     expect(actual).toEqual(expected);

@@ -10,8 +10,9 @@ import {
 } from "~/features/organizations/organizations-email-invite-link-model.server";
 import { createPopulatedOrganizationEmailInviteLink } from "~/features/organizations/organizations-factories.server";
 import type { UserAccount } from "~/generated/client";
+import { auth0Handlers } from "~/test/mocks/handlers/auth0";
+import { cloudinaryHandlers } from "~/test/mocks/handlers/cloudinary";
 import { stripeHandlers } from "~/test/mocks/handlers/stripe";
-import { supabaseHandlers } from "~/test/mocks/handlers/supabase";
 import { setupMockServerLifecycle } from "~/test/msw-test-utils";
 import { setupUserWithOrgAndAddAsMember } from "~/test/server-test-utils";
 import {
@@ -90,7 +91,11 @@ async function setup() {
   return { emailInviteLink, organization, otherOrganization, otherUser, user };
 }
 
-setupMockServerLifecycle(...supabaseHandlers, ...stripeHandlers);
+setupMockServerLifecycle(
+  ...auth0Handlers,
+  ...cloudinaryHandlers,
+  ...stripeHandlers,
+);
 
 describe("/organizations/email-invite route action", () => {
   describe("given: an unauthenticated request", () => {

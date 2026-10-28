@@ -9,9 +9,10 @@ import {
 import { loginIntents } from "~/features/user-authentication/user-authentication-constants";
 import { anonymousMiddleware } from "~/features/user-authentication/user-authentication-middleware.server";
 import {
+  auth0Handlers,
   createRateLimitedEmail,
-  supabaseHandlers,
-} from "~/test/mocks/handlers/supabase";
+  MOCK_EMAIL_CODE,
+} from "~/test/mocks/handlers/auth0";
 import { setupMockServerLifecycle } from "~/test/msw-test-utils";
 import {
   createAuthenticatedRequest,
@@ -43,7 +44,7 @@ async function sendRequest({ formData }: { formData: FormData }) {
   });
 }
 
-setupMockServerLifecycle(...supabaseHandlers);
+setupMockServerLifecycle(...auth0Handlers);
 
 describe("/login route action", () => {
   test("given: an authenticated request, should: throw a redirect to the organizations page", async () => {
@@ -132,7 +133,7 @@ describe("/login route action", () => {
       const formData = toFormData({ email: userAccount.email, intent });
 
       const actual = await sendRequest({ formData });
-      const expected = { email: userAccount.email, session: null, user: null };
+      const expected = { email: userAccount.email, result: undefined };
 
       expect(actual).toEqual(expected);
     });
@@ -217,21 +218,68 @@ describe("/login route action", () => {
     });
   });
 
+  describe(`${loginIntents.verifyCode} intent`, () => {
+    const intent = loginIntents.verifyCode;
+
+    test("given: the correct code, should: sign the user in and redirect", async () => {
+      const userAccount = createPopulatedUserAccount();
+      await saveUserAccountToDatabase(userAccount);
+      onTestFinished(async () => {
+        await deleteUserAccountFromDatabaseById(userAccount.id);
+      });
+      const { email } = userAccount;
+      const EXPECTED_LOCATION = "/organizations";
+      const formData = toFormData({ code: MOCK_EMAIL_CODE, email, intent });
+
+      const response = (await sendRequest({ formData })) as Response;
+
+      expect(response.status).toEqual(302);
+      expect(response.headers.get("Location")).toEqual(EXPECTED_LOCATION);
+      expect(response.headers.get("Set-Cookie")).toMatch(/__session=/);
+    });
+
+    test("given: a wrong code, should: return a 400 with the email and a code error", async () => {
+      const email = "wrong-code@example.com";
+      const formData = toFormData({ code: "000000", email, intent });
+
+      const actual = await sendRequest({ formData });
+
+      expect(actual).toMatchObject({
+        data: {
+          email,
+          result: {
+            error: {
+              fieldErrors: {
+                code: expect.arrayContaining([
+                  "userAuthentication:login.code.invalidCode",
+                ]),
+              },
+            },
+          },
+        },
+        init: { status: 400 },
+      });
+    });
+  });
+
   describe(`${loginIntents.loginWithGoogle} intent`, () => {
     const intent = loginIntents.loginWithGoogle;
 
-    test("given: a login request with Google, should: return a redirect response to Supabase OAuth URL with code_verifier cookie", async () => {
+    test("given: a login request with Google, should: redirect to Auth0's authorize URL for Google and set the OAuth cookie", async () => {
       const formData = toFormData({ intent });
 
       const response = (await sendRequest({ formData })) as Response;
 
       expect(response.status).toEqual(302);
-      expect(response.headers.get("Location")).toMatch(
-        /^https:\/\/.*\.supabase\.co\/auth\/v1\/authorize\?provider=google/,
+      const location = new URL(response.headers.get("Location") ?? "");
+      expect(location.origin).toEqual(`https://${process.env.AUTH0_DOMAIN}`);
+      expect(location.pathname).toEqual("/authorize");
+      expect(location.searchParams.get("connection")).toEqual("google-oauth2");
+      expect(location.searchParams.get("code_challenge_method")).toEqual(
+        "S256",
       );
-      expect(response.headers.get("Set-Cookie")).toMatch(
-        /sb-.*-auth-token-code-verifier=/,
-      );
+      expect(location.searchParams.get("state")).toBeTruthy();
+      expect(response.headers.get("Set-Cookie")).toMatch(/__oauth=/);
     });
   });
 });

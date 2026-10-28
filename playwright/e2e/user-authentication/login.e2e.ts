@@ -23,6 +23,7 @@ import {
   deleteUserAccountFromDatabaseById,
   saveUserAccountToDatabase,
 } from "~/features/user-accounts/user-accounts-model.server";
+import { requireEmail } from "~/test/mocks/utils";
 import { createUserWithOrgAndAddAsMember } from "~/test/test-utils";
 
 const path = "/login";
@@ -40,9 +41,7 @@ test.describe("login page", () => {
 
     // Verify auth cookie is cleared
     const cookies = await page.context().cookies();
-    const authCookie = cookies.find((cookie) =>
-      cookie.name.includes("-auth-token"),
-    );
+    const authCookie = cookies.find((cookie) => cookie.name === "__session");
     expect(authCookie).toBeUndefined();
   });
 
@@ -127,18 +126,24 @@ test.describe("login page", () => {
       await emailInput.fill(userAccount.email);
       await loginButton.click();
 
-      // Check that the magic link verification form is shown. The button
-      // should be disabled because you can only request a new link every 60
-      // seconds.
+      // Check that the code entry form is shown. The resend button should be
+      // disabled because you can only request a new code every 60 seconds.
       await expect(page.getByText(/check your email/i)).toBeVisible();
       await expect(
         page.getByText(
-          /if you haven't received the email within 60 seconds, you may request another link./i,
+          /if you haven't received the email within 60 seconds, you may request another code./i,
         ),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: /request new login link/i }),
+        page.getByRole("button", { name: /request new code/i }),
       ).toBeDisabled();
+
+      // The code from the email signs the user in.
+      const { text } = await requireEmail(userAccount.email);
+      const code = /\b(\d{6})\b/.exec(text)?.[1] ?? "";
+      await page.getByRole("textbox", { name: /sign-in code/i }).fill(code);
+      await page.getByRole("button", { name: /^sign in$/i }).click();
+      await expect(page).toHaveURL(/\/onboarding|\/organizations/);
 
       await deleteUserAccountFromDatabaseById(userAccount.id);
     });
@@ -148,14 +153,19 @@ test.describe("login page", () => {
     test("given: a logged out user, should: redirect to the google login page", async ({
       page,
     }) => {
-      // Mock the Supabase OAuth authorize endpoint to return a mock Google sign-in page
-      await page.route("**/auth/v1/authorize*", async (route) => {
-        const url = new URL(route.request().url());
-        const provider = url.searchParams.get("provider");
+      // Mock Auth0's authorize endpoint (which would forward to Google) with
+      // a fake Google sign-in page.
+      await page.route(
+        (url) =>
+          url.hostname === process.env.AUTH0_DOMAIN &&
+          url.pathname === "/authorize",
+        async (route) => {
+          const url = new URL(route.request().url());
+          const connection = url.searchParams.get("connection");
 
-        if (provider === "google") {
-          await route.fulfill({
-            body: `
+          if (connection === "google-oauth2") {
+            await route.fulfill({
+              body: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -164,16 +174,17 @@ test.describe("login page", () => {
 <body>
   <h1>Sign in</h1>
   <p>Sign in with Google</p>
-  <p>to continue to vpszwsdvgeeazuheoxfw.supabase.co</p>
+  <p>to continue to Auth0</p>
 </body>
 </html>
-            `,
-            contentType: "text/html",
-          });
-        } else {
-          await route.continue();
-        }
-      });
+              `,
+              contentType: "text/html",
+            });
+          } else {
+            await route.continue();
+          }
+        },
+      );
 
       await page.goto(path);
 

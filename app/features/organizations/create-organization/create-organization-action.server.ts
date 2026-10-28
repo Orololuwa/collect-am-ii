@@ -7,7 +7,6 @@ import type { Route } from ".react-router/types/app/routes/_authenticated-routes
 import { uploadOrganizationLogo } from "~/features/organizations/organizations-helpers.server";
 import { saveOrganizationWithOwnerToDatabase } from "~/features/organizations/organizations-model.server";
 import { requireAuthenticatedUserExists } from "~/features/user-accounts/user-accounts-helpers.server";
-import { authContext } from "~/features/user-authentication/user-authentication-middleware.server";
 import { slugify } from "~/utils/slugify.server";
 import { validateFormData } from "~/utils/validate-form-data.server";
 
@@ -19,7 +18,6 @@ export async function createOrganizationAction({
     context,
     request,
   });
-  const { supabase } = context.get(authContext);
   const result = await validateFormData(
     request,
     coerceFormValue(createOrganizationFormSchema),
@@ -37,7 +35,6 @@ export async function createOrganizationAction({
     ? await uploadOrganizationLogo({
         file: result.data.logo,
         organizationId,
-        supabase,
       })
     : "";
 

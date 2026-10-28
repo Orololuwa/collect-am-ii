@@ -7,7 +7,6 @@ import { onboardingOrganizationSchema } from "./onboarding-organization-schemas"
 import type { Route } from ".react-router/types/app/routes/_authenticated-routes+/onboarding+/+types/organization";
 import { uploadOrganizationLogo } from "~/features/organizations/organizations-helpers.server";
 import { saveOrganizationWithOwnerToDatabase } from "~/features/organizations/organizations-model.server";
-import { authContext } from "~/features/user-authentication/user-authentication-middleware.server";
 import { slugify } from "~/utils/slugify.server";
 import { validateFormData } from "~/utils/validate-form-data.server";
 
@@ -19,7 +18,6 @@ export async function onboardingOrganizationAction({
     context,
     request,
   });
-  const { supabase } = context.get(authContext);
   const result = await validateFormData(
     request,
     coerceFormValue(onboardingOrganizationSchema),
@@ -37,7 +35,6 @@ export async function onboardingOrganizationAction({
     ? await uploadOrganizationLogo({
         file: result.data.logo,
         organizationId,
-        supabase,
       })
     : "";
 

@@ -33,8 +33,9 @@ import {
 } from "~/features/user-accounts/user-accounts-model.server";
 import type { Organization, UserAccount } from "~/generated/client";
 import { OrganizationMembershipRole } from "~/generated/client";
+import { auth0Handlers } from "~/test/mocks/handlers/auth0";
+import { cloudinaryHandlers } from "~/test/mocks/handlers/cloudinary";
 import { stripeHandlers } from "~/test/mocks/handlers/stripe";
-import { supabaseHandlers } from "~/test/mocks/handlers/supabase";
 import { setupMockServerLifecycle } from "~/test/msw-test-utils";
 import {
   setupUserWithOrgAndAddAsMember,
@@ -87,7 +88,11 @@ async function sendAuthenticatedRequest({
   });
 }
 
-const server = setupMockServerLifecycle(...supabaseHandlers, ...stripeHandlers);
+const server = setupMockServerLifecycle(
+  ...auth0Handlers,
+  ...cloudinaryHandlers,
+  ...stripeHandlers,
+);
 
 describe("/organizations/:organizationSlug/settings/billing route action", () => {
   test("given: an unauthenticated request, should: throw a redirect to the login page", async () => {

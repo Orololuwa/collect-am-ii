@@ -1,4 +1,5 @@
 import type { Template } from "../../shared/types";
+import { PLACEHOLDER_LOGO_URLS } from "~/utils/static-assets";
 
 export const invoiceTemplates: Template[] = [
   {
@@ -18,8 +19,7 @@ export const invoiceTemplates: Template[] = [
     sections: [
       {
         data: {
-          companyLogo:
-            "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/logoipsum-404.svg",
+          companyLogo: PLACEHOLDER_LOGO_URLS.logoipsum404,
           companyName: "Your Company Name",
           companyAddress: "123 Business Street\nCity, State 12345",
           companyEmail: "contact@company.com",
@@ -114,8 +114,7 @@ export const invoiceTemplates: Template[] = [
     sections: [
       {
         data: {
-          companyLogo:
-            "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/logoipsum-288.svg",
+          companyLogo: PLACEHOLDER_LOGO_URLS.logoipsum288,
           companyName: "Your Company Name",
           companyAddress:
             "123 Business Street\nSuite 100\nCity, State 12345\nUnited States",

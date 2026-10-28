@@ -41,19 +41,23 @@ import { getDomainUrl } from "./utils/get-domain-url.server";
 import { honeypot } from "./utils/honeypot.server";
 import { useNonce } from "./utils/nonce-provider";
 import { securityMiddleware } from "./utils/security-middleware.server";
+import {
+  RENSTUDIO_LOGO_DARK_MODE_URL,
+  RENSTUDIO_LOGO_URL,
+} from "./utils/static-assets";
 import { getToast } from "./utils/toast.server";
 
 export const links: Route.LinksFunction = () => [
   {
     rel: "icon",
     type: "image/svg+xml",
-    href: "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/ren-studio/ren-studio.svg",
+    href: RENSTUDIO_LOGO_URL,
     media: "(prefers-color-scheme: light)",
   },
   {
     rel: "icon",
     type: "image/svg+xml",
-    href: "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/ren-studio/ren-studio-dark-mode.svg",
+    href: RENSTUDIO_LOGO_DARK_MODE_URL,
     media: "(prefers-color-scheme: dark)",
   },
   { href: sonnerStyles, rel: "stylesheet" },

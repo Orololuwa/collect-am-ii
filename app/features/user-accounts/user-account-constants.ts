@@ -1,2 +1,1 @@
-export const BUCKET_NAME = "app-images";
-export const AVATAR_PATH_PREFIX = "user-avatars";
+export const AVATAR_FOLDER = "user-avatars";

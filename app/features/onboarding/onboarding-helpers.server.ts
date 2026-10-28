@@ -2,7 +2,7 @@ import type { RouterContextProvider } from "react-router";
 import { href, redirect } from "react-router";
 
 import { throwIfUserAccountIsMissing } from "../user-accounts/user-accounts-helpers.server";
-import { retrieveUserAccountWithMembershipsFromDatabaseBySupabaseUserId } from "../user-accounts/user-accounts-model.server";
+import { retrieveUserAccountWithMembershipsFromDatabaseById } from "../user-accounts/user-accounts-model.server";
 import { authContext } from "../user-authentication/user-authentication-middleware.server";
 import { asyncPipe } from "~/utils/async-pipe.server";
 
@@ -22,12 +22,8 @@ async function requireOnboardingUserExists({
   context: Readonly<RouterContextProvider>;
   request: Request;
 }) {
-  const {
-    user: { id },
-    headers,
-  } = context.get(authContext);
-  const user =
-    await retrieveUserAccountWithMembershipsFromDatabaseBySupabaseUserId(id);
+  const { userId, headers } = context.get(authContext);
+  const user = await retrieveUserAccountWithMembershipsFromDatabaseById(userId);
   return { headers, user: await throwIfUserAccountIsMissing(request, user) };
 }
 

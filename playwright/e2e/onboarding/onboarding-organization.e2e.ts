@@ -130,11 +130,10 @@ test.describe("onboarding organization page", () => {
         OrganizationMembershipRole.owner,
       );
 
-      // Verify logo URL is in the correct Supabase storage format
-      const supabaseUrl = process.env.VITE_SUPABASE_URL as string;
+      // Verify logo URL is a Cloudinary upload in the logos folder
       expect(createdOrganization?.imageUrl).toMatch(
         new RegExp(
-          `${supabaseUrl}/storage/v1/object/public/app-images/organization-logos/${createdOrganization?.id}\\.jpg$`,
+          `^https://res\\.cloudinary\\.com/[^/]+/image/upload/v\\d+/organization-logos/${createdOrganization?.id}\\.\\w+$`,
         ),
       );
 

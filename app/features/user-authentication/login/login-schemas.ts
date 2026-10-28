@@ -9,6 +9,14 @@ export const loginWithEmailSchema = z.object({
   intent: z.literal(LOGIN_INTENTS.loginWithEmail),
 });
 
+export const verifyLoginCodeSchema = z.object({
+  code: z
+    .string({ message: "userAuthentication:login.code.invalidCode" })
+    .regex(/^\d{6}$/, { message: "userAuthentication:login.code.invalidCode" }),
+  email: z.email({ message: "userAuthentication:login.errors.invalidEmail" }),
+  intent: z.literal(LOGIN_INTENTS.verifyCode),
+});
+
 export const loginWithGoogleSchema = z.object({
   intent: z.literal(LOGIN_INTENTS.loginWithGoogle),
 });

@@ -1,40 +1,84 @@
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: react-router-saas-db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-app}
+    ports:
+      # Published on the host (default 5433) so local dev (`npm run dev`) and the
+      # Prisma CLI can reach it. Inside the compose network it's still db:5432.
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-off job that applies Prisma migrations before the app starts. Uses the
+  # build stage of the Dockerfile because it has the Prisma CLI installed.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build-env
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-app}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: react-router-saas-app
     ports:
-      - "3001:3000"
+      - "3001:3001"
+    env_file:
+      - .env
     environment:
-      # Database (use your Supabase connection string)
-      - DATABASE_URL=${DATABASE_URL}
-      
+      # Talks to the `db` service over the compose network (overrides .env).
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-app}
+
       # Required secrets
       - COOKIE_SECRET=${COOKIE_SECRET:-change-me-in-production}
       - API_KEY_ENCRYPTION_KEY=${API_KEY_ENCRYPTION_KEY:-change-me-in-production}
-      
+
       # Node environment
       - NODE_ENV=production
-      
+      - PORT=3001
+
       # Optional: Mailgun (if you want to test email features)
       - MAILGUN_API_KEY=${MAILGUN_API_KEY:-}
       - MAILGUN_DOMAIN=${MAILGUN_DOMAIN:-}
-      
+
       # Optional: Stripe (if you want to test payment features)
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      
+
       # Puppeteer configuration (already set in Dockerfile, but can override)
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-    env_file:
-      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
     # Health check to ensure the app is running
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  pgdata:

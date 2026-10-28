@@ -15,8 +15,9 @@ import {
   deleteUserAccountFromDatabaseById,
   saveUserAccountToDatabase,
 } from "~/features/user-accounts/user-accounts-model.server";
+import { auth0Handlers } from "~/test/mocks/handlers/auth0";
+import { cloudinaryHandlers } from "~/test/mocks/handlers/cloudinary";
 import { stripeHandlers } from "~/test/mocks/handlers/stripe";
-import { supabaseHandlers } from "~/test/mocks/handlers/supabase";
 import { setupMockServerLifecycle } from "~/test/msw-test-utils";
 import {
   createAuthenticatedRequest,
@@ -63,7 +64,11 @@ async function setup(userAccount = createPopulatedUserAccount()) {
   return { userAccount };
 }
 
-setupMockServerLifecycle(...supabaseHandlers, ...stripeHandlers);
+setupMockServerLifecycle(
+  ...auth0Handlers,
+  ...cloudinaryHandlers,
+  ...stripeHandlers,
+);
 
 describe("/organizations/new route action", () => {
   test("given: an unauthenticated request, should: throw a redirect to the login page", async () => {

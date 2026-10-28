@@ -3,7 +3,6 @@ import { faker } from "@faker-js/faker";
 import type { MiddlewareFunction, Params } from "react-router";
 import { RouterContextProvider } from "react-router";
 
-import { setMockSession } from "./mocks/handlers/supabase/mock-sessions";
 import type { LookupKey, Tier } from "~/features/billing/billing-constants";
 import { priceLookupKeysByTierAndInterval } from "~/features/billing/billing-constants";
 import type { StripeSubscriptionWithItemsAndPrice } from "~/features/billing/billing-factories.server";
@@ -33,10 +32,7 @@ import {
   deleteUserAccountFromDatabaseById,
   saveUserAccountToDatabase,
 } from "~/features/user-accounts/user-accounts-model.server";
-import {
-  createPopulatedSupabaseSession,
-  createPopulatedSupabaseUser,
-} from "~/features/user-authentication/user-authentication-factories";
+import { createUserSessionCookie } from "~/features/user-authentication/auth-session.server";
 import { authMiddleware } from "~/features/user-authentication/user-authentication-middleware.server";
 import type { Organization, UserAccount } from "~/generated/client";
 import {
@@ -151,53 +147,9 @@ export const createOnboardingUser = (
   };
 };
 
-function createMockJWT(payload: object): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const encodedHeader = btoa(JSON.stringify(header)).replace(/=+$/, "");
-  const encodedPayload = btoa(JSON.stringify(payload)).replace(/=+$/, "");
-  const signature = "mock_signature";
-  return `${encodedHeader}.${encodedPayload}.${signature}`;
-}
-
 /**
- * Creates a mock Supabase session with a fixed access token and refresh token.
- *
- * @param options - An object containing the user to create the session for.
- * @returns A Promise that resolves to a mock Supabase session.
- */
-export const createMockSupabaseSession = ({
-  user = createPopulatedUserAccount(),
-}: {
-  user?: UserAccount;
-}) => {
-  // Create a Supabase user with the provided ID and email
-  const supabaseUser = createPopulatedSupabaseUser({
-    email: user.email,
-    id: user.supabaseUserId,
-  });
-
-  const jwtPayload = {
-    email: supabaseUser.email,
-    exp: Math.floor(Date.now() / 1000) + 3600, // Expires in 1 hour
-    sub: supabaseUser.id, // Subject (user ID)
-  };
-
-  const access_token = createMockJWT(jwtPayload);
-
-  // Create a session with fixed tokens for testing
-  const session = createPopulatedSupabaseSession({
-    access_token,
-    user: supabaseUser,
-  });
-
-  return session;
-};
-
-/**
- * Creates an authenticated request object with the given parameters and a user
- * auth session behind the scenes.
- * NOTE: You need to activate the MSW mocks for Supabase (`getUser`) for this to
- * work.
+ * Creates an authenticated request object with the given parameters and a
+ * signed session cookie for the user.
  *
  * @param options - An object containing the url and user as well as optional
  * form data.
@@ -216,16 +168,9 @@ export async function createAuthenticatedRequest({
   formData?: FormData;
   headers?: Headers;
 }) {
-  // Create a mock session with the provided user details.
-  const mockSession = createMockSupabaseSession({ user });
-
-  await setMockSession(mockSession.access_token, mockSession);
-
-  // Determine the Supabase project reference for the cookie name.
-  const projectReference =
-    /https:\/\/([^.]+)/.exec(process.env.VITE_SUPABASE_URL)?.[1] ?? "default";
-  const cookieName = `sb-${projectReference}-auth-token`;
-  const cookieValue = encodeURIComponent(JSON.stringify(mockSession));
+  // `Set-Cookie` value is "name=value; Path=/; ..."; a request only needs the
+  // "name=value" part.
+  const authCookie = (await createUserSessionCookie(user.id)).split(";")[0]!;
 
   // Create a new request with the auth cookie.
   const request = new Request(url, { body: formData, method });
@@ -239,7 +184,6 @@ export async function createAuthenticatedRequest({
 
   // Set the auth cookie, preserving any existing cookies
   const existingCookies = request.headers.get("Cookie") ?? "";
-  const authCookie = `${cookieName}=${cookieValue}`;
   request.headers.set(
     "Cookie",
     existingCookies ? `${existingCookies}; ${authCookie}` : authCookie,

@@ -43,23 +43,35 @@ describe("RegistrationVerificationAwaiting Component", () => {
     // Verify the card title and description are displayed
     expect(screen.getByText(/verify your email/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/we've sent a verification link to your email address/i),
+      screen.getByText(/we've sent a 6-digit verification code to/i),
     ).toBeInTheDocument();
+    expect(screen.getByText(email)).toBeInTheDocument();
+
+    // Verify the code input and the verify button
+    expect(
+      screen.getByRole("textbox", { name: /verification code/i }),
+    ).toHaveAttribute("name", "code");
+    const verifyButton = screen.getByRole("button", {
+      name: /^verify and continue$/i,
+    });
+    expect(verifyButton).toHaveAttribute("value", registerIntents.verifyCode);
 
     // Verify the countdown message is displayed (initial countdown is 60 seconds)
     expect(
       screen.getByText(/if you haven't received the email within 60 seconds/i),
     ).toBeInTheDocument();
 
-    // Verify the hidden email input is present with the correct value
-    const hiddenInput = screen.getByDisplayValue(email);
-    expect(hiddenInput).toBeInTheDocument();
-    expect(hiddenInput).toHaveAttribute("type", "hidden");
-    expect(hiddenInput).toHaveAttribute("name", "email");
+    // Verify both forms carry the email in a hidden input
+    const hiddenInputs = screen.getAllByDisplayValue(email);
+    expect(hiddenInputs).toHaveLength(2);
+    for (const hiddenInput of hiddenInputs) {
+      expect(hiddenInput).toHaveAttribute("type", "hidden");
+      expect(hiddenInput).toHaveAttribute("name", "email");
+    }
 
     // Verify the resend button has the correct text and attributes
     const button = screen.getByRole("button", {
-      name: /request new verification link/i,
+      name: /request new code/i,
     });
     expect(button).toBeInTheDocument();
     expect(button).toHaveAttribute("name", "intent");
@@ -85,7 +97,7 @@ describe("RegistrationVerificationAwaiting Component", () => {
 
     // Initially, the fieldset should be disabled
     const submitButton = screen.getByRole("button", {
-      name: /request new verification link/i,
+      name: /request new code/i,
     });
     expect(submitButton).toBeDisabled();
 
@@ -100,7 +112,7 @@ describe("RegistrationVerificationAwaiting Component", () => {
     // The countdown message should now show the zero state
     expect(
       screen.getByText(
-        /if you haven't received the email, you may request another verification link now/i,
+        /if you haven't received the email, you may request another (verification )?code now/i,
       ),
     ).toBeInTheDocument();
   });
@@ -147,7 +159,7 @@ describe("RegistrationVerificationAwaiting Component", () => {
     // The submit button should still be disabled due to isSubmitting, even
     // though countdown is at zero.
     const submitButton = screen.getByRole("button", {
-      name: /request new verification link/i,
+      name: /request new code/i,
     });
     expect(submitButton).toBeDisabled();
   });

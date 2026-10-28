@@ -169,9 +169,9 @@ test.describe("account settings", () => {
     // Verify name was updated in database
     const updatedUser = await retrieveUserAccountFromDatabaseById(user.id);
     expect(updatedUser?.name).toEqual(newName);
-    // With server-side uploads, the file is uploaded to Supabase storage
+    // With server-side uploads, the file is uploaded to Cloudinary
     expect(updatedUser?.imageUrl).toMatch(
-      /storage\/v1\/object\/public\/app-images\/user-avatars/,
+      /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/v\d+\/user-avatars\//,
     );
 
     await deleteUserAccountFromDatabaseById(user.id);

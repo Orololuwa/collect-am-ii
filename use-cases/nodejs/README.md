@@ -94,7 +94,7 @@ node send-document-email.js
 🚀 Starting document export and email process...
 📮 Using email provider: MAILGUN
 
-📄 Exporting document from: http://localhost:3000/api/v1/templates/resume-modern-professional/export
+📄 Exporting document from: http://localhost:3001/api/v1/templates/resume-modern-professional/export
 ✅ PDF generated successfully (123456 bytes)
 📧 Sending email via Mailgun to: recipient@example.com
 ✅ Email sent successfully!

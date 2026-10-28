@@ -5,7 +5,10 @@ This guide walks you through deploying this Ren Studio to Railway with Docker an
 ## Prerequisites
 
 - A Railway account ([railway.app](https://railway.app))
-- A Supabase project with your database migrated
+- A Postgres database (the `db` service in `docker-compose.yml`, or a Postgres
+  service on Railway). To bring over existing Supabase data, see
+  "Migrating data from Supabase" in the README.
+- An Auth0 tenant and a Cloudinary account (see the README for setup)
 - GitHub repository with your code
 - Docker and Docker Compose installed (for local testing)
 
@@ -17,12 +20,24 @@ Before deploying to Railway, you can test the Docker setup locally:
 
 1. **Create or update your `.env` file** with all required variables:
    ```bash
-   DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.xxxxx.supabase.co:5432/postgres?sslmode=require
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=a-strong-password
+   POSTGRES_DB=app
    COOKIE_SECRET=your-cookie-secret-here
    API_KEY_ENCRYPTION_KEY=your-encryption-key-here
+   AUTH0_DOMAIN=your-tenant.eu.auth0.com
+   AUTH0_CLIENT_ID=your-auth0-client-id
+   AUTH0_CLIENT_SECRET=your-auth0-client-secret
+   CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
+   RESEND_API_KEY=re_...
+   EMAIL_FROM=you@yourdomain.com
    NODE_ENV=production
    MAILGUN_API_KEY=your-mailgun-api-key
    MAILGUN_DOMAIN=mg.yourdomain.com
+   ```
+
+   docker compose builds `DATABASE_URL` for the app from the `POSTGRES_*`
+   values, so you don't need to set it here.
    ```
 
 ### Step 2: Build and Run with Docker Compose
@@ -33,14 +48,13 @@ Before deploying to Railway, you can test the Docker setup locally:
    ```
 
    This will:
+   - Start Postgres (`db`) with its data in the `pgdata` volume
    - Build the Docker image (may take a few minutes the first time)
-   - Install all dependencies
-   - Build your React Router app
-   - Run Prisma migrations
+   - Run Prisma migrations (the one-off `migrate` service)
    - Start the application
 
 2. **Access your application:**
-   - Open [http://localhost:3000](http://localhost:3000) in your browser
+   - Open [http://localhost:3001](http://localhost:3001) in your browser
    - The app should be running in production mode
 
 ### Step 3: Test Features
@@ -77,7 +91,7 @@ If you prefer not to use docker-compose:
 
 2. **Run the container:**
    ```bash
-   docker run -p 3000:3000 \
+   docker run -p 3001:3001 \
      -e DATABASE_URL="your-database-url" \
      -e COOKIE_SECRET="your-secret" \
      -e API_KEY_ENCRYPTION_KEY="your-key" \
@@ -89,8 +103,8 @@ If you prefer not to use docker-compose:
 ### Troubleshooting Local Docker Testing
 
 - **Build fails:** Check Docker has enough resources (memory, disk space)
-- **Port already in use:** Change the port mapping in `docker-compose.yml` (e.g., `"3001:3000"`)
-- **Database connection fails:** Verify your `DATABASE_URL` is correct and Supabase is accessible
+- **Port already in use:** The app is published on `3001` and Postgres on `5433` (`POSTGRES_PORT`). Change the host side of the mappings in `docker-compose.yml` if those are taken too
+- **Database connection fails:** Check `docker compose ps` shows `db` as healthy and `migrate` exited with code 0 (`docker compose logs migrate`)
 - **Puppeteer fails:** Check logs for Chromium-related errors; the Dockerfile should handle this automatically
 
 ## Step 1: Prepare Your Repository
@@ -122,7 +136,7 @@ If you prefer not to use docker-compose:
 
    **Required:**
    ```bash
-   DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.xxxxx.supabase.co:5432/postgres?sslmode=require
+   DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@your-postgres-host:5432/app
    COOKIE_SECRET=your-cookie-secret-here
    API_KEY_ENCRYPTION_KEY=your-encryption-key-here
    NODE_ENV=production
@@ -184,7 +198,7 @@ If you prefer not to use docker-compose:
 
 - **Check application logs:** Railway → Deployments → View logs
 - **Verify environment variables:** Ensure all required env vars are set
-- **Check database connection:** Verify `DATABASE_URL` is correct and Supabase is accessible
+- **Check database connection:** Verify `DATABASE_URL` is correct and the Postgres service is reachable
 
 ### Puppeteer/PDF Generation Fails
 
@@ -194,16 +208,22 @@ If you prefer not to use docker-compose:
 
 ### Database Connection Issues
 
-- **Verify Supabase connection string:** Ensure it includes `?sslmode=require`
-- **Check Supabase project status:** Ensure your Supabase project is active
-- **Verify network access:** Railway should be able to reach Supabase
+- **Verify the connection string:** Use the private network URL of your Railway Postgres service
+- **Run migrations:** The runtime image has no Prisma CLI; run `npx prisma migrate deploy` against the production `DATABASE_URL` (locally or in CI) before deploying
+- **Verify network access:** The app service should be able to reach the Postgres service
 
 ## Environment Variables Reference
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | Supabase PostgreSQL connection string |
-| `COOKIE_SECRET` | Yes | Secret for encrypting session cookies |
+| `DATABASE_URL` | Yes | PostgreSQL connection string (set automatically by docker compose) |
+| `COOKIE_SECRET` | Yes | Secret for signing session cookies |
+| `AUTH0_DOMAIN` | Yes | Auth0 tenant domain |
+| `AUTH0_CLIENT_ID` | Yes | Auth0 Regular Web Application client ID |
+| `AUTH0_CLIENT_SECRET` | Yes | Auth0 Regular Web Application client secret |
+| `CLOUDINARY_URL` | Yes | Cloudinary API environment variable |
+| `RESEND_API_KEY` | No | Resend API key for invite emails (Auth0 codes use Resend SMTP configured in Auth0) |
+| `EMAIL_FROM` | No | Sender address on a Resend-verified domain |
 | `API_KEY_ENCRYPTION_KEY` | Yes | Key for encrypting API keys |
 | `NODE_ENV` | Yes | Set to `production` |
 | `MAILGUN_API_KEY` | No | Mailgun API key for sending emails |
@@ -218,9 +238,11 @@ The `Dockerfile` is configured to:
 1. **Use Debian-based Node image** (better Chromium support)
 2. **Install Chromium and dependencies** for Puppeteer
 3. **Skip Puppeteer's bundled Chromium** (use system Chromium)
-4. **Run Prisma migrations** on startup
-5. **Generate Prisma client** on startup
-6. **Start the application** with `react-router-serve`
+4. **Generate the Prisma client** at build time
+5. **Start the application** with `react-router-serve`
+
+Migrations are not run by the image itself: `docker compose` runs them in the
+`migrate` service before starting `app`.
 
 ## Updating Your Application
 
@@ -257,5 +279,6 @@ The `Dockerfile` is configured to:
 ## Additional Resources
 
 - [Railway Documentation](https://docs.railway.app)
-- [Supabase Documentation](https://supabase.com/docs)
+- [Auth0 Documentation](https://auth0.com/docs)
+- [Cloudinary Documentation](https://cloudinary.com/documentation)
 - [React Router Documentation](https://reactrouter.com)

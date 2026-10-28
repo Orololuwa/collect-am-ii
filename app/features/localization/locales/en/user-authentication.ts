@@ -3,7 +3,7 @@ export default {
     backgroundPathsTitle: "Animated background paths",
     home: "Home",
     quote:
-      "This authentication system has transformed how we handle user logins. The magic link flow is seamless and our users love it.",
+      "This authentication system has transformed how we handle user logins. The email code flow is seamless and our users love it.",
     quoteAuthor: "Alex Chen, Lead Developer",
   },
   login: {
@@ -21,21 +21,25 @@ export default {
         "User with given email doesn't exist. Did you mean to create a new account instead?",
     },
     googleButton: "Continue with Google",
-    magicLink: {
+    code: {
       alertDescription: "Remember to check your spam folder.",
       cardDescription:
-        "We've sent a secure login link to your email address. Please check your inbox and click the link to access your account.",
+        "We've sent a 6-digit sign-in code to <1>{{email}}</1>. Enter it below to access your account.",
       cardTitle: "Check your email",
+      codeLabel: "Sign-in code",
+      codeRateLimited:
+        "Too many attempts. Please wait a moment and request a new code.",
       countdownMessage_one:
-        "Once you click the link, <1>please close this tab</1>. If you haven't received the email within {{count}} second, you may request another link.",
+        "If you haven't received the email within {{count}} second, you may request another code.",
       countdownMessage_other:
-        "Once you click the link, <1>please close this tab</1>. If you haven't received the email within {{count}} seconds, you may request another link.",
+        "If you haven't received the email within {{count}} seconds, you may request another code.",
       countdownMessage_zero:
-        "Once you click the link, <1>please close this tab</1>. If you haven't received the email, you may request another login link now.",
-      resendButton: "Request new login link",
+        "If you haven't received the email, you may request another code now.",
+      invalidCode: "That code is invalid or has expired. Please try again.",
+      resendButton: "Request new code",
       resendButtonLoading: "Sending...",
-      resendSuccess:
-        "A new login link has been sent to your email address. Please check your inbox.",
+      verifyButton: "Sign in",
+      verifyButtonLoading: "Verifying...",
     },
     pageTitle: "Login",
     separator: "Or",
@@ -65,21 +69,25 @@ export default {
     legal:
       "By clicking continue, you agree to our <tos>Terms of Service</tos> and <pp>Privacy Policy</pp>.",
     loginCta: "Already have an account? <login>Sign in</login>",
-    magicLink: {
+    code: {
       alertDescription: "Remember to check your spam folder.",
       cardDescription:
-        "We've sent a verification link to your email address. Please check your inbox and click the link to complete your registration.",
+        "We've sent a 6-digit verification code to <1>{{email}}</1>. Enter it below to complete your registration.",
       cardTitle: "Verify your email",
+      codeLabel: "Verification code",
+      codeRateLimited:
+        "Too many attempts. Please wait a moment and request a new code.",
       countdownMessage_one:
-        "Once you click the link, <1>please close this tab</1>. If you haven't received the email within {{count}} second, you may request another verification link.",
+        "If you haven't received the email within {{count}} second, you may request another verification code.",
       countdownMessage_other:
-        "Once you click the link, <1>please close this tab</1>. If you haven't received the email within {{count}} seconds, you may request another verification link.",
+        "If you haven't received the email within {{count}} seconds, you may request another verification code.",
       countdownMessage_zero:
-        "Once you click the link, <1>please close this tab</1>. If you haven't received the email, you may request another verification link now.",
-      resendButton: "Request new verification link",
+        "If you haven't received the email, you may request another verification code now.",
+      invalidCode: "That code is invalid or has expired. Please try again.",
+      resendButton: "Request new code",
       resendButtonLoading: "Sending...",
-      resendSuccess:
-        "A new verification link has been sent to your email address. Please check your inbox.",
+      verifyButton: "Verify and continue",
+      verifyButtonLoading: "Verifying...",
     },
     pageTitle: "Register",
     separator: "Or",

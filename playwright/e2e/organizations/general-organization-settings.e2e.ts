@@ -224,9 +224,9 @@ test.describe("general organization settings", () => {
         organization.id,
       );
       expect(updatedOrganization?.name).toEqual(newName);
-      // With server-side uploads, the file is uploaded to Supabase storage
+      // With server-side uploads, the file is uploaded to Cloudinary
       expect(updatedOrganization?.imageUrl).toMatch(
-        /storage\/v1\/object\/public\/app-images\/organization-logos/,
+        /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/v\d+\/organization-logos\//,
       );
 
       await teardownOrganizationAndMember({ organization, user });

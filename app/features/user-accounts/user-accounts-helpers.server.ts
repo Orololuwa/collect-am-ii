@@ -1,11 +1,12 @@
 import type { RouterContextProvider } from "react-router";
 
+import { getUserIdFromSession } from "../user-authentication/auth-session.server";
 import { logout } from "../user-authentication/user-authentication-helpers.server";
 import { authContext } from "../user-authentication/user-authentication-middleware.server";
 import {
-  retrieveUserAccountFromDatabaseBySupabaseUserId,
-  retrieveUserAccountWithMembershipsAndMemberCountsAndSubscriptionsFromDatabaseBySupabaseUserId,
-  retrieveUserAccountWithMembershipsAndMemberCountsFromDatabaseBySupabaseUserId,
+  retrieveUserAccountFromDatabaseById,
+  retrieveUserAccountWithMembershipsAndMemberCountsAndSubscriptionsFromDatabaseById,
+  retrieveUserAccountWithMembershipsAndMemberCountsFromDatabaseById,
 } from "./user-accounts-model.server";
 import type { UserAccount } from "~/generated/client";
 
@@ -42,11 +43,8 @@ export const requireAuthenticatedUserExists = async ({
   context: Readonly<RouterContextProvider>;
   request: Request;
 }) => {
-  const {
-    user: { id },
-    headers,
-  } = context.get(authContext);
-  const user = await retrieveUserAccountFromDatabaseBySupabaseUserId(id);
+  const { userId, headers } = context.get(authContext);
+  const user = await retrieveUserAccountFromDatabaseById(userId);
   return { headers, user: await throwIfUserAccountIsMissing(request, user) };
 };
 
@@ -60,7 +58,7 @@ export const requireAuthenticatedUserExists = async ({
  *
  * @param context - Router context provider containing authentication data.
  * @param request - Request object used for logout if user account is missing.
- * @returns The user account with memberships, authentication headers, and supabase client.
+ * @returns The user account with memberships and authentication headers.
  * @throws Logs the user out if the user account is missing.
  */
 export const requireAuthenticatedUserWithMembershipsExists = async ({
@@ -70,18 +68,13 @@ export const requireAuthenticatedUserWithMembershipsExists = async ({
   context: Readonly<RouterContextProvider>;
   request: Request;
 }) => {
-  const {
-    user: { id },
-    headers,
-    supabase,
-  } = context.get(authContext);
+  const { userId, headers } = context.get(authContext);
   const user =
-    await retrieveUserAccountWithMembershipsAndMemberCountsFromDatabaseBySupabaseUserId(
-      id,
+    await retrieveUserAccountWithMembershipsAndMemberCountsFromDatabaseById(
+      userId,
     );
   return {
     headers,
-    supabase,
     user: await throwIfUserAccountIsMissing(request, user),
   };
 };
@@ -96,7 +89,7 @@ export const requireAuthenticatedUserWithMembershipsExists = async ({
  *
  * @param context - Router context provider containing authentication data.
  * @param request - Request object used for logout if user account is missing.
- * @returns The user account with memberships and subscriptions, authentication headers, and supabase client.
+ * @returns The user account with memberships and subscriptions and authentication headers.
  * @throws Logs the user out if the user account is missing.
  */
 export const requireAuthenticatedUserWithMembershipsAndSubscriptionsExists =
@@ -107,30 +100,29 @@ export const requireAuthenticatedUserWithMembershipsAndSubscriptionsExists =
     context: Readonly<RouterContextProvider>;
     request: Request;
   }) => {
-    const {
-      user: { id },
-      headers,
-      supabase,
-    } = context.get(authContext);
+    const { userId, headers } = context.get(authContext);
     const user =
-      await retrieveUserAccountWithMembershipsAndMemberCountsAndSubscriptionsFromDatabaseBySupabaseUserId(
-        id,
+      await retrieveUserAccountWithMembershipsAndMemberCountsAndSubscriptionsFromDatabaseById(
+        userId,
       );
     return {
       headers,
-      supabase,
       user: await throwIfUserAccountIsMissing(request, user),
     };
   };
 
 /**
- * Ensures that a user account for the provided supabase user id exists.
+ * Ensures that the request has a signed-in user whose account exists. For
+ * routes that don't run `authMiddleware`.
  *
  * @param request - The incoming request object.
- * @param id - The supabase user id.
  * @returns The user account.
+ * @throws Logs the user out if there is no session or the account is missing.
  */
-export async function requireSupabaseUserExists(request: Request, id: string) {
-  const user = await retrieveUserAccountFromDatabaseBySupabaseUserId(id);
+export async function requireUserSession(request: Request) {
+  const userId = await getUserIdFromSession(request);
+  const user = userId
+    ? await retrieveUserAccountFromDatabaseById(userId)
+    : null;
   return await throwIfUserAccountIsMissing(request, user);
 }

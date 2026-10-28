@@ -21,7 +21,8 @@ import {
   deleteUserAccountFromDatabaseById,
   retrieveUserAccountFromDatabaseByEmail,
 } from "~/features/user-accounts/user-accounts-model.server";
-import { stringifyAuthCodeData } from "~/test/mocks/handlers/supabase/auth";
+import { createOAuthSessionHeaders } from "~/features/user-authentication/auth-session.server";
+import { stringifyAuthCodeData } from "~/test/mocks/handlers/auth0";
 import {
   createUserWithOrgAndAddAsMember,
   teardownOrganizationAndMember,
@@ -29,24 +30,41 @@ import {
 
 const path = "/auth/callback";
 
+const OAUTH_STATE = "test-oauth-state";
+
 /**
- * Sets up the code verifier cookie required for PKCE flow.
- * This simulates what happens when a user initiates OAuth login.
+ * Sets up the `__oauth` cookie (state + PKCE verifier) that the app sets when
+ * the user clicks "Continue with Google".
  */
 async function setupCodeVerifierCookie({ page }: { page: Page }) {
-  const regex = /https:\/\/([^.]+)/;
-  const projectReference =
-    regex.exec(process.env.VITE_SUPABASE_URL ?? "")?.[1] ?? "default";
+  const setCookie = (
+    await createOAuthSessionHeaders({
+      codeVerifier: "test-code-verifier",
+      state: OAUTH_STATE,
+    })
+  ).get("Set-Cookie");
+  const value = /^__oauth=([^;]+)/.exec(setCookie ?? "")?.[1];
+
+  if (!value) {
+    throw new Error("Failed to extract the __oauth cookie value");
+  }
 
   await page.context().addCookies([
     {
       domain: "localhost",
-      name: `sb-${projectReference}-auth-token-code-verifier`,
+      httpOnly: true,
+      name: "__oauth",
       path: "/",
-      value: "test-code-verifier",
+      value,
     },
   ]);
 }
+
+/**
+ * Builds the callback URL Auth0 would redirect to after Google sign-in.
+ */
+const createCallbackUrl = (email: string) =>
+  `${path}?${new URLSearchParams({ code: stringifyAuthCodeData({ email }), state: OAUTH_STATE }).toString()}`;
 
 test.describe(`${path} API route`, () => {
   test("given: a valid code for a new user, should: create user account and redirect to onboarding page", async ({
@@ -55,20 +73,17 @@ test.describe(`${path} API route`, () => {
     // Set up the code verifier cookie first.
     await setupCodeVerifierCookie({ page });
 
-    // Use a code that includes 'google' to simulate Google OAuth. The email
-    // will be used to create a mock user in the mock handler.
+    // The mocked Auth0 token endpoint signs in the email encoded in the code.
     const { email } = createPopulatedUserAccount();
-    const code = stringifyAuthCodeData({ email, provider: "google" });
+    const callbackUrl = createCallbackUrl(email);
 
     // Navigate to the callback page with code.
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify we're on the onboarding page.
     expect(getPath(page)).toEqual("/onboarding/user-account");
 
     // Get the created user account from the database.
-    // Note: The mock handler for `exchangeCodeForSession` returns a user based
-    // on the code.
     const userAccount = await retrieveUserAccountFromDatabaseByEmail(email);
     expect(userAccount).not.toBeNull();
 
@@ -87,14 +102,10 @@ test.describe(`${path} API route`, () => {
     // Set up the code verifier cookie.
     await setupCodeVerifierCookie({ page });
 
-    const code = stringifyAuthCodeData({
-      email: user.email,
-      id: user.supabaseUserId,
-      provider: "google",
-    });
+    const callbackUrl = createCallbackUrl(user.email);
 
     // Navigate to callback with code.
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify we're on the organizations page.
     expect(getPath(page)).toEqual(
@@ -122,7 +133,7 @@ test.describe(`${path} API route`, () => {
 
     // Generate email for the new user and create auth code
     const { email } = createPopulatedUserAccount();
-    const code = stringifyAuthCodeData({ email, provider: "google" });
+    const callbackUrl = createCallbackUrl(email);
 
     // Set the invite link cookie
     await setupInviteLinkCookie({
@@ -131,7 +142,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify redirect to onboarding page
     await expect(
@@ -198,11 +209,7 @@ test.describe(`${path} API route`, () => {
     await setupCodeVerifierCookie({ page });
 
     // Create auth code for existing user
-    const code = stringifyAuthCodeData({
-      email: existingUser.email,
-      id: existingUser.supabaseUserId,
-      provider: "google",
-    });
+    const callbackUrl = createCallbackUrl(existingUser.email);
 
     // Set the invite link cookie
     await setupInviteLinkCookie({
@@ -211,7 +218,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify redirect to organization dashboard
     await expect(
@@ -262,11 +269,7 @@ test.describe(`${path} API route`, () => {
     await setupCodeVerifierCookie({ page });
 
     // Create auth code for the same user
-    const code = stringifyAuthCodeData({
-      email: user.email,
-      id: user.supabaseUserId,
-      provider: "google",
-    });
+    const callbackUrl = createCallbackUrl(user.email);
 
     // Set the invite link cookie
     await setupInviteLinkCookie({
@@ -275,7 +278,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify redirect to organization dashboard
     await expect(
@@ -305,21 +308,46 @@ test.describe(`${path} API route`, () => {
     await teardownOrganizationAndMember({ organization, user });
   });
 
-  test("given: no code parameter, should: return an error", async ({
+  test("given: no code parameter, should: redirect to the login page", async ({
     request,
   }) => {
     // Make request without code.
-    const response = await request.get(path);
+    const response = await request.get(path, { maxRedirects: 0 });
 
     // Verify response.
-    expect(response.status()).toEqual(500);
+    expect(response.status()).toEqual(302);
+    expect(response.headers().location).toEqual("/login");
+  });
+
+  test("given: a state that doesn't match the OAuth cookie, should: redirect to the login page", async ({
+    page,
+  }) => {
+    await setupCodeVerifierCookie({ page });
+
+    await page.goto(
+      `${path}?${new URLSearchParams({ code: stringifyAuthCodeData({ email: createPopulatedUserAccount().email }), state: "forged-state" }).toString()}`,
+    );
+
+    expect(getPath(page)).toEqual("/login");
   });
 
   test("given: an invalid code, should: return an error", async ({
+    page,
     request,
   }) => {
-    // Make request with invalid code.
-    const response = await request.get(`${path}?code=invalid_code`);
+    await setupCodeVerifierCookie({ page });
+    const cookies = await page.context().cookies();
+
+    // Make request with an invalid code but a valid state.
+    const response = await request.get(
+      `${path}?${new URLSearchParams({ code: "invalid_code", state: OAUTH_STATE }).toString()}`,
+      {
+        headers: {
+          Cookie: cookies.map((c) => `${c.name}=${c.value}`).join("; "),
+        },
+        maxRedirects: 0,
+      },
+    );
 
     // Verify response.
     expect(response.status()).toEqual(500);
@@ -342,7 +370,7 @@ test.describe(`${path} API route`, () => {
 
     // Generate email for the new user and create auth code
     const { email } = createPopulatedUserAccount();
-    const code = stringifyAuthCodeData({ email, provider: "google" });
+    const callbackUrl = createCallbackUrl(email);
 
     // Set the email invite cookie
     await setupEmailInviteCookie({
@@ -351,7 +379,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify redirect to onboarding page
     await expect(
@@ -418,11 +446,7 @@ test.describe(`${path} API route`, () => {
     await setupCodeVerifierCookie({ page });
 
     // Create auth code for existing user
-    const code = stringifyAuthCodeData({
-      email: existingUser.email,
-      id: existingUser.supabaseUserId,
-      provider: "google",
-    });
+    const callbackUrl = createCallbackUrl(existingUser.email);
 
     // Set the email invite cookie
     await setupEmailInviteCookie({
@@ -431,7 +455,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify redirect to organization dashboard
     await expect(
@@ -483,11 +507,7 @@ test.describe(`${path} API route`, () => {
     await setupCodeVerifierCookie({ page });
 
     // Create auth code for the same user
-    const code = stringifyAuthCodeData({
-      email: user.email,
-      id: user.supabaseUserId,
-      provider: "google",
-    });
+    const callbackUrl = createCallbackUrl(user.email);
 
     // Set the email invite cookie
     await setupEmailInviteCookie({
@@ -496,7 +516,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify redirect to organization dashboard
     await expect(
@@ -547,7 +567,7 @@ test.describe(`${path} API route`, () => {
 
     // Generate email for the new user and create auth code
     const { email } = createPopulatedUserAccount();
-    const code = stringifyAuthCodeData({ email, provider: "google" });
+    const callbackUrl = createCallbackUrl(email);
 
     // Set the invite link cookie
     await setupInviteLinkCookie({
@@ -556,7 +576,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify toast message
     await expect(
@@ -603,7 +623,7 @@ test.describe(`${path} API route`, () => {
 
     // Generate email for the new user and create auth code
     const { email } = createPopulatedUserAccount();
-    const code = stringifyAuthCodeData({ email, provider: "google" });
+    const callbackUrl = createCallbackUrl(email);
 
     // Set the email invite cookie
     await setupEmailInviteCookie({
@@ -612,7 +632,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify toast message
     await expect(
@@ -662,11 +682,7 @@ test.describe(`${path} API route`, () => {
     await setupCodeVerifierCookie({ page });
 
     // Create auth code for existing user
-    const code = stringifyAuthCodeData({
-      email: existingUser.email,
-      id: existingUser.supabaseUserId,
-      provider: "google",
-    });
+    const callbackUrl = createCallbackUrl(existingUser.email);
 
     // Set the invite link cookie
     await setupInviteLinkCookie({
@@ -675,7 +691,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify toast message
     await expect(
@@ -721,11 +737,7 @@ test.describe(`${path} API route`, () => {
     await setupCodeVerifierCookie({ page });
 
     // Create auth code for existing user
-    const code = stringifyAuthCodeData({
-      email: existingUser.email,
-      id: existingUser.supabaseUserId,
-      provider: "google",
-    });
+    const callbackUrl = createCallbackUrl(existingUser.email);
 
     // Set the email invite cookie
     await setupEmailInviteCookie({
@@ -734,7 +746,7 @@ test.describe(`${path} API route`, () => {
     });
 
     // Navigate to callback with code
-    await page.goto(`${path}?code=${code}`);
+    await page.goto(callbackUrl);
 
     // Verify toast message
     await expect(

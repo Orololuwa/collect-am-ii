@@ -10,6 +10,7 @@ import {
   ensureStripeProductsAndPricesExist,
 } from "../app/test/test-utils";
 import { prisma } from "../app/utils/database.server";
+import { STATIC_ASSETS_BASE_URL } from "../app/utils/static-assets";
 import { OrganizationMembershipRole } from "~/generated/client";
 
 // Load environment variables from .env file
@@ -60,8 +61,7 @@ async function seed() {
       lookupKey: priceLookupKeysByTierAndInterval.high.monthly,
       organization: createPopulatedOrganization({
         name: "Orololuwa",
-        imageUrl:
-          "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/uyztdp5v8a8gowxfxlbrciys.jpg",
+        imageUrl: `${STATIC_ASSETS_BASE_URL}/organization-logos/uyztdp5v8a8gowxfxlbrciys.jpg`,
         slug: "ororo",
       }),
       seats: 100,
@@ -69,8 +69,7 @@ async function seed() {
       user: createPopulatedUserAccount({
         email: "emmybest.ea@gmail.com",
         name: "Emmanuel Awolusi",
-        imageUrl:
-          "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/user-avatars/z5nxmk6hqkk5aq75458ljgsj.jpeg",
+        imageUrl: `${STATIC_ASSETS_BASE_URL}/user-avatars/z5nxmk6hqkk5aq75458ljgsj.jpeg`,
       }),
     },
   ];
@@ -132,7 +131,7 @@ async function seed() {
   console.log("  • startup@example.com   (Startup Plan, 5 seats, annual)");
   console.log("  • business@example.com  (Business Plan, 25 seats, monthly)");
   console.log(
-    "\n💡 Use these emails to log in via Supabase magic link when running with mocks.",
+    "\n💡 Use these emails to log in with an emailed code when running with mocks (see app/tests/mocks/fixtures/email).",
   );
 }
 

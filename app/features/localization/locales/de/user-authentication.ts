@@ -3,7 +3,7 @@ export default {
     backgroundPathsTitle: "Animierte Hintergrundpfade",
     home: "Startseite",
     quote:
-      "Dieses Authentifizierungssystem hat verändert, wie wir Benutzer-Logins handhaben. Der Magic-Link-Flow ist nahtlos und unsere Benutzer lieben es.",
+      "Dieses Authentifizierungssystem hat verändert, wie wir Benutzer-Logins handhaben. Die Anmeldung per E-Mail-Code ist nahtlos und unsere Benutzer lieben es.",
     quoteAuthor: "Alex Chen, Lead Developer",
   },
   login: {
@@ -21,21 +21,26 @@ export default {
         "Benutzer mit der angegebenen E-Mail existiert nicht. Wolltest du stattdessen ein neues Konto erstellen?",
     },
     googleButton: "Mit Google fortfahren",
-    magicLink: {
+    code: {
       alertDescription: "Denk daran, auch deinen Spam-Ordner zu überprüfen.",
       cardDescription:
-        "Wir haben einen sicheren Anmeldelink an deine E-Mail-Adresse gesendet. Bitte überprüfe deinen Posteingang und klicke auf den Link, um auf dein Konto zuzugreifen.",
+        "Wir haben einen 6-stelligen Anmeldecode an <1>{{email}}</1> gesendet. Gib ihn unten ein, um auf dein Konto zuzugreifen.",
       cardTitle: "Überprüfe deine E-Mails",
+      codeLabel: "Anmeldecode",
+      codeRateLimited:
+        "Zu viele Versuche. Bitte warte einen Moment und fordere einen neuen Code an.",
       countdownMessage_one:
-        "Nachdem du auf den Link geklickt hast, <1>schließe bitte diesen Tab</1>. Wenn du die E-Mail nicht innerhalb von {{count}} Sekunde erhalten hast, kannst du einen weiteren Link anfordern.",
+        "Wenn du die E-Mail nicht innerhalb von {{count}} Sekunde erhalten hast, kannst du einen weiteren Code anfordern.",
       countdownMessage_other:
-        "Nachdem du auf den Link geklickt hast, <1>schließe bitte diesen Tab</1>. Wenn du die E-Mail nicht innerhalb von {{count}} Sekunden erhalten hast, kannst du einen weiteren Link anfordern.",
+        "Wenn du die E-Mail nicht innerhalb von {{count}} Sekunden erhalten hast, kannst du einen weiteren Code anfordern.",
       countdownMessage_zero:
-        "Nachdem du auf den Link geklickt hast, <1>schließe bitte diesen Tab</1>. Wenn du die E-Mail nicht erhalten hast, kannst du jetzt einen neuen Anmeldelink anfordern.",
-      resendButton: "Neuen Anmeldelink anfordern",
+        "Wenn du die E-Mail nicht erhalten hast, kannst du jetzt einen neuen Code anfordern.",
+      invalidCode:
+        "Dieser Code ist ungültig oder abgelaufen. Bitte versuche es erneut.",
+      resendButton: "Neuen Code anfordern",
       resendButtonLoading: "Wird gesendet...",
-      resendSuccess:
-        "Ein neuer Anmeldelink wurde an deine E-Mail-Adresse gesendet. Bitte überprüfe deinen Posteingang.",
+      verifyButton: "Anmelden",
+      verifyButtonLoading: "Wird überprüft...",
     },
     pageTitle: "Anmelden",
     separator: "Oder",
@@ -66,21 +71,26 @@ export default {
     legal:
       "Durch Klicken auf Fortfahren stimmst du unseren <tos>Nutzungsbedingungen</tos> und <pp>Datenschutzrichtlinien</pp> zu.",
     loginCta: "Hast du bereits ein Konto? <login>Anmelden</login>",
-    magicLink: {
+    code: {
       alertDescription: "Denk daran, auch deinen Spam-Ordner zu überprüfen.",
       cardDescription:
-        "Wir haben einen Verifizierungslink an deine E-Mail-Adresse gesendet. Bitte überprüfe deinen Posteingang und klicke auf den Link, um deine Registrierung abzuschließen.",
+        "Wir haben einen 6-stelligen Verifizierungscode an <1>{{email}}</1> gesendet. Gib ihn unten ein, um deine Registrierung abzuschließen.",
       cardTitle: "Verifiziere deine E-Mail",
+      codeLabel: "Verifizierungscode",
+      codeRateLimited:
+        "Zu viele Versuche. Bitte warte einen Moment und fordere einen neuen Code an.",
       countdownMessage_one:
-        "Nachdem du auf den Link geklickt hast, <1>schließe bitte diesen Tab</1>. Wenn du die E-Mail nicht innerhalb von {{count}} Sekunde erhalten hast, kannst du einen weiteren Verifizierungslink anfordern.",
+        "Wenn du die E-Mail nicht innerhalb von {{count}} Sekunde erhalten hast, kannst du einen weiteren Verifizierungscode anfordern.",
       countdownMessage_other:
-        "Nachdem du auf den Link geklickt hast, <1>schließe bitte diesen Tab</1>. Wenn du die E-Mail nicht innerhalb von {{count}} Sekunden erhalten hast, kannst du einen weiteren Verifizierungslink anfordern.",
+        "Wenn du die E-Mail nicht innerhalb von {{count}} Sekunden erhalten hast, kannst du einen weiteren Verifizierungscode anfordern.",
       countdownMessage_zero:
-        "Nachdem du auf den Link geklickt hast, <1>schließe bitte diesen Tab</1>. Wenn du die E-Mail nicht erhalten hast, kannst du jetzt einen neuen Verifizierungslink anfordern.",
-      resendButton: "Neuen Verifizierungslink anfordern",
+        "Wenn du die E-Mail nicht erhalten hast, kannst du jetzt einen neuen Verifizierungscode anfordern.",
+      invalidCode:
+        "Dieser Code ist ungültig oder abgelaufen. Bitte versuche es erneut.",
+      resendButton: "Neuen Code anfordern",
       resendButtonLoading: "Wird gesendet...",
-      resendSuccess:
-        "Ein neuer Verifizierungslink wurde an deine E-Mail-Adresse gesendet. Bitte überprüfe deinen Posteingang.",
+      verifyButton: "Bestätigen und fortfahren",
+      verifyButtonLoading: "Wird überprüft...",
     },
     pageTitle: "Registrieren",
     separator: "Oder",
