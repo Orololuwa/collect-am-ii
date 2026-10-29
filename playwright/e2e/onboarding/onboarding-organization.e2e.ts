@@ -133,7 +133,7 @@ test.describe("onboarding organization page", () => {
       // Verify logo URL is a Cloudinary upload in the logos folder
       expect(createdOrganization?.imageUrl).toMatch(
         new RegExp(
-          `^https://res\\.cloudinary\\.com/[^/]+/image/upload/v\\d+/organization-logos/${createdOrganization?.id}\\.\\w+$`,
+          `^https://res\\.cloudinary\\.com/[^/]+/image/upload/v\\d+/CollectAm/organization-logos/${createdOrganization?.id}\\.\\w+$`,
         ),
       );
 

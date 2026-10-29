@@ -226,7 +226,7 @@ test.describe("general organization settings", () => {
       expect(updatedOrganization?.name).toEqual(newName);
       // With server-side uploads, the file is uploaded to Cloudinary
       expect(updatedOrganization?.imageUrl).toMatch(
-        /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/v\d+\/organization-logos\//,
+        /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/v\d+\/CollectAm\/organization-logos\//,
       );
 
       await teardownOrganizationAndMember({ organization, user });

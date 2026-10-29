@@ -171,7 +171,7 @@ test.describe("account settings", () => {
     expect(updatedUser?.name).toEqual(newName);
     // With server-side uploads, the file is uploaded to Cloudinary
     expect(updatedUser?.imageUrl).toMatch(
-      /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/v\d+\/user-avatars\//,
+      /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/v\d+\/CollectAm\/user-avatars\//,
     );
 
     await deleteUserAccountFromDatabaseById(user.id);

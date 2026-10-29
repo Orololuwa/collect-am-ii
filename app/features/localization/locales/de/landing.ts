@@ -172,7 +172,4 @@ export default {
     },
     title: "Erstelle professionelle Dokumente per Drag & Drop",
   },
-  logos: {
-    title: "Der Stack hinter dem Template",
-  },
 } satisfies typeof import("../en/landing").default;

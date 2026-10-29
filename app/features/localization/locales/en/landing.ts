@@ -172,7 +172,4 @@ export default {
     },
     title: "Build Professional Documents",
   },
-  logos: {
-    title: "The Stack Behind the Template",
-  },
 };

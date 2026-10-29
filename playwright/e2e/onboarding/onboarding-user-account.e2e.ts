@@ -114,7 +114,7 @@ test.describe("onboarding user account page", () => {
       // Verify image URL is a Cloudinary upload in the avatars folder
       expect(updatedUser?.imageUrl).toMatch(
         new RegExp(
-          `^https://res\\.cloudinary\\.com/[^/]+/image/upload/v\\d+/user-avatars/${id}\\.\\w+$`,
+          `^https://res\\.cloudinary\\.com/[^/]+/image/upload/v\\d+/CollectAm/user-avatars/${id}\\.\\w+$`,
         ),
       );
 
