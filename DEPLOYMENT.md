@@ -101,12 +101,11 @@ Then edit `.env`:
 | `API_KEY_ENCRYPTION_KEY` | a generated secret. Optional (falls back to `COOKIE_SECRET`), but set it so rotating the cookie secret doesn't break stored API keys. Never change it once keys exist. |
 | `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` | from the Auth0 application |
 | `CLOUDINARY_URL` | `cloudinary://<api_key>:<api_secret>@df1fw15ei` |
-| `RESEND_API_KEY`, `EMAIL_FROM` | Resend key and a sender on a verified domain |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Resend key and a sender on a verified domain. Used for invites, documents sent from templates, and checkout receipts. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | live Stripe keys (required) |
 | `STRIPE_WEBHOOK_SECRET_CHECKOUT` | signing secret of the checkout webhook endpoint |
 | `PAYSTACK_SECRET_KEY` | live Paystack key |
 | `ALLOW_INDEXING` | `true` to let search engines index the site |
-| `MAILGUN_API_KEY`, `MAILGUN_DOMAIN` | only if you send template emails through Mailgun |
 
 Remove the mock values the example file comes with. `NODE_ENV` and `PORT` are
 set by `docker-compose.yml`.

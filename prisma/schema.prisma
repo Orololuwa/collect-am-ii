@@ -37,6 +37,9 @@ model Organization {
   stripeCustomerId            String?                       @unique
   /// We set this to 14 days from now by default in the Prisma middleware.
   trialEnd                    DateTime
+  /// When a member chose to skip the dashboard's setup guide. Until then, an
+  /// organization without checkout pages or payments sees the guide.
+  setupGuideDismissedAt       DateTime?
   notifications               Notification[]
   notificationPanels          NotificationPanel[]
   organizationEmailInviteLink OrganizationEmailInviteLink[]
@@ -231,17 +234,17 @@ model NotificationPanel {
 }
 
 model Template {
-  id               String       @id @default(cuid(2))
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  name             String
-  type             TemplateType
-  organizationId   String
-  sections         Json
-  globalStyles     Json
-  colorPalette     Json?
-  sourceTemplateId String?
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                          String         @id @default(cuid(2))
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+  name                        String
+  type                        TemplateType
+  organizationId              String
+  sections                    Json
+  globalStyles                Json
+  colorPalette                Json?
+  sourceTemplateId            String?
+  organization                Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   checkoutPagesUsingAsReceipt CheckoutPage[] @relation("CheckoutReceiptTemplate")
   generatedReceipts           Receipt[]
 
@@ -250,40 +253,40 @@ model Template {
 }
 
 model CheckoutPage {
-  id               String   @id @default(cuid(2))
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id        String   @id @default(cuid(2))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  organizationId   String
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  name             String
-  slug             String   @unique
-  description      String?
+  name        String
+  slug        String  @unique
+  description String?
 
-  sections         Json
-  globalStyles     Json
-  colorPalette     Json?
+  sections     Json
+  globalStyles Json
+  colorPalette Json?
 
   receiptTemplateId String?
   receiptTemplate   Template? @relation("CheckoutReceiptTemplate", fields: [receiptTemplateId], references: [id])
 
-  paymentProviders String[]
-  defaultCurrency  String   @default("USD")
+  paymentProviders  String[]
+  defaultCurrency   String   @default("USD")
   allowedCurrencies String[]
 
   isPasswordProtected Boolean @default(false)
   passwordHash        String?
   passwordHint        String?
 
-  isActive        Boolean  @default(true)
-  expiresAt       DateTime?
+  isActive  Boolean   @default(true)
+  expiresAt DateTime?
 
-  viewCount       Int      @default(0)
-  paymentCount    Int      @default(0)
-  totalRevenueMinor Int    @default(0)
+  viewCount         Int @default(0)
+  paymentCount      Int @default(0)
+  totalRevenueMinor Int @default(0)
 
-  payments        Payment[]
+  payments Payment[]
 
   @@index([organizationId])
   @@index([slug])
@@ -291,58 +294,58 @@ model CheckoutPage {
 }
 
 model Payment {
-  id                 String   @id @default(cuid(2))
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id        String   @id @default(cuid(2))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  checkoutPageId     String
-  checkoutPage       CheckoutPage @relation(fields: [checkoutPageId], references: [id], onDelete: Cascade)
+  checkoutPageId String
+  checkoutPage   CheckoutPage @relation(fields: [checkoutPageId], references: [id], onDelete: Cascade)
 
   provider           String
   providerPaymentId  String
   providerCustomerId String?
 
-  amountMinor        Int
-  currency           String
-  status             PaymentStatus
+  amountMinor Int
+  currency    String
+  status      PaymentStatus
 
-  customerEmail      String
-  customerName       String?
-  customerPhone      String?
-  billingAddress     Json?
+  customerEmail  String
+  customerName   String?
+  customerPhone  String?
+  billingAddress Json?
 
-  items              Json
-  receipt            Receipt?
+  items   Json
+  receipt Receipt?
 
-  metadata           Json?
+  metadata Json?
 
+  @@unique([provider, providerPaymentId])
   @@index([checkoutPageId])
   @@index([providerPaymentId])
   @@index([status])
   @@index([customerEmail])
-  @@unique([provider, providerPaymentId])
 }
 
 model Receipt {
-  id                 String   @id @default(cuid(2))
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id        String   @id @default(cuid(2))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  templateId         String
-  template           Template @relation(fields: [templateId], references: [id])
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id])
 
-  paymentId          String   @unique
-  payment            Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  paymentId String  @unique
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
-  sections           Json
-  globalStyles       Json
-  colorPalette       Json?
+  sections     Json
+  globalStyles Json
+  colorPalette Json?
 
-  receiptNumber      String   @unique
-  issuedAt           DateTime @default(now())
+  receiptNumber String   @unique
+  issuedAt      DateTime @default(now())
 
-  sentToEmail        String?
-  sentAt             DateTime?
+  sentToEmail String?
+  sentAt      DateTime?
 
   @@index([paymentId])
   @@index([receiptNumber])

@@ -23,6 +23,18 @@ export function toMinorUnits({
   return Math.round(n * factor);
 }
 
+/** Converts an amount in minor units (e.g. kobo, cents) to major units. */
+export function fromMinorUnits({
+  amountMinor,
+  currency,
+}: {
+  amountMinor: number;
+  currency: string;
+}) {
+  const exponent = currencyMinorUnitMap[currency.toUpperCase()] ?? 2;
+  return amountMinor / 10 ** exponent;
+}
+
 export function formatMinorUnits({
   amountMinor,
   currency,
@@ -33,8 +45,7 @@ export function formatMinorUnits({
   locale?: string;
 }) {
   const normalizedCurrency = currency.toUpperCase();
-  const exponent = currencyMinorUnitMap[normalizedCurrency] ?? 2;
-  const amountMajor = amountMinor / 10 ** exponent;
+  const amountMajor = fromMinorUnits({ amountMinor, currency });
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: normalizedCurrency,
