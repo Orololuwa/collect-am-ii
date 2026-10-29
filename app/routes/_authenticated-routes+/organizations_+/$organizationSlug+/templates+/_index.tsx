@@ -1,11 +1,11 @@
 import {
+  ArrowRight,
   BadgeCheck,
   Calculator,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
   Copy,
-  Edit,
   Eye,
   FilePenLine,
   FileText,
@@ -849,8 +849,8 @@ function TemplateGrid({
                 onClick={() => handleEdit(template.id)}
                 variant="default"
               >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
+                Open
+                <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
               <Button
                 className="min-w-fit flex-1"
