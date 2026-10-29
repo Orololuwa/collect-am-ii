@@ -1,15 +1,22 @@
 import {
+  BadgeCheck,
+  Calculator,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Copy,
   Edit,
   Eye,
+  FilePenLine,
   FileText,
   Loader2,
+  MessageSquareQuote,
+  Package,
   Plus,
   Receipt,
-  ShoppingBag,
+  ShoppingCart,
   Trash2,
+  Truck,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -221,52 +228,52 @@ export const meta: Route.MetaFunction = ({ loaderData }) => [
 
 const builderTypes = [
   {
-    icon: FileText,
+    icon: Calculator,
     label: "Estimate",
     value: "estimate",
   },
   {
-    icon: FileText,
+    icon: MessageSquareQuote,
     label: "Quote",
     value: "quote",
   },
   {
-    icon: FileText,
+    icon: ShoppingCart,
     label: "Purchase Order",
     value: "purchase-order",
   },
   {
-    icon: Receipt,
+    icon: FileText,
     label: "Invoice",
     value: "invoice",
   },
   {
-    icon: FileText,
+    icon: ClipboardList,
     label: "Sales Order",
     value: "sales-order",
   },
   {
-    icon: FileText,
+    icon: BadgeCheck,
     label: "Order Confirmation",
     value: "order-confirmation",
   },
   {
-    icon: FileText,
+    icon: Package,
     label: "Packing Slip",
     value: "packing-slip",
   },
   {
-    icon: FileText,
+    icon: Truck,
     label: "Delivery Note",
     value: "delivery-note",
   },
   {
-    icon: FileText,
+    icon: FilePenLine,
     label: "Contract",
     value: "contract",
   },
   {
-    icon: ShoppingBag,
+    icon: Receipt,
     label: "Receipt",
     value: "receipt",
   },
