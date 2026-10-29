@@ -107,7 +107,7 @@
       "biome check --write --unsafe"
     ]
   },
-  "name": "ren-studio",
+  "name": "collectam",
   "packageManager": "npm@11.6.4",
   "private": true,
   "scripts": {

@@ -98,7 +98,7 @@ export default {
     save: "Continue",
     saving: "Saving ...",
     subtitle:
-      "Welcome to the Ren Studio! Please create your user account to get started.",
+      "Welcome to CollectAm! Please create your user account to get started.",
     title: "User account",
   },
 };

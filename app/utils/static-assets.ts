@@ -9,8 +9,10 @@
 export const STATIC_ASSETS_BASE_URL =
   "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images";
 
-export const RENSTUDIO_LOGO_URL = `${STATIC_ASSETS_BASE_URL}/ren-studio/ren-studio.svg`;
-export const RENSTUDIO_LOGO_DARK_MODE_URL = `${STATIC_ASSETS_BASE_URL}/ren-studio/ren-studio-dark-mode.svg`;
+// TODO: the logo files still show the old Ren Studio artwork. Upload the
+// CollectAm logos (light and dark) and point these paths at them.
+export const COLLECTAM_LOGO_URL = `${STATIC_ASSETS_BASE_URL}/ren-studio/ren-studio.svg`;
+export const COLLECTAM_LOGO_DARK_MODE_URL = `${STATIC_ASSETS_BASE_URL}/ren-studio/ren-studio-dark-mode.svg`;
 
 export const PLACEHOLDER_LOGO_URLS = {
   logoipsum288: `${STATIC_ASSETS_BASE_URL}/organization-logos/logoipsum-288.svg`,

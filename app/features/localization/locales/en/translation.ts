@@ -1,5 +1,5 @@
 export default {
-  appName: "Ren Studio",
+  appName: "CollectAm",
   breadcrumbNavigation: "breadcrumb",
   notFound: {
     description: "Sorry, we couldn't find the page you're looking for.",

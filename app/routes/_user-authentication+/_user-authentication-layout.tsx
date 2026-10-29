@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { href, Link, Outlet, useMatch } from "react-router";
 
 import type { Route } from "./+types/_user-authentication-layout";
-import { RenStudioLogo } from "~/components/ren-studio-logo";
+import { CollectAmLogo } from "~/components/collectam-logo";
 import { Button } from "~/components/ui/button";
 import { ThemeToggle } from "~/features/color-scheme/theme-toggle";
 import { FloatingPaths } from "~/features/user-authentication/floating-paths";
@@ -38,7 +38,7 @@ export default function UserAuthenticationLayout({
           className="z-10 flex items-center gap-2 font-medium"
           to={href("/")}
         >
-          <RenStudioLogo className="size-6" />
+          <CollectAmLogo className="size-6" />
           {tCommon("appName")}
         </Link>
         <div className="z-10 mt-auto">

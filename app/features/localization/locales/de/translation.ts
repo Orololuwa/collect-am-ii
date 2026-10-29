@@ -1,5 +1,5 @@
 export default {
-  appName: "Ren Studio",
+  appName: "CollectAm",
   breadcrumbNavigation: "Navigationspfad",
   notFound: {
     description:

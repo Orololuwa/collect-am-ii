@@ -23,7 +23,7 @@ test.describe("logout", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: /Ren Studio/i,
+        name: /CollectAm/i,
       }),
     ).toBeVisible();
 

@@ -52,7 +52,7 @@ test.describe("account settings", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: /settings/i }),
     ).toBeVisible();
-    await expect(page).toHaveTitle(/account | Ren Studio/i);
+    await expect(page).toHaveTitle(/account | CollectAm/i);
     await expect(page.getByText(/manage your account settings/i)).toBeVisible();
     await expect(page.getByRole("link", { name: /back/i })).toHaveAttribute(
       "href",
@@ -241,7 +241,7 @@ test.describe("account settings", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: /Ren Studio/i,
+        name: /CollectAm/i,
       }),
     ).toBeVisible();
     expect(getPath(page)).toEqual("/");
@@ -291,7 +291,7 @@ test.describe("account settings", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: /Ren Studio/i,
+        name: /CollectAm/i,
       }),
     ).toBeVisible();
     expect(getPath(page)).toEqual("/");

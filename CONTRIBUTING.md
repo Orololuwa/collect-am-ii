@@ -1,6 +1,6 @@
-# Contributing to the Ren Studio
+# Contributing to CollectAm
 
-Thank you for your interest in contributing to the Ren Studio!
+Thank you for your interest in contributing to CollectAm!
 This guide outlines the process, standards, and best practices for contributing
 to the project.
 
@@ -182,5 +182,5 @@ npm run test:e2e:ui # End-to-end
 - Comment complex logic
 - Keep functions small and focused (DOT principle)
 
-Thank you for helping improve the Ren Studio! We look forward to
+Thank you for helping improve CollectAm! We look forward to
 your contributions.

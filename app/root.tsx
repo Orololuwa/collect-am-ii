@@ -42,8 +42,8 @@ import { honeypot } from "./utils/honeypot.server";
 import { useNonce } from "./utils/nonce-provider";
 import { securityMiddleware } from "./utils/security-middleware.server";
 import {
-  RENSTUDIO_LOGO_DARK_MODE_URL,
-  RENSTUDIO_LOGO_URL,
+  COLLECTAM_LOGO_DARK_MODE_URL,
+  COLLECTAM_LOGO_URL,
 } from "./utils/static-assets";
 import { getToast } from "./utils/toast.server";
 
@@ -51,13 +51,13 @@ export const links: Route.LinksFunction = () => [
   {
     rel: "icon",
     type: "image/svg+xml",
-    href: RENSTUDIO_LOGO_URL,
+    href: COLLECTAM_LOGO_URL,
     media: "(prefers-color-scheme: light)",
   },
   {
     rel: "icon",
     type: "image/svg+xml",
-    href: RENSTUDIO_LOGO_DARK_MODE_URL,
+    href: COLLECTAM_LOGO_DARK_MODE_URL,
     media: "(prefers-color-scheme: dark)",
   },
   { href: sonnerStyles, rel: "stylesheet" },

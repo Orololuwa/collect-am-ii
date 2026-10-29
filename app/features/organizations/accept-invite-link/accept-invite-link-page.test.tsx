@@ -27,7 +27,7 @@ describe("AcceptInviteLinkPage component", () => {
     render(<RemixStub initialEntries={[path]} />);
 
     // It renders a greeting.
-    expect(screen.getByText(/welcome to Ren Studio/i)).toBeInTheDocument();
+    expect(screen.getByText(/welcome to CollectAm/i)).toBeInTheDocument();
     expect(
       screen.getByText(
         new RegExp(

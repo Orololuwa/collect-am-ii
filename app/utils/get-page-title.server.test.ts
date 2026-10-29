@@ -10,7 +10,7 @@ const createMockT = (pageTitle: string): TFunction => {
         return pageTitle.split(".")[0];
       }
       case "appName": {
-        return "Ren Studio";
+        return "CollectAm";
       }
       default: {
         return key;
@@ -26,7 +26,7 @@ describe("getPageTitle", () => {
     const mockT = createMockT("login.pageTitle");
 
     const actual = getPageTitle(mockT, "login.pageTitle");
-    const expected = "login | Ren Studio";
+    const expected = "login | CollectAm";
 
     expect(actual).toEqual(expected);
   });
@@ -35,7 +35,7 @@ describe("getPageTitle", () => {
     const mockT = createMockT("register.pageTitle");
 
     const actual = getPageTitle(mockT, "register.pageTitle");
-    const expected = "register | Ren Studio";
+    const expected = "register | CollectAm";
 
     expect(actual).toEqual(expected);
   });

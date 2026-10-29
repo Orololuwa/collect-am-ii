@@ -58,7 +58,7 @@ test.describe("organizations invite link page", () => {
       await page.getByRole("button", { name: /accept invite/i }).click();
 
       // The page title is correct.
-      await expect(page).toHaveTitle(/register | Ren Studio/i);
+      await expect(page).toHaveTitle(/register | CollectAm/i);
       await expect(
         page.getByText(
           new RegExp(`register to join ${organization.name}`, "i"),

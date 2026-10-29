@@ -101,7 +101,7 @@ export default {
     save: "Weiter",
     saving: "Wird gespeichert ...",
     subtitle:
-      "Willkommen beim Ren Studio! Bitte erstelle dein Benutzerkonto, um loszulegen.",
+      "Willkommen bei CollectAm! Bitte erstelle dein Benutzerkonto, um loszulegen.",
     title: "Benutzerkonto",
   },
 } satisfies typeof import("../en/onboarding").default;

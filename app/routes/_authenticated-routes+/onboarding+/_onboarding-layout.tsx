@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet, useMatch } from "react-router";
 
 import type { Route } from "./+types/_onboarding-layout";
-import { RenStudioLogo } from "~/components/ren-studio-logo";
+import { CollectAmLogo } from "~/components/collectam-logo";
 import { TalentMap } from "~/features/onboarding/talent-map";
 import { authMiddleware } from "~/features/user-authentication/user-authentication-middleware.server";
 import { cn } from "~/lib/utils";
@@ -31,7 +31,7 @@ export default function OnboardingLayout({ loaderData }: Route.ComponentProps) {
       {/* Left side */}
       <div className="relative hidden h-full flex-col overflow-hidden border-r bg-muted/60 p-10 lg:flex">
         <div className="absolute inset-0 z-10 bg-linear-to-t from-background to-transparent" />
-        <RenStudioLogo className="mr-auto h-5" />
+        <CollectAmLogo className="mr-auto h-5" />
         <div className="z-10 mt-auto">
           <blockquote className="space-y-2">
             <p className="text-xl">&ldquo;{t("quote")}&rdquo;</p>

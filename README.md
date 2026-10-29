@@ -1,4 +1,4 @@
-# Welcome to the Ren Studio!
+# Welcome to CollectAm!
 
 A modern, production-ready template for building full-stack B2B & B2C SaaS
 applications using React Router.
@@ -263,7 +263,7 @@ For each price, set the "Product tax code" to "SaaS" and the "Unit label" to
 
 #### 1. Create your products & prices
 
-The Ren Studio is set up to listen to product & prices webhooks.
+CollectAm is set up to listen to product & prices webhooks.
 This also allows your account managers to create and manage products & prices in
 the Stripe Dashboard, and have them automatically reflected in your app.
 
@@ -429,7 +429,7 @@ subscription via the portal.
 
 Here are a few miscellaneous things you might want to change:
 
-1. Give it your own name! Fuzzy search for `Ren Studio` to find
+1. Give it your own name! Fuzzy search for `CollectAm` to find
    all the places you need to change the name.
 2. The current theme violates color contrast. It's best for you to pick a theme
    that is accessible and configure it in your `app.css` file. Then you can
@@ -634,14 +634,14 @@ This template uses [flat routes](https://github.com/kiliman/remix-flat-routes).
 
 ### i18n
 
-This Ren Studio comes with localization support through
+CollectAm comes with localization support through
 [remix-i18next](https://github.com/sergiodxa/remix-i18next).
 
 The namespaces live in `public/locales/`.
 
 ### Toasts
 
-This Ren Studio includes utilities for toast notifications based
+CollectAm includes utilities for toast notifications based
 on flash sessions.
 
 **Flash Data:** Temporary session values, ideal for transferring data to the

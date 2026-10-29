@@ -68,7 +68,7 @@ test.describe("general organization settings", () => {
     await expect(
       page.getByRole("link", { name: /return home/i }),
     ).toHaveAttribute("href", "/");
-    expect(await page.title()).toMatch(/404|Ren Studio/i);
+    expect(await page.title()).toMatch(/404|CollectAm/i);
 
     await teardownOrganizationAndMember({
       organization: otherOrganization,
@@ -91,7 +91,7 @@ test.describe("general organization settings", () => {
     await page.goto(`/organizations/${organization.slug}/settings/general`);
 
     // Verify page content
-    await expect(page).toHaveTitle(/general | Ren Studio/i);
+    await expect(page).toHaveTitle(/general | CollectAm/i);
     await expect(
       page.getByText(/general settings for this organization/i),
     ).toBeVisible();
@@ -129,7 +129,7 @@ test.describe("general organization settings", () => {
     await page.goto(`/organizations/${organization.slug}/settings/general`);
 
     // Verify page content
-    await expect(page).toHaveTitle(/general | Ren Studio/i);
+    await expect(page).toHaveTitle(/general | CollectAm/i);
     await expect(
       page.getByText(/general settings for this organization/i),
     ).toBeVisible();
@@ -165,7 +165,7 @@ test.describe("general organization settings", () => {
       await page.goto(`/organizations/${organization.slug}/settings/general`);
 
       // Verify page content
-      await expect(page).toHaveTitle(/general | Ren Studio/i);
+      await expect(page).toHaveTitle(/general | CollectAm/i);
       await expect(
         page.getByText(/general settings for this organization/i),
       ).toBeVisible();
@@ -243,7 +243,7 @@ test.describe("general organization settings", () => {
       await page.goto(`/organizations/${organization.slug}/settings/general`);
 
       // Verify page content
-      await expect(page).toHaveTitle(/general | Ren Studio/i);
+      await expect(page).toHaveTitle(/general | CollectAm/i);
       await expect(
         page.getByText(/general settings for this organization/i),
       ).toBeVisible();

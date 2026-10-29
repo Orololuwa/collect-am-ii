@@ -4,7 +4,7 @@ import { FaGithub, FaLinkedin, FaXTwitter } from "react-icons/fa6";
 import { Link } from "react-router";
 
 import { ThemeToggle } from "../color-scheme/theme-toggle";
-import { RenStudioLogo } from "~/components/ren-studio-logo";
+import { CollectAmLogo } from "~/components/collectam-logo";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
@@ -64,7 +64,7 @@ export function Footer({ className, ...props }: ComponentProps<"footer">) {
 
         <div className="flex items-center gap-2">
           <Link to="/">
-            <RenStudioLogo />
+            <CollectAmLogo />
           </Link>
         </div>
       </div>

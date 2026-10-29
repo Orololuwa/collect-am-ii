@@ -16,8 +16,8 @@ import {
 } from "react-icons/si";
 
 import { PlaywrightIcon } from "./svgs/playwright-icon";
+import { CollectAmLogo } from "~/components/collectam-logo";
 import { Marquee } from "~/components/magicui/marquee";
-import { RenStudioLogo } from "~/components/ren-studio-logo";
 
 export function Logos() {
   const { t } = useTranslation("landing", { keyPrefix: "logos" });
@@ -32,7 +32,7 @@ export function Logos() {
         <Marquee className="max-w-full">
           {[
             {
-              icon: <RenStudioLogo className="size-16" />,
+              icon: <CollectAmLogo className="size-16" />,
               key: "react-router",
             },
             {

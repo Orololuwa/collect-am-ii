@@ -1,6 +1,6 @@
 # Railway Deployment Guide
 
-This guide walks you through deploying this Ren Studio to Railway with Docker and Puppeteer support.
+This guide walks you through deploying CollectAm to Railway with Docker and Puppeteer support.
 
 ## Prerequisites
 

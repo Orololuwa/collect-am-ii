@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
 import { ThemeToggle } from "../color-scheme/theme-toggle";
-import { RenStudioLogo } from "~/components/ren-studio-logo";
+import { CollectAmLogo } from "~/components/collectam-logo";
 import { Button } from "~/components/ui/button";
 import {
   Sheet,
@@ -35,7 +35,7 @@ export function Header({ className, ...props }: ComponentProps<"header">) {
           to="/"
         >
           <div className="flex items-center gap-2">
-            <RenStudioLogo className="size-8 sm:size-6" />
+            <CollectAmLogo className="size-8 sm:size-6" />
 
             <Sheet onOpenChange={setIsMobileMenuOpen} open={isMobileMenuOpen}>
               <SheetTrigger asChild>

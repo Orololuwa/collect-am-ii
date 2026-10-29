@@ -140,7 +140,7 @@ export default {
     productReady:
       "Dein SaaS-Produkt ist bereit und freut sich darauf, dir zu helfen, deine Zeit optimal zu nutzen und deine Kunden zu bedienen. Verabschiede dich von mühsamer Einrichtung und konzentriere dich aufs Entwickeln.",
     thankYou:
-      "Vielen Dank, dass du Ren Studio vertraust. Deine erfolgreiche Reise zum Aufbau und zur Pflege eines SaaS-Produkts beginnt jetzt!",
+      "Vielen Dank, dass du CollectAm vertraust. Deine erfolgreiche Reise zum Aufbau und zur Pflege eines SaaS-Produkts beginnt jetzt!",
   },
   contactSales: {
     company: "Firma",
@@ -258,7 +258,7 @@ export default {
   },
   pricingPage: {
     pageDescription:
-      "Natürlich ist Ren Studio kostenlos. Aber so könnte deine Preisgestaltung aussehen.",
+      "Natürlich ist CollectAm kostenlos. Aber so könnte deine Preisgestaltung aussehen.",
     pageTitle: "Preise",
     pricingHeading: "Wähle deinen Plan",
   },

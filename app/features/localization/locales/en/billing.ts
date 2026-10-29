@@ -138,7 +138,7 @@ export default {
     productReady:
       "Your SaaS product is ready and eager to help you maximize the usage of your time and serve your customers. Say goodbye to tedious set up and hello to just building.",
     thankYou:
-      "Thank you for trusting Ren Studio. Your successful journey towards building and maintaining a SaaS product starts now!",
+      "Thank you for trusting CollectAm. Your successful journey towards building and maintaining a SaaS product starts now!",
   },
   contactSales: {
     company: "Company",
@@ -247,7 +247,7 @@ export default {
   },
   pricingPage: {
     pageDescription:
-      "Obviously Ren Studio is free. But this is what your pricing could look like.",
+      "Obviously CollectAm is free. But this is what your pricing could look like.",
     pageTitle: "Pricing",
     pricingHeading: "Choose your plan",
   },

@@ -67,7 +67,7 @@ test.describe("onboarding organization page", () => {
       await page.goto(path);
 
       // Verify page content
-      await expect(page).toHaveTitle(/organization | Ren Studio/i);
+      await expect(page).toHaveTitle(/organization | CollectAm/i);
       await expect(
         page.getByRole("heading", {
           level: 1,
@@ -148,7 +148,7 @@ test.describe("onboarding organization page", () => {
       await page.goto(path);
 
       // Verify page content
-      await expect(page).toHaveTitle(/organization | Ren Studio/i);
+      await expect(page).toHaveTitle(/organization | CollectAm/i);
       await expect(
         page.getByRole("heading", {
           level: 1,
@@ -210,7 +210,7 @@ test.describe("onboarding organization page", () => {
       await page.goto(path);
 
       // Verify page content
-      await expect(page).toHaveTitle(/organization | Ren Studio/i);
+      await expect(page).toHaveTitle(/organization | CollectAm/i);
       await expect(
         page.getByRole("heading", {
           level: 1,

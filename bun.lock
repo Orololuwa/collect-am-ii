@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "ren-studio",
+      "name": "collectam",
       "dependencies": {
         "@conform-to/react": "1.14.0",
         "@conform-to/zod": "1.14.0",

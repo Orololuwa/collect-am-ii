@@ -132,7 +132,7 @@ test.describe("billing page", () => {
     await page.goto(createPath(organization.slug));
 
     // Verify page title
-    await expect(page).toHaveTitle(/billing | Ren Studio/i);
+    await expect(page).toHaveTitle(/billing | CollectAm/i);
 
     // Verify breadcrumb heading (last breadcrumb is h1)
     await expect(
@@ -379,7 +379,7 @@ test.describe("billing page", () => {
     await page.goto(createPath(organization.slug));
 
     // Verify page title
-    await expect(page).toHaveTitle(/billing | Ren Studio/i);
+    await expect(page).toHaveTitle(/billing | CollectAm/i);
 
     // Verify breadcrumb heading (last breadcrumb is h1)
     await expect(
@@ -496,7 +496,7 @@ test.describe("billing page", () => {
     await page.goto(createPath(organization.slug));
 
     // Verify page title + headings
-    await expect(page).toHaveTitle(/billing | Ren Studio/i);
+    await expect(page).toHaveTitle(/billing | CollectAm/i);
     // Verify breadcrumb heading (last breadcrumb is h1)
     await expect(
       page.getByRole("heading", { level: 1, name: /billing/i }),

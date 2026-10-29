@@ -69,13 +69,13 @@ test.describe("onboarding user account page", () => {
       await page.goto(path);
 
       // Verify page content
-      await expect(page).toHaveTitle(/user account | Ren Studio/i);
+      await expect(page).toHaveTitle(/user account | CollectAm/i);
       await expect(
         page.getByRole("heading", { level: 1, name: /create your account/i }),
       ).toBeVisible();
       await expect(
         page.getByText(
-          /welcome to the Ren Studio! please create your user account to get started./i,
+          /welcome to CollectAm! please create your user account to get started./i,
         ),
       ).toBeVisible();
 
@@ -132,13 +132,13 @@ test.describe("onboarding user account page", () => {
       await page.goto(path);
 
       // Verify page content
-      await expect(page).toHaveTitle(/user account | Ren Studio/i);
+      await expect(page).toHaveTitle(/user account | CollectAm/i);
       await expect(
         page.getByRole("heading", { level: 1, name: /create your account/i }),
       ).toBeVisible();
       await expect(
         page.getByText(
-          /welcome to the Ren Studio! please create your user account to get started./i,
+          /welcome to CollectAm! please create your user account to get started./i,
         ),
       ).toBeVisible();
 
@@ -174,13 +174,13 @@ test.describe("onboarding user account page", () => {
       await page.goto(path);
 
       // Verify page content
-      await expect(page).toHaveTitle(/user account | Ren Studio/i);
+      await expect(page).toHaveTitle(/user account | CollectAm/i);
       await expect(
         page.getByRole("heading", { level: 1, name: /create your account/i }),
       ).toBeVisible();
       await expect(
         page.getByText(
-          /welcome to the Ren Studio! please create your user account to get started./i,
+          /welcome to CollectAm! please create your user account to get started./i,
         ),
       ).toBeVisible();
 
