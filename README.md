@@ -133,7 +133,9 @@ service that runs `prisma migrate deploy`, then the `app`.
 
 `scripts/migrate-supabase-db.sh` copies an existing Supabase database into the
 container: it dumps the `public` schema, restores it, applies the remaining
-Prisma migrations and compares row counts per table.
+Prisma migrations, points saved templates at the Cloudinary copies of the sample
+logos, and compares row counts per table. At the end it lists the organization
+logos and avatars still on Supabase Storage, which you move by hand.
 
 ```bash
 SUPABASE_DB_URL="postgresql://postgres.<ref>:<password>@<region>.pooler.supabase.com:5432/postgres" \
@@ -161,8 +163,9 @@ to their `UserAccount` by verified email.
    - **Advanced Settings → Grant Types**: enable _Authorization Code_,
      _Passwordless OTP_ and _Client Credentials_.
 3. **Authentication → Passwordless → Email**: enable it, choose **Code**
-   (OTP length 6), customize the email template, and enable the connection for
-   your application.
+   (OTP length 6), paste in the email template from `auth0/` (see
+   [auth0/README.md](./auth0/README.md)), and enable the connection for your
+   application.
 4. **Authentication → Social → Google**: add your Google OAuth client ID and
    secret (create them in the Google Cloud console with the authorized
    redirect URI `https://<AUTH0_DOMAIN>/login/callback`), and enable the
@@ -180,16 +183,17 @@ to their `UserAccount` by verified email.
 ### Cloudinary
 
 Avatars and organization logos are uploaded server-side to Cloudinary
-(`app/utils/storage.server.ts`) into the `user-avatars` and
-`organization-logos` folders.
+(`app/utils/storage.server.ts`) into the `CollectAm/user-avatars` and
+`CollectAm/organization-logos` folders (the account is shared with other apps,
+so everything sits under `CollectAm/`).
 
 1. Create a [Cloudinary](https://cloudinary.com/) account.
 2. Copy the **API environment variable** from the dashboard into
    `CLOUDINARY_URL` (`cloudinary://<api_key>:<api_secret>@<cloud_name>`).
 
-Static images (brand logo, template placeholder logos, seed data) are
-referenced from `app/utils/static-assets.ts`; point `STATIC_ASSETS_BASE_URL`
-at wherever you host them.
+The brand logo and favicon ship in `public/`. The document templates' sample
+company logos are Cloudinary URLs in `app/utils/static-assets.ts`; they must be
+full URLs because they end up in rendered PDFs and emails.
 
 The upload is parsed with `parseFormData` from
 [`@remix-run/form-data-parser`](https://github.com/remix-run/form-data-parser).

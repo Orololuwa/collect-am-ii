@@ -1,1 +1,1 @@
-export const AVATAR_FOLDER = "user-avatars";
+export const AVATAR_FOLDER = "CollectAm/user-avatars";

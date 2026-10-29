@@ -10,7 +10,6 @@ import {
   ensureStripeProductsAndPricesExist,
 } from "../app/test/test-utils";
 import { prisma } from "../app/utils/database.server";
-import { STATIC_ASSETS_BASE_URL } from "../app/utils/static-assets";
 import { OrganizationMembershipRole } from "~/generated/client";
 
 // Load environment variables from .env file
@@ -61,7 +60,8 @@ async function seed() {
       lookupKey: priceLookupKeysByTierAndInterval.high.monthly,
       organization: createPopulatedOrganization({
         name: "Orololuwa",
-        imageUrl: `${STATIC_ASSETS_BASE_URL}/organization-logos/uyztdp5v8a8gowxfxlbrciys.jpg`,
+        imageUrl:
+          "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/uyztdp5v8a8gowxfxlbrciys.jpg",
         slug: "ororo",
       }),
       seats: 100,
@@ -69,7 +69,8 @@ async function seed() {
       user: createPopulatedUserAccount({
         email: "emmybest.ea@gmail.com",
         name: "Emmanuel Awolusi",
-        imageUrl: `${STATIC_ASSETS_BASE_URL}/user-avatars/z5nxmk6hqkk5aq75458ljgsj.jpeg`,
+        imageUrl:
+          "https://res.cloudinary.com/df1fw15ei/image/upload/v1793263518/CollectAm/user-avatars/White-Shirt_Tech_Workspace_Selfie_sophn1.png",
       }),
     },
   ];

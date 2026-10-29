@@ -1,22 +1,18 @@
+// The brand logos ship with the app, from `public/`.
+export const COLLECTAM_LOGO_URL = "/collectam-logo.svg";
+export const COLLECTAM_LOGO_DARK_MODE_URL = "/collectam-logo-dark-mode.svg";
+
 /**
- * Base URL for the app's static images (brand logos, template placeholder
- * logos, seed data). Point this at wherever the `app-images` folder lives,
- * e.g. `https://res.cloudinary.com/<cloud_name>/image/upload/app-images` once
- * the files have been uploaded to Cloudinary with the same folder structure.
- *
- * TODO: still points at the old Supabase bucket until the images are moved.
+ * Sample company logos used by the document templates. They are full URLs
+ * (not `public/` paths) because they end up in rendered PDFs and emails.
  */
-export const STATIC_ASSETS_BASE_URL =
-  "https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images";
-
-// TODO: the logo files still show the old Ren Studio artwork. Upload the
-// CollectAm logos (light and dark) and point these paths at them.
-export const COLLECTAM_LOGO_URL = `${STATIC_ASSETS_BASE_URL}/ren-studio/ren-studio.svg`;
-export const COLLECTAM_LOGO_DARK_MODE_URL = `${STATIC_ASSETS_BASE_URL}/ren-studio/ren-studio-dark-mode.svg`;
-
 export const PLACEHOLDER_LOGO_URLS = {
-  logoipsum288: `${STATIC_ASSETS_BASE_URL}/organization-logos/logoipsum-288.svg`,
-  logoipsum350: `${STATIC_ASSETS_BASE_URL}/organization-logos/logoipsum-350.svg`,
-  logoipsum397: `${STATIC_ASSETS_BASE_URL}/organization-logos/logoipsum-397.svg`,
-  logoipsum404: `${STATIC_ASSETS_BASE_URL}/organization-logos/logoipsum-404.svg`,
+  logoipsum288:
+    "https://res.cloudinary.com/df1fw15ei/image/upload/v1793263359/CollectAm/organization-logos/logoipsum-288_f4kynu.svg",
+  logoipsum350:
+    "https://res.cloudinary.com/df1fw15ei/image/upload/v1793263360/CollectAm/organization-logos/logoipsum-350_xwfaex.svg",
+  logoipsum397:
+    "https://res.cloudinary.com/df1fw15ei/image/upload/v1793263360/CollectAm/organization-logos/logoipsum-397_qipq43.svg",
+  logoipsum404:
+    "https://res.cloudinary.com/df1fw15ei/image/upload/v1793263360/CollectAm/organization-logos/logoipsum-404_ercaqd.svg",
 } as const;

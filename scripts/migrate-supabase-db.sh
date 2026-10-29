@@ -85,6 +85,44 @@ echo "▶ Applying pending Prisma migrations (removes the Supabase-only columns)
 DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/${POSTGRES_DB}" \
   npx prisma migrate deploy
 
+echo "▶ Pointing saved templates at the Cloudinary copies of the placeholder logos…"
+# Saved templates, checkout pages and receipts copy the sample logo URLs into
+# their JSON, so rewrite them in every jsonb column.
+local_psql <<'SQL'
+DO $$
+DECLARE
+  col record;
+  old_base text := 'https://iwvduhvsxhjpxapdochp.supabase.co/storage/v1/object/public/app-images/organization-logos/';
+  new_base text := 'https://res.cloudinary.com/df1fw15ei/image/upload/';
+  logos text[][] := ARRAY[
+    ['logoipsum-288.svg', 'v1793263359/CollectAm/organization-logos/logoipsum-288_f4kynu.svg'],
+    ['logoipsum-350.svg', 'v1793263360/CollectAm/organization-logos/logoipsum-350_xwfaex.svg'],
+    ['logoipsum-397.svg', 'v1793263360/CollectAm/organization-logos/logoipsum-397_qipq43.svg'],
+    ['logoipsum-404.svg', 'v1793263360/CollectAm/organization-logos/logoipsum-404_ercaqd.svg']
+  ];
+  i int;
+  n bigint;
+BEGIN
+  FOR col IN
+    SELECT table_name, column_name FROM information_schema.columns
+    WHERE table_schema = 'public' AND data_type = 'jsonb'
+  LOOP
+    FOR i IN 1 .. array_length(logos, 1) LOOP
+      EXECUTE format(
+        'UPDATE public.%I SET %I = replace(%I::text, %L, %L)::jsonb WHERE %I::text LIKE %L',
+        col.table_name, col.column_name, col.column_name,
+        old_base || logos[i][1], new_base || logos[i][2],
+        col.column_name, '%' || old_base || logos[i][1] || '%'
+      );
+      GET DIAGNOSTICS n = ROW_COUNT;
+      IF n > 0 THEN
+        RAISE NOTICE '  %.%: % row(s) with %', col.table_name, col.column_name, n, logos[i][1];
+      END IF;
+    END LOOP;
+  END LOOP;
+END $$;
+SQL
+
 echo "▶ Comparing row counts (Supabase → docker)…"
 source_counts=$(supabase_psql -Atc "$(supabase_psql -Atc "$COUNT_QUERY_SQL")")
 target_counts=$(local_psql -Atc "$(local_psql -Atc "$COUNT_QUERY_SQL")")
@@ -106,18 +144,18 @@ while IFS='|' read -r table count; do
   printf '  %-40s %8s → %8s %s\n' "$table" "$count" "${target:--}" "$status"
 done <<<"$source_counts"
 
+echo
+echo "▶ Images still on Supabase Storage (move these to Cloudinary by hand):"
+local_psql -At <<'SQL'
+SELECT '  Organization ' || id || ': ' || "imageUrl" FROM "Organization" WHERE "imageUrl" LIKE '%supabase.co%'
+UNION ALL
+SELECT '  UserAccount ' || id || ': ' || "imageUrl" FROM "UserAccount" WHERE "imageUrl" LIKE '%supabase.co%';
+SQL
 cat <<'EOF'
+  Upload each to Cloudinary (CollectAm/organization-logos or
+  CollectAm/user-avatars), then point the row at the new URL, e.g.:
 
-Note: image URLs stored in the database (UserAccount.imageUrl,
-Organization.imageUrl) still point at Supabase Storage. After uploading the
-images to Cloudinary with the same folder layout, you can rewrite them with e.g.:
-
-  UPDATE "UserAccount" SET "imageUrl" = replace("imageUrl",
-    'https://<ref>.supabase.co/storage/v1/object/public/app-images/',
-    'https://res.cloudinary.com/<cloud_name>/image/upload/app-images/');
-  UPDATE "Organization" SET "imageUrl" = replace("imageUrl",
-    'https://<ref>.supabase.co/storage/v1/object/public/app-images/',
-    'https://res.cloudinary.com/<cloud_name>/image/upload/app-images/');
+  UPDATE "UserAccount" SET "imageUrl" = '<cloudinary url>' WHERE id = '<id>';
 EOF
 
 if [[ "$mismatch" == true ]]; then

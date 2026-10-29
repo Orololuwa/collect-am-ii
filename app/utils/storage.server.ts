@@ -10,7 +10,7 @@ cloudinary.config({ secure: true });
  * public id.
  *
  * @param file - The image to upload.
- * @param folder - The Cloudinary folder, e.g. `user-avatars`.
+ * @param folder - The Cloudinary folder, e.g. `CollectAm/user-avatars`.
  * @param publicId - The id of the image inside the folder (no extension).
  * @returns The HTTPS URL of the uploaded image.
  */

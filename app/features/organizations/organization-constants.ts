@@ -1,1 +1,1 @@
-export const LOGO_FOLDER = "organization-logos";
+export const LOGO_FOLDER = "CollectAm/organization-logos";
