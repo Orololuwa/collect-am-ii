@@ -834,9 +834,10 @@ function TemplateGrid({
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1" />
-            <CardFooter className="gap-2">
+            {/* Wraps instead of overflowing when the grid makes the card narrow. */}
+            <CardFooter className="flex-wrap gap-2">
               <Button
-                className="flex-1"
+                className="min-w-fit flex-1"
                 data-testid={`template-edit-button-${template.id}`}
                 onClick={() => handleEdit(template.id)}
                 variant="default"
@@ -845,7 +846,7 @@ function TemplateGrid({
                 Edit
               </Button>
               <Button
-                className="flex-1"
+                className="min-w-fit flex-1"
                 data-testid={`template-duplicate-button-${template.id}`}
                 disabled={duplicatingTemplateId === template.id}
                 onClick={() => handleDuplicate(template.id)}
@@ -859,7 +860,7 @@ function TemplateGrid({
                 Duplicate
               </Button>
               <Button
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="ml-auto shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                 data-testid={`template-delete-button-${template.id}`}
                 onClick={() => handleDeleteClick(template)}
                 size="icon"
