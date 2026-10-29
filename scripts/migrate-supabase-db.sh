@@ -25,9 +25,7 @@ if [[ -f .env ]]; then
 fi
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-app}"
-POSTGRES_PORT="${POSTGRES_PORT:-5433}"
 PG_IMAGE="postgres:17-alpine"
 FORCE=false
 
@@ -82,8 +80,8 @@ docker compose exec -T db pg_restore --clean --if-exists --no-owner --no-privile
   -U "$POSTGRES_USER" -d "$POSTGRES_DB" <"$DUMP_FILE"
 
 echo "▶ Applying pending Prisma migrations (removes the Supabase-only columns)…"
-DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/${POSTGRES_DB}" \
-  npx prisma migrate deploy
+# Runs in the compose `migrate` service, so the host needs Docker but no Node.
+docker compose run --rm --build migrate
 
 echo "▶ Pointing saved templates at the Cloudinary copies of the placeholder logos…"
 # Saved templates, checkout pages and receipts copy the sample logo URLs into

@@ -1,15 +1,17 @@
 services:
   db:
     image: postgres:17-alpine
-    container_name: react-router-saas-db
+    container_name: collect-am-db
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_DB=${POSTGRES_DB:-app}
     ports:
-      # Published on the host (default 5433) so local dev (`npm run dev`) and the
-      # Prisma CLI can reach it. Inside the compose network it's still db:5432.
-      - "${POSTGRES_PORT:-5433}:5432"
+      # Published on the host's loopback only (default 5433) so local dev
+      # (`npm run dev`) and the Prisma CLI can reach it, but the internet can't:
+      # Docker's port rules bypass host firewalls like UFW. Inside the compose
+      # network it's still db:5432.
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
@@ -38,30 +40,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: react-router-saas-app
+    container_name: collect-am-app
     ports:
-      - "3001:3001"
+      # Loopback only, for checks from the host. The public way in is the
+      # server's Caddy container, which reaches the app as collect-am-app:3001
+      # over the shared `web` network.
+      - "127.0.0.1:3001:3001"
+    networks:
+      - default
+      - web
     env_file:
       - .env
     environment:
-      # Talks to the `db` service over the compose network (overrides .env).
+      # Everything else (secrets, Auth0, Stripe, ...) comes from .env. These
+      # override it for the container:
+      # Talks to the `db` service over the compose network.
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-app}
-
-      # Required secrets
-      - COOKIE_SECRET=${COOKIE_SECRET:-change-me-in-production}
-      - API_KEY_ENCRYPTION_KEY=${API_KEY_ENCRYPTION_KEY:-change-me-in-production}
 
       # Node environment
       - NODE_ENV=production
       - PORT=3001
-
-      # Optional: Mailgun (if you want to test email features)
-      - MAILGUN_API_KEY=${MAILGUN_API_KEY:-}
-      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN:-}
-
-      # Optional: Stripe (if you want to test payment features)
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
 
       # Puppeteer configuration (already set in Dockerfile, but can override)
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
@@ -82,3 +80,9 @@ services:
 
 volumes:
   pgdata:
+
+networks:
+  # Created by the server's Caddy setup. To run the app container locally, create
+  # it once with `docker network create web`.
+  web:
+    external: true
