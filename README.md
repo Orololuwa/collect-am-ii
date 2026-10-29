@@ -142,7 +142,8 @@ SUPABASE_DB_URL="postgresql://postgres.<ref>:<password>@<region>.pooler.supabase
   npm run db:migrate-from-supabase
 ```
 
-Use the session pooler (port 5432) or the direct connection string. Pass
+Use the session pooler (port 5432); the direct `db.<ref>.supabase.co`
+connection is IPv6-only. Pass
 `-- --force` to wipe a non-empty local database first. The dump is kept in
 `backups/` (git-ignored).
 

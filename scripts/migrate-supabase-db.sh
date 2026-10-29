@@ -7,8 +7,9 @@
 #   SUPABASE_DB_URL="postgresql://postgres.<ref>:<password>@aws-1-eu-west-1.pooler.supabase.com:5432/postgres" \
 #     npm run db:migrate-from-supabase [-- --force]
 #
-# Use the *session* pooler (port 5432) or the direct connection string; the
-# transaction pooler (port 6543) does not work with pg_dump.
+# Use the *session* pooler (port 5432); the transaction pooler (port 6543)
+# does not work with pg_dump. The direct connection (db.<ref>.supabase.co) is
+# IPv6-only on most projects, so it only works if this machine has IPv6.
 #
 # --force  Drop everything in the docker database's public schema first.
 #          Without it, the script refuses to restore into a non-empty database.
@@ -47,8 +48,10 @@ local_psql() {
 }
 
 # psql against Supabase, run from a throwaway container (no local client needed).
+# --network host: use the host's network (and its IPv6, if any) rather than
+# Docker's bridge, which has no IPv6.
 supabase_psql() {
-  docker run --rm "$PG_IMAGE" psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 "$@"
+  docker run --rm --network host "$PG_IMAGE" psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 "$@"
 }
 
 COUNT_QUERY_SQL="SELECT coalesce(string_agg(format('SELECT %L AS table_name, count(*) AS row_count FROM public.%I', tablename, tablename), ' UNION ALL ' ORDER BY tablename), 'SELECT NULL LIMIT 0') FROM pg_tables WHERE schemaname = 'public'"
@@ -71,7 +74,7 @@ mkdir -p backups
 DUMP_FILE="backups/supabase-$(date +%Y%m%d-%H%M%S).dump"
 
 echo "▶ Dumping the public schema from Supabase to $DUMP_FILE…"
-docker run --rm "$PG_IMAGE" pg_dump "$SUPABASE_DB_URL" \
+docker run --rm --network host "$PG_IMAGE" pg_dump "$SUPABASE_DB_URL" \
   --schema=public --no-owner --no-privileges --format=custom >"$DUMP_FILE"
 
 echo "▶ Restoring into the docker database…"

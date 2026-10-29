@@ -126,8 +126,9 @@ SUPABASE_DB_URL="postgresql://postgres.<ref>:<password>@aws-1-eu-west-1.pooler.s
   ./scripts/migrate-supabase-db.sh
 ```
 
-Use the session pooler (port 5432) or the direct connection, not the 6543
-pooler. The script runs entirely in Docker. It dumps Supabase into `backups/`,
+Use the **session pooler** URL (Supabase → Connect → Session pooler, port
+5432), not the 6543 transaction pooler. The direct `db.<ref>.supabase.co`
+connection is IPv6-only, so it fails on servers without IPv6. The script runs entirely in Docker. It dumps Supabase into `backups/`,
 restores it, applies the Prisma migrations, repoints saved templates at the
 Cloudinary logos, compares row counts, and lists the logos and avatars still on
 Supabase Storage for you to move by hand.
