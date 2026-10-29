@@ -68,7 +68,7 @@ Clone the app:
 ```bash
 sudo mkdir -p /srv/collect-am
 sudo chown "$USER": /srv/collect-am
-git clone --branch dev https://github.com/Orololuwa/react-router-saas-template.git /srv/collect-am
+git clone --branch dev https://github.com/Orololuwa/collect-am-ii.git /srv/collect-am
 cd /srv/collect-am
 ```
 
@@ -189,17 +189,92 @@ Caddy fetches the certificate on the first request; open
 https://collect-am.orololuwa.dev and sign in. Ports 80 and 443 must be open
 (`sudo ufw status`); Caddy needs 80 for the certificate challenge.
 
-## Updating
+## Continuous deployment
+
+Every push to `dev` runs the checks in `.github/workflows/ci.yml` (Biome,
+TypeScript, Vitest). When they pass, it calls
+[.github/workflows/deploy.yml](./.github/workflows/deploy.yml), which SSHes into
+the server and:
+
+1. fast-forwards `/srv/collect-am` to the pushed commit (it stops if the
+   checkout has local changes or isn't on `dev`),
+2. runs `docker compose up -d --build` (migrations run first, in `migrate`),
+3. waits for `collect-am-app` to report healthy, printing its logs if not,
+4. prunes old images,
+
+then checks https://collect-am.orololuwa.dev answers. Deploys run one at a
+time, under the `development` GitHub environment.
+
+### One-time setup
+
+**1. Create the deploy key on the server**, next to your other deploy keys, and
+let it log in:
 
 ```bash
-cd /srv/collect-am
-git pull
-docker compose up -d --build
+ssh-keygen -t ed25519 -N "" -C "github-actions@collect-am" -f ~/.ssh/collectam_deploy
+cat ~/.ssh/collectam_deploy.pub >> ~/.ssh/authorized_keys
+```
+
+Use the server user that owns `/srv/collect-am` and runs Docker.
+
+**2. Prepare the checkout.** It must be on `dev` with no local edits (undo any
+hand edits, e.g. to `scripts/migrate-supabase-db.sh`; `.env` and `backups/` are
+git-ignored and stay):
+
+```bash
+cd /srv/collect-am && git checkout -- . && git checkout dev && git pull --ff-only
+```
+
+The repository is public, so the server fetches it over HTTPS with no
+credentials and no GitHub deploy key. (The repo was renamed to
+`Orololuwa/collect-am-ii`; point an older checkout at the new URL with
+`git remote set-url origin https://github.com/Orololuwa/collect-am-ii.git`.)
+
+If you make it private, give the server read access with a GitHub deploy key:
+create a second key on the server, add its `.pub` under the repo's Settings →
+Deploy keys (read-only), and switch the remote to SSH. That key is separate
+from `collectam_deploy`, which works the other way round (GitHub logging in to
+the server).
+
+**3. Add the secrets to GitHub** (repo → Settings → Environments →
+`development` → Environment secrets; the environment is created by the first
+deploy run, or create it yourself):
+
+| Secret | Value |
+| --- | --- |
+| `DEPLOY_HOST` | `169.58.111.138` |
+| `DEPLOY_USER` | the server user from step 1 (e.g. `orololuwa`) |
+| `DEPLOY_SSH_KEY` | the private key from step 1, including the `BEGIN`/`END` lines |
+| `DEPLOY_KNOWN_HOSTS` | the server's host key line |
+
+On the server, print each value to paste:
+
+```bash
+whoami                                    # DEPLOY_USER
+cat ~/.ssh/collectam_deploy               # DEPLOY_SSH_KEY
+echo "169.58.111.138 $(cut -d' ' -f1,2 /etc/ssh/ssh_host_ed25519_key.pub)"   # DEPLOY_KNOWN_HOSTS
+```
+
+The host key line comes straight from the server's own key file; pinning it is
+what stops the job from talking to an impostor.
+
+**4. Push to `dev`** (or re-run the latest workflow) and watch the **🚀 Deploy**
+job under the repo's Actions tab.
+
+To require a click before each deploy, add yourself as a required reviewer on
+the `development` environment.
+
+## Updating by hand
+
+CI does this on every push to `dev`. To deploy without it, on the server:
+
+```bash
+cd /srv/collect-am && git pull --ff-only && docker compose up -d --build
 ```
 
 New migrations run automatically before the new app container starts. To roll
-back, check out the previous commit and run the same `docker compose up -d
---build` (migrations are not rolled back; restore a backup if one changed data).
+back, revert the bad commit on `dev` and push; the pipeline deploys the revert.
+Migrations are not rolled back; restore a backup if one changed data.
 
 ## Logs, restarts and backups
 

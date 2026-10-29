@@ -1,0 +1,105 @@
+name: Deploy
+
+# Deploys a commit of `dev` to the dev server (https://collect-am.orololuwa.dev).
+# ci.yml calls this after its checks pass on a push to dev.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: development
+      url: https://collect-am.orololuwa.dev
+    concurrency:
+      group: deploy-development
+      cancel-in-progress: false
+    steps:
+      - name: 🔑 Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # Runs on the server: fast-forwards /srv/collect-am to this commit,
+      # rebuilds and restarts with Docker Compose (migrations run first, in the
+      # `migrate` service), then waits for the app to report healthy.
+      - name: 🚀 Deploy ${{ github.sha }}
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+            "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$GITHUB_SHA" <<'SCRIPT'
+          # Inside main() so bash has read all of it before anything runs.
+          main() {
+            set -euo pipefail
+            # Keep going if the SSH connection drops mid-deploy.
+            trap '' HUP
+
+            local sha="$1"
+            cd /srv/collect-am
+
+            # One deploy at a time; a second one waits for the first.
+            exec 9>/tmp/collect-am-deploy.lock
+            flock -w 1800 9 || { echo "✖ Another deploy is still running." >&2; exit 1; }
+
+            if [[ "$(git symbolic-ref --short HEAD)" != "dev" ]]; then
+              echo "✖ /srv/collect-am is not on dev." >&2; exit 1
+            fi
+            if ! git diff --quiet HEAD --; then
+              echo "✖ /srv/collect-am has local changes; deploys only fast-forward:" >&2
+              git status --short >&2; exit 1
+            fi
+
+            git fetch --quiet origin dev
+            if ! git merge-base --is-ancestor "$sha" origin/dev; then
+              echo "✖ $sha is not on origin/dev." >&2; exit 1
+            fi
+            # An older commit than the checkout (a superseded run) is a no-op.
+            git merge --ff-only --quiet "$sha"
+            echo "▶ Deploying $(git log -1 --format='%h %s')"
+
+            docker compose up -d --build --remove-orphans
+
+            echo "▶ Waiting for collect-am-app to be healthy…"
+            local status=""
+            for _ in $(seq 1 60); do
+              status="$(docker inspect -f '{{.State.Health.Status}}' collect-am-app 2>/dev/null || true)"
+              [[ "$status" == "healthy" || "$status" == "unhealthy" ]] && break
+              sleep 5
+            done
+            if [[ "$status" != "healthy" ]]; then
+              echo "✖ collect-am-app is '${status:-missing}'. Recent logs:" >&2
+              docker compose logs --tail=50 app >&2
+              exit 1
+            fi
+
+            # Drop superseded images; keep a week of build cache for fast rebuilds.
+            docker image prune -f >/dev/null
+            docker builder prune -f --filter until=168h >/dev/null
+            echo "✔ Deployed $(git rev-parse --short HEAD)"
+          }
+          main "$@"
+          exit
+          SCRIPT
+
+      - name: 🩺 Check the site
+        run: |
+          for attempt in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://collect-am.orololuwa.dev/ || true)
+            if [ "$code" = "200" ]; then echo "✔ https://collect-am.orololuwa.dev is up"; exit 0; fi
+            echo "Attempt $attempt: HTTP $code"; sleep 6
+          done
+          exit 1

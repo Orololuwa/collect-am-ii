@@ -62,7 +62,7 @@ services:
       - PORT=3001
 
       # Puppeteer configuration (already set in Dockerfile, but can override)
-      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_SKIP_DOWNLOAD=true
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
     depends_on:
       db:

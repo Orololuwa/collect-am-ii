@@ -9,7 +9,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Supersede stale PR runs, but never cancel a push run: it may be deploying.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -116,6 +117,14 @@ jobs:
 
       - name: ⚡ Run vitest
         run: npm run test -- --coverage
+
+  deploy:
+    name: 🚀 Deploy
+    # Pushes to dev deploy to https://collect-am.orololuwa.dev once the checks pass.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: [lint, type-check, vitest]
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
 
   # playwright-chrome:
   #   name: 🎭 Playwright Chrome
