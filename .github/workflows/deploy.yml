@@ -1,31 +1,10 @@
 name: Deploy
 
-# Deploys to the dev server (https://collect-am.orololuwa.dev).
-# ci.yml calls this after its checks pass on a push to dev, or on a pull
-# request targeting dev. A push fast-forwards local `dev`. A pull request
-# checks out GitHub's merge ref detached, so the local `dev` branch is left
-# where it is until the next push.
+# Deploys a commit of `dev` to the dev server (https://collect-am.orololuwa.dev).
+# ci.yml calls this after its checks pass on a push to dev.
 on:
   workflow_call:
-    inputs:
-      git_ref:
-        description: Ref to fetch on the server (`refs/heads/dev` or `refs/pull/N/merge`)
-        type: string
-        default: refs/heads/dev
-      deploy_sha:
-        description: Commit that passed CI. Defaults to the workflow SHA.
-        type: string
-        default: ""
   workflow_dispatch:
-    inputs:
-      git_ref:
-        description: Ref to fetch on the server (`refs/heads/dev` or `refs/pull/N/merge`)
-        type: string
-        default: refs/heads/dev
-      deploy_sha:
-        description: Commit to deploy. Defaults to the workflow SHA.
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -52,19 +31,17 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
-      # Runs on the server: checks out the commit, rebuilds and restarts with
-      # Docker Compose (migrations run first, in the `migrate` service), then
-      # waits for the app to report healthy.
-      - name: 🚀 Deploy ${{ inputs.deploy_sha || github.sha }}
+      # Runs on the server: fast-forwards /srv/collect-am to this commit,
+      # rebuilds and restarts with Docker Compose (migrations run first, in the
+      # `migrate` service), then waits for the app to report healthy.
+      - name: 🚀 Deploy ${{ github.sha }}
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SHA: ${{ inputs.deploy_sha || github.sha }}
-          GIT_REF: ${{ inputs.git_ref || 'refs/heads/dev' }}
         run: |
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
             -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
-            "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$DEPLOY_SHA" "$GIT_REF" <<'SCRIPT'
+            "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$GITHUB_SHA" <<'SCRIPT'
           # Inside main() so bash has read all of it before anything runs.
           main() {
             set -euo pipefail
@@ -72,39 +49,26 @@ jobs:
             trap '' HUP
 
             local sha="$1"
-            local ref="$2"
             cd /srv/collect-am
 
             # One deploy at a time; a second one waits for the first.
             exec 9>/tmp/collect-am-deploy.lock
             flock -w 1800 9 || { echo "✖ Another deploy is still running." >&2; exit 1; }
 
+            if [[ "$(git symbolic-ref --short HEAD)" != "dev" ]]; then
+              echo "✖ /srv/collect-am is not on dev." >&2; exit 1
+            fi
             if ! git diff --quiet HEAD --; then
-              echo "✖ /srv/collect-am has local changes; refusing to deploy:" >&2
+              echo "✖ /srv/collect-am has local changes; deploys only fast-forward:" >&2
               git status --short >&2; exit 1
             fi
 
-            if [[ "$ref" == "refs/heads/dev" || "$ref" == "dev" ]]; then
-              # `git fetch origin dev` updates origin/dev. A full refspec would not.
-              git fetch --quiet origin dev
-              git checkout --quiet dev
-              if ! git merge-base --is-ancestor "$sha" origin/dev; then
-                echo "✖ $sha is not on origin/dev." >&2; exit 1
-              fi
-              # An older commit than the checkout (a superseded run) is a no-op.
-              git merge --ff-only --quiet "$sha"
-            else
-              # Pull request: GitHub's merge ref is the commit CI tested (the PR
-              # merged into dev). Detach so the local dev branch stays put; the
-              # next push to dev checks it out again and fast-forwards.
-              git fetch --quiet origin "$ref"
-              local target
-              target="$(git rev-parse FETCH_HEAD)"
-              if [[ "$target" != "$sha" ]]; then
-                echo "▶ $ref is ${target:0:7}; CI tested ${sha:0:7}. Deploying the current merge."
-              fi
-              git checkout --quiet --detach "$target"
+            git fetch --quiet origin dev
+            if ! git merge-base --is-ancestor "$sha" origin/dev; then
+              echo "✖ $sha is not on origin/dev." >&2; exit 1
             fi
+            # An older commit than the checkout (a superseded run) is a no-op.
+            git merge --ff-only --quiet "$sha"
             echo "▶ Deploying $(git log -1 --format='%h %s')"
 
             docker compose up -d --build --remove-orphans
