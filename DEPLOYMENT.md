@@ -15,7 +15,7 @@ internet ──443──▶ caddy (proxy project) ──(web network)──▶ c
 | Compose project| `collect-am` (from the folder name)                 |
 | Containers     | `collect-am-db`, `collect-am-app`                   |
 | App            | `collect-am-app:3001` on the `web` network; `127.0.0.1:3001` on the host |
-| Postgres       | `127.0.0.1:5433` on the host, `db:5432` in compose  |
+| Postgres       | `127.0.0.1:5434` on the host (5433 is Eleven's), `db:5432` in compose  |
 | Data           | Docker volume `collect-am_pgdata`                   |
 
 The host ports are bound to loopback only, for checks and tools on the server.
@@ -93,8 +93,8 @@ Then edit `.env`:
 | `POSTGRES_USER` | `collectam` |
 | `POSTGRES_PASSWORD` | a generated hex secret (hex keeps it URL-safe) |
 | `POSTGRES_DB` | `collectam` |
-| `POSTGRES_PORT` | `5433` |
-| `DATABASE_URL` | `postgresql://collectam:<password>@localhost:5433/collectam` (for tools on the host; the container gets its own `db:5432` URL from compose) |
+| `POSTGRES_PORT` | `5434` (5433 is taken by Eleven's database) |
+| `DATABASE_URL` | `postgresql://collectam:<password>@localhost:5434/collectam` (for tools on the host; the container gets its own `db:5432` URL from compose) |
 | `APP_URL` | `https://collect-am.orololuwa.dev` |
 | `COOKIE_SECRET` | a generated secret |
 | `HONEYPOT_SECRET` | a generated secret |

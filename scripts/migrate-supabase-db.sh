@@ -84,7 +84,8 @@ docker compose exec -T db pg_restore --clean --if-exists --no-owner --no-privile
 
 echo "▶ Applying pending Prisma migrations (removes the Supabase-only columns)…"
 # Runs in the compose `migrate` service, so the host needs Docker but no Node.
-docker compose run --rm --build migrate
+# --no-deps: the database is already up; don't let `run` recreate it.
+docker compose run --rm --no-deps --build migrate
 
 echo "▶ Pointing saved templates at the Cloudinary copies of the placeholder logos…"
 # Saved templates, checkout pages and receipts copy the sample logo URLs into
