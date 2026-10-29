@@ -58,62 +58,217 @@ export default {
     pageTitle: "Vorlagen",
   },
   dashboard: {
-    activityFeed: {
-      description: "Aktuelle Aktivitäten in deiner Organisation",
-      empty: "Keine aktuellen Aktivitäten",
-      title: "Aktivitäts-Feed",
+    activity: {
+      checkoutPageCreated: "Checkout-Seite {{name}} wurde erstellt",
+      empty: "In den letzten 30 Tagen ist nichts passiert.",
+      invite: "Einladen",
+      memberJoined: "{{member}} ist der Organisation beigetreten",
+      payment: "{{customer}} hat {{amount}} über {{page}} bezahlt",
+      templateCreated: "Vorlage {{name}} wurde erstellt",
+      title: "Letzte Aktivitäten",
+    },
+    attention: {
+      allClear: "Gerade braucht nichts deine Aufmerksamkeit.",
+      expiring: "{{name}} schließt {{when}}",
+      expiringDetail: "Danach nimmt die Checkout-Seite keine Zahlungen mehr an",
+      failed_one: "{{count}} fehlgeschlagene Zahlung",
+      failed_other: "{{count}} fehlgeschlagene Zahlungen",
+      failedDetail: "In den letzten 7 Tagen",
+      noReceipt: "{{name}} hat keine Quittungsvorlage",
+      noReceiptDetail: "Zahlungen dort erhalten die Standardquittung",
+      open: "Öffnen",
+      review: "Ansehen",
+      title: "Braucht Aufmerksamkeit",
+      unsent_one: "{{count}} Quittung nicht gesendet",
+      unsent_other: "{{count}} Quittungen nicht gesendet",
+      unsentDetail:
+        "In den letzten 30 Tagen bezahlt, keine Quittung per E-Mail",
     },
     breadcrumb: "Dashboard",
-    charts: {
-      templateTimeline: {
-        title: "Vorlagen-Erstellungszeitlinie",
+    chart: {
+      current_one: "Letzter {{count}} Tag",
+      current_other: "Letzte {{count}} Tage",
+      description: "Erfolgreiche Zahlungen ohne Erstattungen",
+      empty: "In diesem Zeitraum gibt es noch keine Zahlungen.",
+      previous_one: "Vorheriger {{count}} Tag",
+      previous_other: "Vorherige {{count}} Tage",
+      summary_one:
+        "Eingenommener Betrag pro Tag am letzten {{count}} Tag. Höchstwert: {{amount}} am {{date}}.",
+      summary_other:
+        "Eingenommener Betrag pro Tag in den letzten {{count}} Tagen. Höchstwert: {{amount}} am {{date}}.",
+      title: "Einnahmen pro Tag",
+    },
+    header: {
+      currencyLabel: "Währung",
+      greeting: "Willkommen zurück, {{name}}",
+      greetingNoName: "Willkommen zurück",
+      newCheckoutPage: "Neue Checkout-Seite",
+      periodLabel: "Zeitraum",
+      periodOption_one: "{{count}} Tag",
+      periodOption_other: "{{count}} Tage",
+      summary_one:
+        "Das hat {{organizationName}} am letzten {{count}} Tag eingenommen.",
+      summary_other:
+        "Das hat {{organizationName}} in den letzten {{count}} Tagen eingenommen.",
+    },
+    kpis: {
+      average: {
+        note: "Pro erfolgreicher Zahlung",
+        title: "Durchschnittliche Zahlung",
       },
-      templateTypes: {
-        invoice: "Rechnung",
-        receipt: "Quittung",
-        resume: "Lebenslauf",
-        title: "Vorlagen nach Typ",
+      collected: {
+        noPrevious_one: "Nichts eingenommen am vorherigen {{count}} Tag",
+        noPrevious_other:
+          "Nichts eingenommen in den vorherigen {{count}} Tagen",
+        note_one: "gegenüber {{amount}} am vorherigen {{count}} Tag",
+        note_other: "gegenüber {{amount}} in den vorherigen {{count}} Tagen",
+        title: "Eingenommen",
+      },
+      label: "Kennzahlen",
+      payments: {
+        note: "{{failed}} fehlgeschlagen, {{refunded}} erstattet",
+        title: "Erfolgreiche Zahlungen",
+      },
+      receipts: {
+        allSent: "Alle Kunden haben ihre Quittung",
+        none: "In diesem Zeitraum noch keine Zahlungen",
+        title: "Gesendete Quittungen",
+        unsent_one: "{{count}} wartet auf den Versand",
+        unsent_other: "{{count}} warten auf den Versand",
+        value: "{{sent}} von {{total}}",
       },
     },
     pageTitle: "Dashboard",
-    recentTemplates: {
-      description: "Deine zuletzt aktualisierten Vorlagen",
+    recentPayments: {
+      columns: {
+        amount: "Betrag",
+        customer: "Kunde",
+        page: "Checkout-Seite",
+        status: "Status",
+        when: "Wann",
+      },
       empty:
-        "Noch keine Vorlagen. Erstelle deine erste Vorlage, um zu beginnen.",
-      title: "Aktuelle Vorlagen",
+        "Noch keine Zahlungen. Sie erscheinen hier, sobald Kunden bezahlen.",
+      statuses: {
+        canceled: "Abgebrochen",
+        failed: "Fehlgeschlagen",
+        partially_refunded: "Teilweise erstattet",
+        pending: "Ausstehend",
+        processing: "In Bearbeitung",
+        refunded: "Erstattet",
+        succeeded: "Erfolgreich",
+      },
+      title: "Letzte Zahlungen",
     },
-    stats: {
-      recentActivity: {
-        description: "Aktivitäten in den letzten 7 Tagen",
-        title: "Aktuelle Aktivität",
+    setup: {
+      done: "Erledigt",
+      intro:
+        "{{organizationName}} ist bereit. Die anderen Schritte sind optional: Erledige sie jetzt oder springe direkt zu deinem Dashboard.",
+      preview: {
+        average: {
+          label: "Durchschnittliche Zahlung",
+          note: "Was ein Kunde im Schnitt bezahlt",
+        },
+        collected: {
+          label: "Eingenommen",
+          note: "Geld aus erfolgreichen Zahlungen ohne Erstattungen",
+        },
+        receipts: {
+          label: "Gesendete Quittungen",
+          note: "Werden Kunden nach der Zahlung automatisch per E-Mail geschickt",
+        },
+        title: "Sobald Zahlungen eingehen",
       },
-      teamMembers: {
-        description: "Gesamtzahl der Teammitglieder",
-        title: "Teammitglieder",
+      progress: "{{done}} von {{total}} erledigt",
+      skip: "Einrichtung überspringen",
+      steps: {
+        checkoutPage: {
+          action: "Seite erstellen",
+          detail:
+            "Ein Link, den du für ein Produkt, eine Anzahlung oder eine Rechnung teilst.",
+          title: "Veröffentliche deine erste Checkout-Seite",
+        },
+        organization: {
+          action: "Einstellungen öffnen",
+          detail: "Deine Organisation ist eingerichtet und bereit.",
+          title: "Erstelle deine Organisation",
+        },
+        payment: {
+          action: "Checkout-Seiten öffnen",
+          detail: "Teile den Link deiner Checkout-Seite mit einem Kunden.",
+          title: "Nimm deine erste Zahlung an",
+        },
+        team: {
+          action: "Einladen",
+          detail:
+            "Lass dein Team gemeinsam mit dir Zahlungen und Dokumente verwalten.",
+          title: "Lade dein Team ein",
+        },
+        template: {
+          action: "Vorlage wählen",
+          detail:
+            "Kunden erhalten sie nach der Zahlung per E-Mail. Starte mit einer unserer Vorlagen.",
+          title: "Wähle eine Quittungsvorlage",
+        },
       },
-      templatesThisMonth: {
-        description: "Diesen Monat erstellt",
-        title: "Vorlagen diesen Monat",
-      },
-      totalTemplates: {
-        description: "Alle Vorlagen in deiner Organisation",
-        title: "Vorlagen gesamt",
+      title: "Einrichtung",
+      welcome: "Willkommen bei {{appName}}, {{name}}",
+      welcomeNoName: "Willkommen bei {{appName}}",
+    },
+    templates: {
+      edited: "bearbeitet {{when}}",
+      empty: "Noch keine Vorlagen.",
+      open: "Vorlagen öffnen",
+      summary_one: "{{count}} Vorlage · {{thisMonth}} diesen Monat hinzugefügt",
+      summary_other:
+        "{{count}} Vorlagen · {{thisMonth}} diesen Monat hinzugefügt",
+      title: "Dokumentvorlagen",
+      types: {
+        certificate_one: "Zertifikat",
+        certificate_other: "Zertifikate",
+        contract_one: "Vertrag",
+        contract_other: "Verträge",
+        deliveryNote_one: "Lieferschein",
+        deliveryNote_other: "Lieferscheine",
+        estimate_one: "Kostenschätzung",
+        estimate_other: "Kostenschätzungen",
+        form_one: "Formular",
+        form_other: "Formulare",
+        invoice_one: "Rechnung",
+        invoice_other: "Rechnungen",
+        label_one: "Etikett",
+        label_other: "Etiketten",
+        letter_one: "Brief",
+        letter_other: "Briefe",
+        orderConfirmation_one: "Auftragsbestätigung",
+        orderConfirmation_other: "Auftragsbestätigungen",
+        packingSlip_one: "Packzettel",
+        packingSlip_other: "Packzettel",
+        proposal_one: "Angebot (Projekt)",
+        proposal_other: "Angebote (Projekt)",
+        purchaseOrder_one: "Bestellung",
+        purchaseOrder_other: "Bestellungen",
+        quote_one: "Angebot",
+        quote_other: "Angebote",
+        receipt_one: "Quittung",
+        receipt_other: "Quittungen",
+        reportCards_one: "Zeugnis",
+        reportCards_other: "Zeugnisse",
+        resume_one: "Lebenslauf",
+        resume_other: "Lebensläufe",
+        salesOrder_one: "Kundenauftrag",
+        salesOrder_other: "Kundenaufträge",
+        statement_one: "Kontoauszug",
+        statement_other: "Kontoauszüge",
       },
     },
-    teamOverview: {
-      description: "{{count}} Teammitglied",
-      description_plural: "{{count}} Teammitglieder",
-      recent: {
-        title: "Aktuelle Mitglieder",
-      },
-      roles: {
-        admin: "Admin",
-        member: "Mitglied",
-        owner: "Besitzer",
-        title: "Nach Rolle",
-      },
-      title: "Team-Übersicht",
-      viewAll: "Alle Mitglieder anzeigen",
+    topPages: {
+      empty: "In diesem Zeitraum gab es auf keiner Checkout-Seite Zahlungen.",
+      lastPayment: "zuletzt {{when}}",
+      payments_one: "{{count}} Zahlung",
+      payments_other: "{{count}} Zahlungen",
+      title: "Top-Checkout-Seiten",
+      viewAll: "Alle ansehen",
     },
   },
   getHelp: {

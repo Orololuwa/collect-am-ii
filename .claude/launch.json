@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev-3002",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["react-router", "dev", "--port", "3002", "--strictPort"],
+      "port": 3002
+    }
+  ]
+}

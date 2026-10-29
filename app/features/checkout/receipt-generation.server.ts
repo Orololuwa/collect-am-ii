@@ -5,7 +5,7 @@ import {
   generateReceiptPreviewHTML,
 } from "~/features/templates/receipt/utils/html-generator-receipt.server";
 import type { TemplateSection } from "~/features/templates/shared/types";
-import { sendEmailViaMailgun } from "~/features/templates/shared/utils/email-sender.server";
+import { sendDocumentEmail } from "~/features/templates/shared/utils/email-sender.server";
 import { generatePDF } from "~/features/templates/shared/utils/pdf-generator.server";
 import type { Prisma, Receipt } from "~/generated/client";
 import { prisma } from "~/utils/database.server";
@@ -232,11 +232,13 @@ export async function sendReceiptEmailForReceiptInDatabaseById({
   const html = generateReceiptExportHTML(sections, globalStyles, colorPalette);
   const pdfBuffer = await generatePDF(html);
 
-  const result = await sendEmailViaMailgun({
-    from: process.env.MAIL_FROM ?? "Receipts <receipts@example.com>",
+  // Sent from EMAIL_FROM. The idempotency key stops a retried payment webhook
+  // from emailing the same receipt twice.
+  const result = await sendDocumentEmail({
     html: `<p>Your receipt is attached. Receipt #: <strong>${receipt.receiptNumber}</strong></p>`,
     pdfBuffer,
     pdfFilename: `receipt-${receipt.receiptNumber}.pdf`,
+    idempotencyKey: `receipt-email-${receipt.id}`,
     subject: `Your receipt ${receipt.receiptNumber}`,
     to,
   });

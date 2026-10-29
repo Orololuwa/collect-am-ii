@@ -1,4 +1,4 @@
-import { Copy, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Copy, ExternalLink, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
 import {
   data,
@@ -284,35 +284,31 @@ function CheckoutPageCardComponent({
           {page.paymentCount} payment{page.paymentCount === 1 ? "" : "s"} ·{" "}
           {page.viewCount} view{page.viewCount === 1 ? "" : "s"}
         </CardContent>
-        <CardFooter className="flex flex-nowrap items-center gap-1 border-t p-2">
+        {/* Wraps instead of overflowing when the grid makes the card narrow. */}
+        <CardFooter className="flex flex-wrap items-center gap-2 border-t p-2">
           <Button
-            className="h-8 shrink-0 gap-1.5 px-2"
+            className="min-w-fit flex-1"
             onClick={onEdit}
             size="sm"
             type="button"
-            variant="outline"
           >
-            <Pencil className="h-3.5 w-3.5" />
-            Edit
+            Open
+            <ArrowRight className="h-3.5 w-3.5" />
           </Button>
           <Button
             asChild
-            size="icon-sm"
-            title="Open checkout"
+            className="min-w-fit flex-1"
+            size="sm"
+            title="Visit the public checkout page"
             variant="outline"
           >
-            <a
-              className="h-8 shrink-0 gap-1.5 px-2 w-max"
-              href={publicPath}
-              rel="noreferrer"
-              target="_blank"
-            >
+            <a href={publicPath} rel="noreferrer" target="_blank">
               <ExternalLink className="h-3.5 w-3.5" />
-              <span>Open</span>
+              <span>Visit</span>
             </a>
           </Button>
           <Button
-            className="h-8 shrink-0 gap-1.5 px-2 w-max"
+            className="min-w-fit flex-1"
             onClick={async () => {
               const full =
                 typeof window !== "undefined"
@@ -320,7 +316,7 @@ function CheckoutPageCardComponent({
                   : publicPath;
               await navigator.clipboard.writeText(full);
             }}
-            size="icon-sm"
+            size="sm"
             title="Copy link"
             type="button"
             variant="outline"
@@ -329,7 +325,7 @@ function CheckoutPageCardComponent({
             <span>Copy</span>
           </Button>
           <Button
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
+            className="ml-auto shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
             disabled={busy}
             onClick={() => setOpen(true)}
             size="icon-sm"

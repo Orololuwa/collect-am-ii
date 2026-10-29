@@ -120,11 +120,19 @@ jobs:
 
   deploy:
     name: 🚀 Deploy
-    # Pushes to dev deploy to https://collect-am.orololuwa.dev once the checks pass.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    # Pushes to dev, and pull requests into dev from this repo, deploy to
+    # https://collect-am.orololuwa.dev once the checks pass. Fork PRs stay
+    # skipped so they never receive the deploy secrets.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/dev') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'dev' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     needs: [lint, type-check, vitest]
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
+    with:
+      git_ref: ${{ github.event_name == 'pull_request' && format('refs/pull/{0}/merge', github.event.pull_request.number) || 'refs/heads/dev' }}
+      deploy_sha: ${{ github.sha }}
 
   # playwright-chrome:
   #   name: 🎭 Playwright Chrome

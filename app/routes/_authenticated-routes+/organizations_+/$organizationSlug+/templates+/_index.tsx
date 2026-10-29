@@ -1,15 +1,22 @@
 import {
+  ArrowRight,
+  BadgeCheck,
+  Calculator,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Copy,
-  Edit,
   Eye,
+  FilePenLine,
   FileText,
   Loader2,
+  MessageSquareQuote,
+  Package,
   Plus,
   Receipt,
-  ShoppingBag,
+  ShoppingCart,
   Trash2,
+  Truck,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -221,52 +228,52 @@ export const meta: Route.MetaFunction = ({ loaderData }) => [
 
 const builderTypes = [
   {
-    icon: FileText,
+    icon: Calculator,
     label: "Estimate",
     value: "estimate",
   },
   {
-    icon: FileText,
+    icon: MessageSquareQuote,
     label: "Quote",
     value: "quote",
   },
   {
-    icon: FileText,
+    icon: ShoppingCart,
     label: "Purchase Order",
     value: "purchase-order",
   },
   {
-    icon: Receipt,
+    icon: FileText,
     label: "Invoice",
     value: "invoice",
   },
   {
-    icon: FileText,
+    icon: ClipboardList,
     label: "Sales Order",
     value: "sales-order",
   },
   {
-    icon: FileText,
+    icon: BadgeCheck,
     label: "Order Confirmation",
     value: "order-confirmation",
   },
   {
-    icon: FileText,
+    icon: Package,
     label: "Packing Slip",
     value: "packing-slip",
   },
   {
-    icon: FileText,
+    icon: Truck,
     label: "Delivery Note",
     value: "delivery-note",
   },
   {
-    icon: FileText,
+    icon: FilePenLine,
     label: "Contract",
     value: "contract",
   },
   {
-    icon: ShoppingBag,
+    icon: Receipt,
     label: "Receipt",
     value: "receipt",
   },
@@ -834,18 +841,19 @@ function TemplateGrid({
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1" />
-            <CardFooter className="gap-2">
+            {/* Wraps instead of overflowing when the grid makes the card narrow. */}
+            <CardFooter className="flex-wrap gap-2">
               <Button
-                className="flex-1"
+                className="min-w-fit flex-1"
                 data-testid={`template-edit-button-${template.id}`}
                 onClick={() => handleEdit(template.id)}
                 variant="default"
               >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
+                Open
+                <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
               <Button
-                className="flex-1"
+                className="min-w-fit flex-1"
                 data-testid={`template-duplicate-button-${template.id}`}
                 disabled={duplicatingTemplateId === template.id}
                 onClick={() => handleDuplicate(template.id)}
@@ -859,7 +867,7 @@ function TemplateGrid({
                 Duplicate
               </Button>
               <Button
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="ml-auto shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                 data-testid={`template-delete-button-${template.id}`}
                 onClick={() => handleDeleteClick(template)}
                 size="icon"

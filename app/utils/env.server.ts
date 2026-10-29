@@ -12,8 +12,6 @@ const schema = z.object({
   EMAIL_FROM: z.string().optional(),
   DATABASE_URL: z.string(),
   HONEYPOT_SECRET: z.string(),
-  MAILGUN_API_KEY: z.string().optional(),
-  MAILGUN_DOMAIN: z.string().optional(),
   MOCKS: z.literal("true").optional(),
   NODE_ENV: z.enum(["production", "development", "test"] as const),
   RESEND_API_KEY: z.string().optional(),

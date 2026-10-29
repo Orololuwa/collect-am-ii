@@ -1,30 +1,44 @@
-import {
-  ActivityIcon,
-  FileTextIcon,
-  TrendingUpIcon,
-  UsersIcon,
-} from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { data, href, useLoaderData, useParams } from "react-router";
+import { data, href, useLoaderData } from "react-router";
+import { z } from "zod";
 
 import type { Route } from "./+types/dashboard";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
-import { ActivityFeedComponent } from "~/features/organizations/dashboard/activity-feed";
-import { getDashboardData } from "~/features/organizations/dashboard/dashboard-helpers.server";
-import { RecentTemplatesComponent } from "~/features/organizations/dashboard/recent-templates";
-import { StatCardComponent } from "~/features/organizations/dashboard/stat-card";
-import { TeamOverviewComponent } from "~/features/organizations/dashboard/team-overview";
-import { TemplateStatsChartComponent } from "~/features/organizations/dashboard/template-stats-chart";
-import { TemplateTypeChartComponent } from "~/features/organizations/dashboard/template-type-chart";
+import { DISMISS_SETUP_GUIDE_INTENT } from "~/features/organizations/dashboard/dashboard-constants";
+import { DashboardHeader } from "~/features/organizations/dashboard/dashboard-header";
+import {
+  dismissSetupGuide,
+  getDashboardData,
+} from "~/features/organizations/dashboard/dashboard-helpers.server";
+import {
+  NeedsAttention,
+  RecentActivity,
+  RecentPayments,
+  TemplatesSummary,
+} from "~/features/organizations/dashboard/dashboard-lists";
+import { parseDashboardPeriod } from "~/features/organizations/dashboard/dashboard-metrics";
+import {
+  CollectedChart,
+  DashboardKpis,
+  TopCheckoutPages,
+} from "~/features/organizations/dashboard/dashboard-overview";
+import { SetupChecklist } from "~/features/organizations/dashboard/setup-checklist";
 import { organizationMembershipContext } from "~/features/organizations/organizations-middleware.server";
 import { getPageTitle } from "~/utils/get-page-title.server";
+import { validateFormData } from "~/utils/validate-form-data.server";
 
-export async function loader({ params, context }: Route.LoaderArgs) {
-  const { organization, headers } = context.get(organizationMembershipContext);
+export async function loader({ request, params, context }: Route.LoaderArgs) {
+  const { organization, user, headers } = context.get(
+    organizationMembershipContext,
+  );
   const i18n = getInstance(context);
   const t = i18n.t.bind(i18n);
+  const searchParams = new URL(request.url).searchParams;
 
-  const dashboardData = await getDashboardData(organization.id);
+  const dashboardData = await getDashboardData({
+    organizationId: organization.id,
+    period: parseDashboardPeriod(searchParams.get("period")),
+    requestedCurrency: searchParams.get("currency"),
+  });
 
   return data(
     {
@@ -35,71 +49,98 @@ export async function loader({ params, context }: Route.LoaderArgs) {
         }),
       },
       dashboardData,
+      organizationName: organization.name,
       pageTitle: getPageTitle(t, "organizations:dashboard.pageTitle"),
+      userName: user.name,
     },
     { headers },
   );
+}
+
+const dashboardActionSchema = z.object({
+  intent: z.literal(DISMISS_SETUP_GUIDE_INTENT),
+});
+
+export async function action({ request, context }: Route.ActionArgs) {
+  const { organization, headers } = context.get(organizationMembershipContext);
+
+  const result = await validateFormData(request, dashboardActionSchema);
+  if (!result.success) {
+    return result.response;
+  }
+
+  // The only intent: skip the setup guide and show the full dashboard.
+  await dismissSetupGuide(organization.id);
+  return data({}, { headers });
 }
 
 export const meta: Route.MetaFunction = ({ loaderData }) => [
   { title: loaderData?.pageTitle },
 ];
 
-export default function OrganizationDashboardRoute() {
-  const { dashboardData } = useLoaderData<typeof loader>();
-  const params = useParams();
-  const { t } = useTranslation("organizations", {
-    keyPrefix: "dashboard",
-  });
+export default function OrganizationDashboardRoute({
+  params,
+}: Route.ComponentProps) {
+  const { dashboardData, organizationName, userName } =
+    useLoaderData<typeof loader>();
+  const organizationSlug = params.organizationSlug;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 px-4 py-4 md:py-6 lg:px-6">
-      {/* Stat Cards */}
-      <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCardComponent
-          description={t("stats.totalTemplates.description")}
-          icon={FileTextIcon}
-          title={t("stats.totalTemplates.title")}
-          value={dashboardData.templates.total}
+    <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+      {dashboardData.isFirstRun ? (
+        <SetupChecklist
+          currency={dashboardData.currency}
+          organizationName={organizationName}
+          organizationSlug={organizationSlug}
+          setup={dashboardData.setup}
+          userName={userName}
         />
-        <StatCardComponent
-          description={t("stats.teamMembers.description")}
-          icon={UsersIcon}
-          title={t("stats.teamMembers.title")}
-          value={dashboardData.team.total}
-        />
-        <StatCardComponent
-          description={t("stats.templatesThisMonth.description")}
-          icon={TrendingUpIcon}
-          title={t("stats.templatesThisMonth.title")}
-          value={dashboardData.templates.thisMonth}
-        />
-        <StatCardComponent
-          description={t("stats.recentActivity.description")}
-          icon={ActivityIcon}
-          title={t("stats.recentActivity.title")}
-          value={dashboardData.activity.length}
-        />
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid auto-rows-min gap-4 md:grid-cols-2">
-        <TemplateStatsChartComponent data={dashboardData.templates.timeline} />
-        <TemplateTypeChartComponent data={dashboardData.templates.byType} />
-      </div>
-
-      {/* Content Section */}
-      <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <RecentTemplatesComponent
-          organizationSlug={params.organizationSlug ?? ""}
-          templates={dashboardData.templates.recent}
-        />
-        <TeamOverviewComponent
-          organizationSlug={params.organizationSlug ?? ""}
-          team={dashboardData.team}
-        />
-        <ActivityFeedComponent activity={dashboardData.activity} />
-      </div>
+      ) : (
+        <>
+          <DashboardHeader
+            currencies={dashboardData.currencies}
+            currency={dashboardData.currency}
+            organizationName={organizationName}
+            organizationSlug={organizationSlug}
+            period={dashboardData.period}
+            userName={userName}
+          />
+          <DashboardKpis
+            currency={dashboardData.currency}
+            period={dashboardData.period}
+            stats={dashboardData.stats}
+          />
+          <div className="flex flex-wrap gap-4">
+            <CollectedChart
+              currency={dashboardData.currency}
+              daily={dashboardData.stats.daily}
+              period={dashboardData.period}
+            />
+            <TopCheckoutPages
+              currency={dashboardData.currency}
+              organizationSlug={organizationSlug}
+              pages={dashboardData.stats.topPages}
+            />
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <RecentPayments payments={dashboardData.recentPayments} />
+            <NeedsAttention
+              attention={dashboardData.attention}
+              organizationSlug={organizationSlug}
+            />
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <TemplatesSummary
+              organizationSlug={organizationSlug}
+              templates={dashboardData.templates}
+            />
+            <RecentActivity
+              activity={dashboardData.activity}
+              organizationSlug={organizationSlug}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

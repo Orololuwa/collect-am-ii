@@ -51,7 +51,8 @@ const quillOptions: ReactQuillProps["modules"] = {
 
 // Form validation schema
 const emailFormSchema = z.object({
-  from: z.string().email("Invalid email address"),
+  // Optional: the server uses the signed-in user's email when it's empty.
+  replyTo: z.union([z.string().email("Invalid email address"), z.literal("")]),
   to: z.string().email("Invalid email address"),
   subject: z.string().min(1, "Subject is required"),
   body: z.string(),
@@ -77,7 +78,7 @@ export function SendEmailModal({
   >({});
 
   const [formData, setFormData] = useState<EmailFormData>({
-    from: "",
+    replyTo: "",
     to: "",
     subject: "",
     body: "",
@@ -102,7 +103,7 @@ export function SendEmailModal({
   useEffect(() => {
     if (open) {
       setFormData({
-        from: "",
+        replyTo: "",
         to: "",
         subject: "",
         body: "",
@@ -168,7 +169,7 @@ export function SendEmailModal({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: formData.from,
+            replyTo: formData.replyTo,
             to: formData.to,
             subject: formData.subject,
             body: formData.body,
@@ -215,18 +216,26 @@ export function SendEmailModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* From Field */}
+          {/* Reply-to Field */}
           <div className="space-y-2">
-            <Label htmlFor="email-from">From</Label>
+            <Label htmlFor="email-reply-to">Reply-to (optional)</Label>
             <Input
-              id="email-from"
-              onChange={(e) => handleFieldChange("from", e.target.value)}
-              placeholder="sender@example.com"
+              aria-describedby="email-reply-to-description"
+              id="email-reply-to"
+              onChange={(e) => handleFieldChange("replyTo", e.target.value)}
+              placeholder="you@yourcompany.com"
               type="email"
-              value={formData.from}
+              value={formData.replyTo}
             />
-            {formErrors.from && (
-              <p className="text-sm text-destructive">{formErrors.from}</p>
+            <p
+              className="text-muted-foreground text-sm"
+              id="email-reply-to-description"
+            >
+              The email is sent in your organization's name. Replies go to this
+              address, or to your account email if you leave it empty.
+            </p>
+            {formErrors.replyTo && (
+              <p className="text-sm text-destructive">{formErrors.replyTo}</p>
             )}
           </div>
 

@@ -101,12 +101,11 @@ Then edit `.env`:
 | `API_KEY_ENCRYPTION_KEY` | a generated secret. Optional (falls back to `COOKIE_SECRET`), but set it so rotating the cookie secret doesn't break stored API keys. Never change it once keys exist. |
 | `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` | from the Auth0 application |
 | `CLOUDINARY_URL` | `cloudinary://<api_key>:<api_secret>@df1fw15ei` |
-| `RESEND_API_KEY`, `EMAIL_FROM` | Resend key and a sender on a verified domain |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Resend key and a sender on a verified domain. Used for invites, documents sent from templates, and checkout receipts. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | live Stripe keys (required) |
 | `STRIPE_WEBHOOK_SECRET_CHECKOUT` | signing secret of the checkout webhook endpoint |
 | `PAYSTACK_SECRET_KEY` | live Paystack key |
 | `ALLOW_INDEXING` | `true` to let search engines index the site |
-| `MAILGUN_API_KEY`, `MAILGUN_DOMAIN` | only if you send template emails through Mailgun |
 
 Remove the mock values the example file comes with. `NODE_ENV` and `PORT` are
 set by `docker-compose.yml`.
@@ -191,13 +190,16 @@ https://collect-am.orololuwa.dev and sign in. Ports 80 and 443 must be open
 
 ## Continuous deployment
 
-Every push to `dev` runs the checks in `.github/workflows/ci.yml` (Biome,
-TypeScript, Vitest). When they pass, it calls
+Every push to `dev`, and every pull request targeting `dev` from this
+repository, runs the checks in `.github/workflows/ci.yml` (Biome, TypeScript,
+Vitest). When they pass, it calls
 [.github/workflows/deploy.yml](./.github/workflows/deploy.yml), which SSHes into
 the server and:
 
-1. fast-forwards `/srv/collect-am` to the pushed commit (it stops if the
-   checkout has local changes or isn't on `dev`),
+1. updates `/srv/collect-am` to the commit that passed CI. A push fast-forwards
+   local `dev`. A pull request checks out GitHub's merge ref detached, so the
+   local `dev` branch stays put until the next push. It stops if the checkout
+   has local changes,
 2. runs `docker compose up -d --build` (migrations run first, in `migrate`),
 3. waits for `collect-am-app` to report healthy, printing its logs if not,
 4. prunes old images,

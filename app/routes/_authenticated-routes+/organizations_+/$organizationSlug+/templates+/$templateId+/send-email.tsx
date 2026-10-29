@@ -1,17 +1,25 @@
 import { z } from "zod";
 
 import type { Route } from "./+types/send-email";
+import { getInstance } from "~/features/localization/i18next-middleware.server";
 import { organizationMembershipContext } from "~/features/organizations/organizations-middleware.server";
 import { getTemplateById } from "~/features/templates/shared/templates";
 import { retrieveTemplateFromDatabaseById } from "~/features/templates/shared/templates-model.server";
-import { sendEmailViaMailgun } from "~/features/templates/shared/utils/email-sender.server";
+import {
+  getDocumentSender,
+  sendDocumentEmail,
+} from "~/features/templates/shared/utils/email-sender.server";
 import { generateExportHTML } from "~/features/templates/shared/utils/html-generator.server";
 import { mergeDataIntoTemplate } from "~/features/templates/shared/utils/merge-template-data.server";
 import { generatePDF } from "~/features/templates/shared/utils/pdf-generator.server";
 import { validateJson } from "~/utils/validate-json.server";
 
 const sendEmailSchema = z.object({
-  from: z.string().email("Invalid email address"),
+  // Emails are sent from the app's verified address on the organization's
+  // behalf; replies go here (the sender's account email when left empty).
+  replyTo: z
+    .union([z.string().email("Invalid email address"), z.literal("")])
+    .optional(),
   to: z.string().email("Invalid email address"),
   subject: z.string().min(1, "Subject is required"),
   body: z.string(),
@@ -22,7 +30,9 @@ const sendEmailSchema = z.object({
 });
 
 export async function action({ request, context, params }: Route.ActionArgs) {
-  const { organization, headers } = context.get(organizationMembershipContext);
+  const { organization, user, headers } = context.get(
+    organizationMembershipContext,
+  );
   const typedParams = params as {
     organizationSlug: string;
     templateId: string;
@@ -79,9 +89,13 @@ export async function action({ request, context, params }: Route.ActionArgs) {
 
     const pdfBuffer = await generatePDF(html);
 
-    // Send email via Mailgun
-    const emailResult = await sendEmailViaMailgun({
-      from: body.from,
+    // Send email via Resend
+    const emailResult = await sendDocumentEmail({
+      from: getDocumentSender({
+        appName: getInstance(context).t("translation:appName"),
+        organizationName: organization.name,
+      }),
+      replyTo: body.replyTo || user.email,
       to: body.to,
       subject: body.subject,
       html: body.body,

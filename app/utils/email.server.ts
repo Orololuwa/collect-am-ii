@@ -51,24 +51,52 @@ const resendSuccessSchema = z.object({
   id: z.string(),
 });
 
+export type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+};
+
 export async function sendEmail({
   react,
+  from = process.env.EMAIL_FROM || "onboarding@resend.dev",
+  replyTo,
+  attachments,
+  idempotencyKey,
   ...options
 }: {
   to: string;
   subject: string;
+  /**
+   * Defaults to EMAIL_FROM. Resend only delivers from a domain verified in the
+   * Resend account; the test sender (onboarding@resend.dev) can only email the
+   * Resend account owner.
+   */
+  from?: string;
+  /** Where replies go, e.g. the person sending a document. */
+  replyTo?: string;
+  attachments?: EmailAttachment[];
+  /**
+   * Resend ignores a repeat request with the same key for 24 hours, so a
+   * retried job doesn't send the same email twice.
+   */
+  idempotencyKey?: string;
 } & (
   | { html: string; text: string; react?: never }
   | { react: ReactElement; html?: never; text?: never }
 )) {
-  // Resend only delivers from a verified domain. The test sender can email
-  // the Resend account owner until EMAIL_FROM uses that domain.
-  const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
-
   const email = {
     from,
     ...options,
     ...(react ? await renderReactEmail(react) : {}),
+    ...(replyTo ? { reply_to: replyTo } : {}),
+    ...(attachments?.length
+      ? {
+          attachments: attachments.map(({ filename, content }) => ({
+            content: content.toString("base64"),
+            filename,
+          })),
+        }
+      : {}),
   };
 
   // feel free to remove this condition once you've set up resend
@@ -80,7 +108,10 @@ export async function sendEmail({
       );
       console.error(
         `Would have sent the following email:`,
-        JSON.stringify(email),
+        JSON.stringify({
+          ...email,
+          attachments: attachments?.map(({ filename }) => filename),
+        }),
       );
     }
 
@@ -95,6 +126,7 @@ export async function sendEmail({
     headers: {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
+      ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
     },
     method: "POST",
   });
@@ -108,7 +140,7 @@ export async function sendEmail({
   const parsedData = resendSuccessSchema.safeParse(data);
 
   if (response.ok && parsedData.success) {
-    return { data: parsedData, status: "success" } as const;
+    return { data: parsedData.data, status: "success" } as const;
   }
 
   return {
