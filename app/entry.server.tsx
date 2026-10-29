@@ -107,7 +107,10 @@ export default async function handleRequest(
 
           responseHeaders.set("Content-Type", "text/html");
 
-          // Configure Content Security Policy with the nonce
+          // Configure Content Security Policy with the nonce.
+          // frame-ancestors allowlists who may embed the app. X-Frame-Options
+          // cannot name another origin, so it is omitted. COOP same-origin
+          // would still refuse a cross-origin parent such as the portfolio.
           contentSecurity(responseHeaders, {
             contentSecurityPolicy: {
               directives: {
@@ -129,11 +132,21 @@ export default async function handleRequest(
                   // Inline event handlers with nonce
                   "script-src-attr": [`'nonce-${nonce}'`],
                 },
+                navigation: {
+                  "frame-ancestors": [
+                    "'self'",
+                    "https://orololuwa.dev",
+                    "https://www.orololuwa.dev",
+                    "http://localhost:3000",
+                  ],
+                },
               },
               // Report-only in dev/test, enforce in production
               reportOnly: MODE !== "production",
             },
             crossOriginEmbedderPolicy: false,
+            crossOriginOpenerPolicy: "unsafe-none",
+            xFrameOptions: false,
           });
 
           resolve(
