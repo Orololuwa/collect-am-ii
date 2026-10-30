@@ -10,6 +10,11 @@ export const DEAL_EVENT_TYPES = [
   "dealWon",
   "dealLost",
   "dealCancelled",
+  "documentViewed",
+  "changesProposed",
+  "proposalApproved",
+  "proposalRejected",
+  "shareLinkReset",
 ] as const;
 export type DealEventType = (typeof DEAL_EVENT_TYPES)[number];
 
@@ -22,6 +27,10 @@ export const DECLINE_DOCUMENT_INTENT = "declineDocument";
 export const RECORD_PAYMENT_INTENT = "recordPayment";
 export const POST_MESSAGE_INTENT = "postMessage";
 export const CLOSE_DEAL_INTENT = "closeDeal";
+export const APPROVE_PROPOSAL_INTENT = "approveProposal";
+export const REJECT_PROPOSAL_INTENT = "rejectProposal";
+export const RESET_SHARE_LINK_INTENT = "resetShareLink";
+export const PROPOSE_CHANGES_INTENT = "proposeChanges";
 
 export const DEALS_PAGE_SIZE = 25;
 export const MAX_MESSAGE_LENGTH = 2000;
@@ -81,6 +90,11 @@ export const EVENT_KEYS = {
   documentRevised: "events.documentRevised",
   documentSent: "events.documentSent",
   paymentRecorded: "events.paymentRecorded",
+  documentViewed: "events.documentViewed",
+  changesProposed: "events.changesProposed",
+  proposalApproved: "events.proposalApproved",
+  proposalRejected: "events.proposalRejected",
+  shareLinkReset: "events.shareLinkReset",
 } as const satisfies Record<DealEventType, string>;
 
 export const ERROR_KEYS = {
@@ -94,4 +108,7 @@ export const ERROR_KEYS = {
   notCurrentStep: "errors.notCurrentStep",
   notPaymentStep: "errors.notPaymentStep",
   workflowNotFound: "errors.workflowNotFound",
+  versionChanged: "errors.versionChanged",
+  proposalNotFound: "errors.proposalNotFound",
+  noItems: "errors.noItems",
 } as const;

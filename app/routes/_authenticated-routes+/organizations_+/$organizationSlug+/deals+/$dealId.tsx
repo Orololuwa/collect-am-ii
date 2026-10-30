@@ -4,6 +4,7 @@ import type { Route } from "./+types/$dealId";
 import type { DealView } from "~/features/deals/components/deal-detail";
 import { DealDetail } from "~/features/deals/components/deal-detail";
 import { parseDealItems } from "~/features/deals/deal-items";
+import { createDealShareUrl } from "~/features/deals/deal-share-link.server";
 import { dealDetailAction } from "~/features/deals/deals-action.server";
 import type { DealEventType } from "~/features/deals/deals-constants";
 import {
@@ -85,6 +86,9 @@ export async function loader({ params, context }: Route.LoaderArgs) {
         document?.versions.find(
           (version) => version.id === document.acceptedVersionId,
         ) ?? document?.versions.find((version) => version.state === "current");
+      const proposal = document?.versions.find(
+        (version) => version.state === "proposed",
+      );
       return {
         amountDueMinor: step.amountDueMinor,
         amountPaidMinor: step.amountPaidMinor,
@@ -105,6 +109,18 @@ export async function loader({ params, context }: Route.LoaderArgs) {
                 dueAt: document.dueAt,
                 id: document.id,
                 number: document.number,
+                proposal: proposal
+                  ? {
+                      createdAt: proposal.createdAt,
+                      id: proposal.id,
+                      items: parseDealItems(proposal.items),
+                      note: proposal.note,
+                      subtotalMinor: proposal.subtotalMinor,
+                      taxMinor: proposal.taxMinor,
+                      totalMinor: proposal.totalMinor,
+                      version: proposal.version,
+                    }
+                  : null,
                 sentAt: document.sentAt,
                 status: document.status,
                 type: document.type,
@@ -122,6 +138,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
         validityDays: step.validityDays,
       };
     }),
+    shareUrl: createDealShareUrl(deal),
     title: deal.title,
     workflowName: deal.workflowName,
   };

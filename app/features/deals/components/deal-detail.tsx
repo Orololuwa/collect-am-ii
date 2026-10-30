@@ -1,10 +1,13 @@
 import {
   CheckIcon,
   ChevronDownIcon,
+  CopyIcon,
   CreditCardIcon,
   DownloadIcon,
+  ExternalLinkIcon,
   EyeIcon,
   FileTextIcon,
+  Link2Icon,
   PencilIcon,
   ReceiptIcon,
   SendIcon,
@@ -13,12 +16,13 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { href, useFetcher } from "react-router";
+import { href, useFetcher, useRevalidator } from "react-router";
 
 import type { DealLineItem } from "../deal-items";
 import type { DealEventType } from "../deals-constants";
 import {
   ACCEPT_DOCUMENT_INTENT,
+  APPROVE_PROPOSAL_INTENT,
   CLOSE_DEAL_INTENT,
   DECLINE_DOCUMENT_INTENT,
   DOCUMENT_TYPE_KEYS,
@@ -28,7 +32,9 @@ import {
   PAYMENT_METHODS,
   POST_MESSAGE_INTENT,
   RECORD_PAYMENT_INTENT,
+  REJECT_PROPOSAL_INTENT,
   RESEND_DOCUMENT_INTENT,
+  RESET_SHARE_LINK_INTENT,
   REVISE_DOCUMENT_INTENT,
   SEND_DOCUMENT_INTENT,
 } from "../deals-constants";
@@ -100,6 +106,17 @@ export type DealDocumentView = {
   acceptedByName: string;
   declineReason: string;
   versionCount: number;
+  /** A change the customer suggested on the share link, awaiting review. */
+  proposal: {
+    id: string;
+    version: number;
+    items: DealLineItem[];
+    note: string;
+    subtotalMinor: number;
+    taxMinor: number;
+    totalMinor: number;
+    createdAt: Date;
+  } | null;
   current: {
     version: number;
     items: DealLineItem[];
@@ -128,6 +145,7 @@ export type DealStepView = {
 export type DealView = {
   id: string;
   title: string;
+  shareUrl: string;
   status: DealStatus;
   currency: string;
   workflowName: string;
@@ -217,7 +235,11 @@ function useOnSuccess(
   }, [fetcher.state, fetcher.data, submitted, onDone]);
 }
 
-function StepsProgress({ steps }: { steps: DealStepView[] }) {
+export function StepsProgress({
+  steps,
+}: {
+  steps: Array<Pick<DealStepView, "id" | "kind" | "name" | "status">>;
+}) {
   const { t } = useTranslation("deals", { keyPrefix: "detail" });
   return (
     <nav aria-label={t("steps")} className="overflow-x-auto">
@@ -542,7 +564,7 @@ function CurrentDocument({
             {t("draftHint", { email: deal.customer.email })}
           </p>
         ) : null}
-        {awaitingAnswer ? (
+        {awaitingAnswer && !document.proposal ? (
           <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm">
             {t("awaitingHint", { name: deal.customer.name })}
           </p>
@@ -561,6 +583,15 @@ function CurrentDocument({
               name: document.acceptedByName,
             })}
           </p>
+        ) : null}
+
+        {document.proposal && !editing ? (
+          <ProposalReview
+            currency={deal.currency}
+            customerName={deal.customer.name}
+            document={document}
+            proposal={document.proposal}
+          />
         ) : null}
 
         {editing ? (
@@ -642,6 +673,170 @@ function CurrentDocument({
       />
     </Card>
   );
+}
+
+function ProposalReview({
+  document,
+  proposal,
+  currency,
+  customerName,
+}: {
+  document: DealDocumentView;
+  proposal: NonNullable<DealDocumentView["proposal"]>;
+  currency: string;
+  customerName: string;
+}) {
+  const { t, i18n } = useTranslation("deals", { keyPrefix: "detail" });
+  const money = (amountMinor: number) =>
+    formatMoney({ amountMinor, currency, locale: i18n.language });
+  return (
+    <div className="space-y-3 rounded-xl border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-400/30 dark:bg-amber-400/10">
+      <div className="space-y-1">
+        <p className="font-medium">
+          {t("proposalTitle", { name: customerName })}
+        </p>
+        <p className="text-muted-foreground text-sm">
+          {t("proposalDescription")}
+        </p>
+        {proposal.note ? (
+          <p className="whitespace-pre-line text-sm">
+            {t("proposalNote", { note: proposal.note })}
+          </p>
+        ) : null}
+      </div>
+      <DealItemsTable
+        currency={currency}
+        items={proposal.items}
+        totals={proposal}
+      />
+      <p className="text-muted-foreground text-sm">
+        {t("proposalTotal", {
+          previous: money(document.current.totalMinor),
+          total: money(proposal.totalMinor),
+        })}
+      </p>
+      <div className="flex flex-wrap justify-end gap-2">
+        <IntentButton
+          fields={{ versionId: proposal.id }}
+          intent={REJECT_PROPOSAL_INTENT}
+        >
+          {t("rejectProposal")}
+        </IntentButton>
+        <IntentButton
+          fields={{ versionId: proposal.id }}
+          intent={APPROVE_PROPOSAL_INTENT}
+          pendingLabel={t("sending")}
+          variant="default"
+        >
+          <CheckIcon aria-hidden="true" />
+          {t("approveProposal")}
+        </IntentButton>
+      </div>
+    </div>
+  );
+}
+
+function ShareLink({ deal }: { deal: DealView }) {
+  const { t } = useTranslation("deals", { keyPrefix: "detail" });
+  const fetcher = useFetcher();
+  const [copied, setCopied] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const id = useId();
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(deal.shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access can be refused; the link stays selectable.
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Link2Icon aria-hidden="true" className="size-4" />
+          {t("shareLink")}
+        </CardTitle>
+        <CardDescription>{t("shareLinkDescription")}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Input
+          aria-label={t("shareLink")}
+          className="font-mono text-xs"
+          id={`${id}-link`}
+          onFocus={(event) => event.currentTarget.select()}
+          readOnly
+          value={deal.shareUrl}
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={copy} size="sm" type="button">
+            {copied ? (
+              <CheckIcon aria-hidden="true" />
+            ) : (
+              <CopyIcon aria-hidden="true" />
+            )}
+            {copied ? t("copied") : t("copyLink")}
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <a href={deal.shareUrl} rel="noreferrer" target="_blank">
+              <ExternalLinkIcon aria-hidden="true" />
+              {t("openLink")}
+            </a>
+          </Button>
+          <Button
+            onClick={() => setResetting(true)}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            {t("resetLink")}
+          </Button>
+        </div>
+      </CardContent>
+      <AlertDialog onOpenChange={setResetting} open={resetting}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("resetTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("resetDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                fetcher.submit(
+                  { intent: RESET_SHARE_LINK_INTENT },
+                  { method: "POST" },
+                )
+              }
+            >
+              {t("confirmReset")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
+  );
+}
+
+/** Reloads the deal every few seconds while the tab is visible, so customer answers show up. */
+function usePolling() {
+  const revalidator = useRevalidator();
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (
+        document.visibilityState === "visible" &&
+        revalidator.state === "idle"
+      ) {
+        void revalidator.revalidate();
+      }
+    }, 10_000);
+    return () => window.clearInterval(timer);
+  }, [revalidator]);
 }
 
 function PaymentStep({ deal, step }: { deal: DealView; step: DealStepView }) {
@@ -877,7 +1072,7 @@ function Messages({ deal }: { deal: DealView }) {
                   </span>
                   <span className="text-muted-foreground text-xs">
                     {(mine ? message.userName : null) ??
-                      (mine ? t("you") : t("customer"))}{" "}
+                      (mine ? t("you") : deal.customer.name)}{" "}
                     · {formatRelativeTime(message.createdAt, i18n.language)}
                   </span>
                 </li>
@@ -977,6 +1172,7 @@ export function DealDetail({
   const label = useDocumentLabel();
   const formatDate = useFormatDate();
   const [previewId, setPreviewId] = useState<string | null>(null);
+  usePolling();
   const activeStep = deal.steps.find((step) => step.status === "active");
   const linksFor = (documentId: string): DocumentLinks => {
     const params = { dealId: deal.id, documentId, organizationSlug };
@@ -1080,6 +1276,7 @@ export function DealDetail({
               ) : null}
             </CardContent>
           </Card>
+          <ShareLink deal={deal} />
           <Messages deal={deal} />
           <Activity deal={deal} />
         </div>

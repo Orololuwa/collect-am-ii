@@ -9,13 +9,17 @@ import {
 } from "./deal-items";
 import {
   ACCEPT_DOCUMENT_INTENT,
+  APPROVE_PROPOSAL_INTENT,
   CLOSE_DEAL_INTENT,
   DECLINE_DOCUMENT_INTENT,
   MAX_MESSAGE_LENGTH,
   PAYMENT_METHODS,
   POST_MESSAGE_INTENT,
+  PROPOSE_CHANGES_INTENT,
   RECORD_PAYMENT_INTENT,
+  REJECT_PROPOSAL_INTENT,
   RESEND_DOCUMENT_INTENT,
+  RESET_SHARE_LINK_INTENT,
   REVISE_DOCUMENT_INTENT,
   SEND_DOCUMENT_INTENT,
   START_DEAL_INTENT,
@@ -146,4 +150,63 @@ export const postMessageFormSchema = z.object({
 export const closeDealFormSchema = z.object({
   intent: z.literal(CLOSE_DEAL_INTENT),
   status: z.enum(["lost", "cancelled"]),
+});
+
+const quantity = z
+  .number()
+  .min(0)
+  .max(MAX_ITEM_QUANTITY)
+  .transform(roundQuantity);
+
+export const proposedChangesSchema = z.object({
+  additions: z
+    .array(z.object({ productId: z.string().min(1), quantity }))
+    .max(MAX_DEAL_ITEMS),
+  quantities: z.record(z.string().regex(/^\d{1,3}$/), quantity),
+});
+
+/** The customer accepting a document on the share link. */
+export const customerAcceptFormSchema = z.object({
+  acceptedByName: z
+    .string({ message: "dealRoom:accept.nameRequired" })
+    .trim()
+    .min(2, { message: "dealRoom:accept.nameRequired" })
+    .max(120),
+  agree: z.literal("on", { message: "dealRoom:accept.agreeRequired" }),
+  documentId: z.string().min(1),
+  intent: z.literal(ACCEPT_DOCUMENT_INTENT),
+  versionId: z.string().min(1),
+});
+
+/** The customer suggesting different lines on the share link. */
+export const proposeChangesFormSchema = z.object({
+  changes: z
+    .string()
+    .transform((value, context) => {
+      try {
+        return JSON.parse(value) as unknown;
+      } catch {
+        context.addIssue({ code: "custom", message: "Invalid changes" });
+        return z.NEVER;
+      }
+    })
+    .pipe(proposedChangesSchema),
+  documentId: z.string().min(1),
+  intent: z.literal(PROPOSE_CHANGES_INTENT),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .transform(normalizeNewlines)
+    .optional()
+    .default(""),
+});
+
+export const proposalFormSchema = z.object({
+  intent: z.enum([APPROVE_PROPOSAL_INTENT, REJECT_PROPOSAL_INTENT]),
+  versionId: z.string().min(1),
+});
+
+export const resetShareLinkFormSchema = z.object({
+  intent: z.literal(RESET_SHARE_LINK_INTENT),
 });

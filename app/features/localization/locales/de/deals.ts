@@ -146,7 +146,7 @@ export default {
     draftHint:
       "Dieses Dokument wurde noch nicht gesendet. Prüfe die Positionen und sende es dann an {{email}}.",
     awaitingHint:
-      "Wartet auf die Antwort von {{name}}. Bis der Freigabelink bereit ist, erfasse die Antwort hier.",
+      "Wartet auf die Antwort von {{name}} über den Freigabelink. Antwortet er anders, erfasse es hier.",
     preview: "Vorschau",
     downloadPdf: "PDF",
     editItems: "Positionen bearbeiten",
@@ -194,6 +194,24 @@ export default {
     versions_other: "{{count}} Versionen",
     activity: "Aktivität",
     previewTitle: "Vorschau: {{type}}",
+    shareLink: "Freigabelink",
+    shareLinkDescription:
+      "Wer diesen Link hat, sieht die Dokumente des Deals, kann sie annehmen, Änderungen vorschlagen und dir schreiben. Er steht in jeder E-Mail, die du sendest.",
+    copyLink: "Link kopieren",
+    copied: "Kopiert",
+    openLink: "Öffnen",
+    resetLink: "Link zurücksetzen",
+    resetTitle: "Freigabelink zurücksetzen?",
+    resetDescription:
+      "Der aktuelle Link funktioniert sofort nicht mehr. Sende dem Kunden den neuen.",
+    confirmReset: "Link zurücksetzen",
+    proposalTitle: "{{name}} hat Änderungen vorgeschlagen",
+    proposalDescription:
+      "Genehmige sie, um sie zur Annahme zurückzusenden, oder überarbeite das Dokument für ein Gegenangebot.",
+    proposalNote: "Notiz: „{{note}}“",
+    proposalTotal: "Neue Summe {{total}} (vorher {{previous}})",
+    approveProposal: "Genehmigen und senden",
+    rejectProposal: "Ablehnen",
   },
   messages: {
     title: "Nachrichten",
@@ -216,6 +234,13 @@ export default {
     documentAccepted: "{{document}} angenommen von {{name}}",
     documentDeclined: "{{document}} abgelehnt",
     paymentRecorded: "{{actor}} hat eine Zahlung über {{amount}} erfasst",
+    documentViewed: "{{actor}} hat {{document}} angesehen",
+    changesProposed: "{{actor}} hat Änderungen an {{document}} vorgeschlagen",
+    proposalApproved:
+      "{{actor}} hat die vorgeschlagenen Änderungen an {{document}} genehmigt",
+    proposalRejected:
+      "{{actor}} hat die vorgeschlagenen Änderungen an {{document}} abgelehnt",
+    shareLinkReset: "{{actor}} hat den Freigabelink zurückgesetzt",
     dealWon: "Alle Schritte erledigt, der Deal ist gewonnen",
     dealLost: "{{actor}} hat den Deal als verloren markiert",
     dealCancelled: "{{actor}} hat den Deal abgebrochen",
@@ -233,6 +258,9 @@ export default {
     paymentRecorded: "Zahlung erfasst",
     messagePosted: "Nachricht hinzugefügt",
     closed: "Deal geschlossen",
+    proposalApproved: "Änderungen genehmigt und gesendet",
+    proposalRejected: "Änderungen abgelehnt",
+    linkReset: "Freigabelink zurückgesetzt",
     emailFailed: "Gespeichert, aber die E-Mail wurde nicht versendet",
     emailFailedDescription:
       "Prüfe die E-Mail-Einstellungen und nutze dann „Erneut senden“.",
@@ -249,5 +277,9 @@ export default {
     documentNotAwaitingAnswer: "Dieses Dokument wartet auf keine Antwort.",
     documentAccepted: "Angenommene Dokumente können nicht geändert werden.",
     notPaymentStep: "Dieser Schritt wartet auf keine Zahlung.",
+    versionChanged:
+      "Dieses Dokument hat sich geändert, während du es angesehen hast. Prüfe die neueste Version.",
+    proposalNotFound: "Diese Änderungen wurden bereits bearbeitet.",
+    noItems: "Behalte mindestens eine Position.",
   },
 } satisfies typeof import("../en/deals").default;

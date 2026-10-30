@@ -1,6 +1,7 @@
 import type { DealDocumentType } from "./deal-documents";
 import type { DealEffects } from "./deal-engine.server";
 import { renderDealDocument } from "./deal-rendering.server";
+import { createDealShareUrl } from "./deal-share-link.server";
 import { formatMoney } from "~/features/organizations/dashboard/dashboard-format";
 import {
   getDocumentSender,
@@ -60,6 +61,7 @@ export async function emailDealDocument({
   }
 
   const { deal } = document;
+  const shareUrl = createDealShareUrl(deal);
   const typeName = DOCUMENT_TYPE_NAMES[document.type as DealDocumentType];
   const total = formatMoney({
     amountMinor: version.totalMinor,
@@ -70,8 +72,8 @@ export async function emailDealDocument({
     `<p>Hi ${escapeHtml(deal.customer.name)},</p>`,
     `<p>${escapeHtml(deal.organization.name)} sent you ${escapeHtml(typeName.toLowerCase())} <strong>${escapeHtml(document.number)}</strong> for ${escapeHtml(deal.title)}. The total is <strong>${escapeHtml(total)}</strong>, and the PDF is attached.</p>`,
     document.step.requiresAcceptance
-      ? "<p>Reply to this email to accept it or to ask for changes.</p>"
-      : "",
+      ? `<p><a href="${escapeHtml(shareUrl)}">Open it online</a> to accept it, ask for changes or send a question.</p>`
+      : `<p>Every document for this deal is also <a href="${escapeHtml(shareUrl)}">online</a>.</p>`,
   ].join("");
 
   try {

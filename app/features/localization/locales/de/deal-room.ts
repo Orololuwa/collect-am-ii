@@ -1,0 +1,124 @@
+export default {
+  pageTitle: "{{title}} · {{organization}}",
+  preparedFor: "Erstellt für {{name}}",
+  current: {
+    awaitingTitle: "Bitte prüfe dein Dokument: {{type}}",
+    awaitingDescription:
+      "Nimm es an, schlage Änderungen vor oder lehne es ab. {{organization}} wird sofort benachrichtigt.",
+    sentTitle: "Dein Dokument: {{type}}",
+    sentDescription:
+      "Gerade ist nichts zu tun. Unten kannst du eine Kopie herunterladen.",
+    acceptedTitle: "Du hast dieses Dokument angenommen ({{type}})",
+    acceptedDescription: "Angenommen von {{name}} am {{date}}.",
+    declinedTitle: "Du hast dieses Dokument abgelehnt ({{type}})",
+    declinedDescription:
+      "{{organization}} schickt dir vielleicht eine neue Version. Du kannst auch eine Nachricht senden.",
+    preparingTitle: "{{organization}} bereitet dein nächstes Dokument vor",
+    preparingDescription: "Du bekommst eine E-Mail, sobald es fertig ist.",
+    paymentTitle: "Zahlung fällig",
+    paymentDescription:
+      "Bezahle {{organization}} wie vereinbart. Sobald die Zahlung da ist, wird sie hier bestätigt und deine Quittung folgt.",
+    wonTitle: "Alles erledigt",
+    wonDescription: "Vielen Dank! Alle Dokumente dieses Deals stehen unten.",
+    closedTitle: "Dieser Deal ist geschlossen",
+    closedDescription: "Wende dich bei Fragen an {{organization}}.",
+    validUntil: "Gültig bis {{date}}",
+    dueOn: "Fällig am {{date}}",
+    total: "Gesamt",
+    downloadPdf: "PDF herunterladen",
+    documentFrame: "{{type}} {{number}}",
+  },
+  accept: {
+    tab: "Annehmen",
+    nameLabel: "Dein vollständiger Name",
+    nameRequired: "Gib deinen vollständigen Namen ein, um anzunehmen.",
+    agree:
+      "Ich nehme dieses Dokument ({{type}}) mit einer Summe von {{total}} an.",
+    agreeRequired: "Setze das Häkchen zur Bestätigung.",
+    submit: "Annehmen",
+    submitting: "Wird angenommen…",
+  },
+  changes: {
+    tab: "Änderungen vorschlagen",
+    description:
+      "Ändere Mengen, entferne Positionen oder füge Artikel aus dem Katalog hinzu. {{organization}} prüft deinen Vorschlag und schickt eine aktualisierte Version.",
+    quantity: "Menge",
+    remove: "Entfernen",
+    removed: "Entfernt",
+    undo: "Rückgängig",
+    addProduct: "Artikel hinzufügen",
+    addProductPlaceholder: "Aus dem Katalog hinzufügen…",
+    perUnit: "pro {{unit}}",
+    noteLabel: "Sonst noch etwas? (optional)",
+    estimatedTotal: "Neue Summe (geschätzt)",
+    submit: "Vorschlag senden",
+    submitting: "Wird gesendet…",
+    noChanges:
+      "Ändere zuerst eine Menge, entferne eine Position oder füge einen Artikel hinzu.",
+    invalid: "Mengen müssen Zahlen ab 0 sein.",
+  },
+  decline: {
+    tab: "Ablehnen",
+    reasonLabel: "Warum lehnst du ab? (optional)",
+    submit: "Ablehnen",
+    submitting: "Wird abgelehnt…",
+  },
+  proposal: {
+    title: "Du hast Änderungen vorgeschlagen",
+    description:
+      "Gesendet {{date}}. {{organization}} antwortet mit einer aktualisierten Version. Neue Summe: {{total}}.",
+  },
+  items: {
+    item: "Position",
+    quantity: "Menge",
+    unitPrice: "Einzelpreis",
+    amount: "Betrag",
+    subtotal: "Zwischensumme",
+    tax: "Steuer",
+    total: "Gesamt",
+  },
+  documents: {
+    title: "Deine Dokumente",
+    empty: "Dokumente erscheinen hier, sobald sie dir gesendet wurden.",
+  },
+  messages: {
+    title: "Nachrichten",
+    description: "Fragen? Schreib {{organization}} hier.",
+    empty: "Noch keine Nachrichten.",
+    placeholder: "Nachricht schreiben…",
+    send: "Senden",
+    you: "Du",
+  },
+  timeline: {
+    title: "Verlauf",
+    documentSent: "{{document}} an dich gesendet",
+    documentAccepted: "Du hast {{document}} angenommen",
+    documentDeclined: "Du hast {{document}} abgelehnt",
+    changesProposed: "Du hast Änderungen an {{document}} vorgeschlagen",
+    proposalApproved:
+      "{{organization}} hat deine Änderungen an {{document}} übernommen",
+    proposalRejected: "{{organization}} hat {{document}} unverändert gelassen",
+    paymentRecorded:
+      "{{organization}} hat deine Zahlung über {{amount}} erhalten",
+    dealWon: "Alle Schritte erledigt",
+  },
+  toasts: {
+    accepted: "Angenommen. Vielen Dank!",
+    declined: "Deine Antwort wurde gesendet",
+    changesSent: "Dein Vorschlag wurde gesendet",
+    messageSent: "Nachricht gesendet",
+  },
+  errors: {
+    generic:
+      "Etwas ist schiefgelaufen. Lade die Seite neu und versuche es erneut.",
+    dealClosed: "Dieser Deal ist geschlossen.",
+    alreadyAnswered:
+      "Auf dieses Dokument wurde bereits geantwortet. Lade die Seite neu.",
+    versionChanged:
+      "Dieses Dokument wurde gerade aktualisiert. Prüfe die neue Version, bevor du annimmst.",
+    noItems: "Behalte mindestens eine Position.",
+    rateLimited:
+      "Zu viele Anfragen. Warte ein paar Minuten und versuche es erneut.",
+  },
+  poweredBy: "Gesendet mit {{appName}}",
+} satisfies typeof import("../en/deal-room").default;

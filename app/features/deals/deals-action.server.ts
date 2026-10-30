@@ -6,11 +6,15 @@ import { deliverDealEffects } from "./deal-emails.server";
 import type { Actor, DealEffects } from "./deal-engine.server";
 import {
   acceptDealDocument,
+  approveDealProposal,
   closeDeal,
   DealTransitionError,
   declineDealDocument,
+  postDealMessage,
   recordDealPayment,
+  rejectDealProposal,
   resendDealDocument,
+  resetDealShareLink,
   reviseDealDocument,
   sendDealDocument,
   startDeal,
@@ -18,12 +22,15 @@ import {
 import type { DealLineItem } from "./deal-items";
 import {
   ACCEPT_DOCUMENT_INTENT,
+  APPROVE_PROPOSAL_INTENT,
   CLOSE_DEAL_INTENT,
   DECLINE_DOCUMENT_INTENT,
   ERROR_KEYS,
   POST_MESSAGE_INTENT,
   RECORD_PAYMENT_INTENT,
+  REJECT_PROPOSAL_INTENT,
   RESEND_DOCUMENT_INTENT,
+  RESET_SHARE_LINK_INTENT,
   REVISE_DOCUMENT_INTENT,
   SEND_DOCUMENT_INTENT,
 } from "./deals-constants";
@@ -33,7 +40,9 @@ import {
   declineDocumentFormSchema,
   documentIdFormSchema,
   postMessageFormSchema,
+  proposalFormSchema,
   recordPaymentFormSchema,
+  resetShareLinkFormSchema,
   reviseDocumentFormSchema,
   startDealFormSchema,
 } from "./deals-schemas";
@@ -155,6 +164,9 @@ export async function startDealAction({
 
 const SUCCESS_KEYS = {
   [ACCEPT_DOCUMENT_INTENT]: "toasts.accepted",
+  [APPROVE_PROPOSAL_INTENT]: "toasts.proposalApproved",
+  [REJECT_PROPOSAL_INTENT]: "toasts.proposalRejected",
+  [RESET_SHARE_LINK_INTENT]: "toasts.linkReset",
   [CLOSE_DEAL_INTENT]: "toasts.closed",
   [DECLINE_DOCUMENT_INTENT]: "toasts.declined",
   [POST_MESSAGE_INTENT]: "toasts.messagePosted",
@@ -261,23 +273,33 @@ export async function dealDetailAction(
       case POST_MESSAGE_INTENT: {
         const result = await validateFormData(request, postMessageFormSchema);
         if (!result.success) return { invalid: result.response };
-        const deal = await prisma.deal.findFirst({
-          select: { id: true },
-          where: { id: dealId, organizationId: organization.id },
-        });
-        if (!deal) throw new DealTransitionError("dealNotFound");
-        await prisma.$transaction([
-          prisma.dealMessage.create({
-            data: {
-              author: "business",
-              body: result.data.body,
-              dealId,
-              userId: user.id,
-            },
-          }),
-          prisma.deal.update({ data: {}, where: { id: dealId } }),
-        ]);
-        return { emails: [] };
+        return (
+          await postDealMessage({ ...target, actor, body: result.data.body })
+        ).effects;
+      }
+      case APPROVE_PROPOSAL_INTENT:
+      case REJECT_PROPOSAL_INTENT: {
+        const result = await validateFormData(request, proposalFormSchema);
+        if (!result.success) return { invalid: result.response };
+        const transition =
+          result.data.intent === APPROVE_PROPOSAL_INTENT
+            ? approveDealProposal
+            : rejectDealProposal;
+        return (
+          await transition({
+            ...target,
+            actor,
+            versionId: result.data.versionId,
+          })
+        ).effects;
+      }
+      case RESET_SHARE_LINK_INTENT: {
+        const result = await validateFormData(
+          request,
+          resetShareLinkFormSchema,
+        );
+        if (!result.success) return { invalid: result.response };
+        return (await resetDealShareLink({ ...target, actor })).effects;
       }
       case CLOSE_DEAL_INTENT: {
         const result = await validateFormData(request, closeDealFormSchema);

@@ -146,7 +146,7 @@ export default {
     draftHint:
       "This document hasn't been sent. Check the lines, then send it to {{email}}.",
     awaitingHint:
-      "Waiting for {{name}} to answer. Until the share link is ready, record their answer here.",
+      "Waiting for {{name}} to answer on the share link. If they answer another way, record it here.",
     preview: "Preview",
     downloadPdf: "PDF",
     editItems: "Edit lines",
@@ -194,6 +194,24 @@ export default {
     versions_other: "{{count}} versions",
     activity: "Activity",
     previewTitle: "{{type}} preview",
+    shareLink: "Share link",
+    shareLinkDescription:
+      "Anyone with this link can see the deal's documents, accept them, ask for changes and send you messages. It's in every email you send.",
+    copyLink: "Copy link",
+    copied: "Copied",
+    openLink: "Open",
+    resetLink: "Reset link",
+    resetTitle: "Reset the share link?",
+    resetDescription:
+      "The current link stops working straight away. Send the customer the new one.",
+    confirmReset: "Reset link",
+    proposalTitle: "{{name}} suggested changes",
+    proposalDescription:
+      "Approve to send it back to them to accept, or revise the document to make a counter-offer.",
+    proposalNote: "Their note: “{{note}}”",
+    proposalTotal: "New total {{total}} (was {{previous}})",
+    approveProposal: "Approve and send",
+    rejectProposal: "Turn down",
   },
   messages: {
     title: "Messages",
@@ -214,6 +232,13 @@ export default {
     documentAccepted: "{{document}} accepted by {{name}}",
     documentDeclined: "{{document}} declined",
     paymentRecorded: "{{actor}} recorded a payment of {{amount}}",
+    documentViewed: "{{actor}} viewed {{document}}",
+    changesProposed: "{{actor}} suggested changes to {{document}}",
+    proposalApproved:
+      "{{actor}} approved the suggested changes to {{document}}",
+    proposalRejected:
+      "{{actor}} turned down the suggested changes to {{document}}",
+    shareLinkReset: "{{actor}} reset the share link",
     dealWon: "All steps done, the deal is won",
     dealLost: "{{actor}} marked the deal as lost",
     dealCancelled: "{{actor}} cancelled the deal",
@@ -231,6 +256,9 @@ export default {
     paymentRecorded: "Payment recorded",
     messagePosted: "Message added",
     closed: "Deal closed",
+    proposalApproved: "Changes approved and sent",
+    proposalRejected: "Changes turned down",
+    linkReset: "Share link reset",
     emailFailed: "Saved, but the email didn't go out",
     emailFailedDescription: "Check the email settings, then use Send again.",
   },
@@ -245,5 +273,9 @@ export default {
     documentNotAwaitingAnswer: "This document isn't waiting for an answer.",
     documentAccepted: "Accepted documents can't be changed.",
     notPaymentStep: "This step isn't waiting for a payment.",
+    versionChanged:
+      "This document changed while you were looking at it. Check the latest version.",
+    proposalNotFound: "Those changes were already handled.",
+    noItems: "Keep at least one line.",
   },
 };

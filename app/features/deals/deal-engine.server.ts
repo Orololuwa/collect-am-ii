@@ -1,3 +1,5 @@
+import { createId } from "@paralleldrive/cuid2";
+
 import type { DealDocumentType } from "./deal-documents";
 import { formatDocumentNumber, paymentMethodName } from "./deal-documents";
 import type { DealLineItem } from "./deal-items";
@@ -33,7 +35,10 @@ export type DealErrorCode =
   | "documentNotSent"
   | "documentNotAwaitingAnswer"
   | "documentAccepted"
-  | "notPaymentStep";
+  | "notPaymentStep"
+  | "versionChanged"
+  | "proposalNotFound"
+  | "noItems";
 
 /** A transition that isn't allowed in the deal's current state. */
 export class DealTransitionError extends Error {
@@ -657,12 +662,15 @@ export async function acceptDealDocument({
   dealId,
   documentId,
   acceptedByName,
+  expectedVersionId,
   actor,
 }: {
   organizationId: string;
   dealId: string;
   documentId: string;
   acceptedByName: string;
+  /** The version the customer looked at; refused if it's no longer current. */
+  expectedVersionId?: string;
   actor: Actor;
 }) {
   return await runTransition(async (tx, effects) => {
@@ -673,6 +681,9 @@ export async function acceptDealDocument({
     );
     if (!AWAITING_ANSWER.has(document.status) || !current) {
       throw new DealTransitionError("documentNotAwaitingAnswer");
+    }
+    if (expectedVersionId && expectedVersionId !== current.id) {
+      throw new DealTransitionError("versionChanged");
     }
 
     await tx.dealDocument.update({
@@ -797,5 +808,272 @@ export async function closeDeal({
       status === "lost" ? "dealLost" : "dealCancelled",
       actor,
     );
+  });
+}
+
+/** Marks a sent document as seen by the customer, the first time only. */
+export async function markDealDocumentViewed({
+  organizationId,
+  dealId,
+  documentId,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  documentId: string;
+  actor: Actor;
+}) {
+  return await runTransition(async (tx) => {
+    const updated = await tx.dealDocument.updateMany({
+      data: { status: "viewed" },
+      where: {
+        deal: { id: dealId, organizationId },
+        id: documentId,
+        status: "sent",
+      },
+    });
+    if (updated.count > 0) {
+      await recordEvent(tx, dealId, "documentViewed", actor, { documentId });
+    }
+    return updated.count > 0;
+  });
+}
+
+export type ProposedChanges = {
+  /** New quantity per line of the current version, by index; 0 removes it. */
+  quantities: Record<number, number>;
+  /** Catalogue products to add. Prices always come from the catalogue. */
+  additions: Array<{ productId: string; quantity: number }>;
+};
+
+/**
+ * The customer suggests different lines. Their version waits for the
+ * business to approve or turn down; a newer suggestion replaces an older one.
+ */
+export async function proposeDealChanges({
+  organizationId,
+  dealId,
+  documentId,
+  changes,
+  note,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  documentId: string;
+  changes: ProposedChanges;
+  note: string;
+  actor: Actor;
+}) {
+  return await runTransition(async (tx) => {
+    const deal = await loadDealForUpdate(tx, organizationId, dealId);
+    const { document, step } = activeDocument(deal, documentId);
+    const current = document.versions.find(
+      (version) => version.state === "current",
+    );
+    if (
+      !step.requiresAcceptance ||
+      !AWAITING_ANSWER.has(document.status) ||
+      !current
+    ) {
+      throw new DealTransitionError("documentNotAwaitingAnswer");
+    }
+
+    const kept = parseDealItems(current.items).flatMap((item, index) => {
+      const quantity = changes.quantities[index] ?? item.quantity;
+      return quantity > 0 ? [{ ...item, quantity }] : [];
+    });
+    const productIds = [
+      ...new Set(changes.additions.map((addition) => addition.productId)),
+    ];
+    const products = await tx.product.findMany({
+      where: {
+        archivedAt: null,
+        currency: deal.currency,
+        id: { in: productIds },
+        organizationId,
+      },
+    });
+    const added = changes.additions.flatMap((addition): DealLineItem[] => {
+      const product = products.find(
+        (candidate) => candidate.id === addition.productId,
+      );
+      return product && addition.quantity > 0
+        ? [
+            {
+              description: product.description,
+              name: product.name,
+              productId: product.id,
+              quantity: addition.quantity,
+              taxRateBps: product.taxRateBps,
+              unit: product.unit,
+              unitPriceMinor: product.unitPriceMinor,
+            },
+          ]
+        : [];
+    });
+    const items = [...kept, ...added];
+    if (items.length === 0) {
+      throw new DealTransitionError("noItems");
+    }
+
+    const version = Math.max(0, ...document.versions.map((v) => v.version)) + 1;
+    await tx.dealDocumentVersion.updateMany({
+      data: { state: "rejected" },
+      where: { dealDocumentId: document.id, state: "proposed" },
+    });
+    await tx.dealDocumentVersion.create({
+      data: {
+        ...versionTotals(items),
+        dealDocumentId: document.id,
+        note,
+        proposedBy: actor.party,
+        state: "proposed",
+        version,
+      },
+    });
+    await tx.dealDocument.update({
+      data: { status: "changesRequested" },
+      where: { id: document.id },
+    });
+    await recordEvent(tx, deal.id, "changesProposed", actor, {
+      documentId: document.id,
+      payload: { version },
+    });
+    return { version };
+  });
+}
+
+/**
+ * The business takes the customer's suggestion: it becomes the document's
+ * current version and is sent again for the customer to accept.
+ */
+export async function approveDealProposal({
+  organizationId,
+  dealId,
+  versionId,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  versionId: string;
+  actor: Actor;
+}) {
+  return await runTransition(async (tx, effects) => {
+    const deal = await loadDealForUpdate(tx, organizationId, dealId);
+    const step = activeStep(deal);
+    const proposal = step.document?.versions.find(
+      (version) => version.id === versionId && version.state === "proposed",
+    );
+    if (!step.document || !proposal) {
+      throw new DealTransitionError("proposalNotFound");
+    }
+    await tx.dealDocumentVersion.updateMany({
+      data: { state: "superseded" },
+      where: { dealDocumentId: step.document.id, state: "current" },
+    });
+    await tx.dealDocumentVersion.update({
+      data: { state: "current" },
+      where: { id: proposal.id },
+    });
+    await tx.dealDocument.update({
+      data: { status: "draft" },
+      where: { id: step.document.id },
+    });
+    await recordEvent(tx, deal.id, "proposalApproved", actor, {
+      documentId: step.document.id,
+      payload: { version: proposal.version },
+    });
+    await sendDocumentInTransaction(tx, deal, step.id, actor, effects);
+  });
+}
+
+/** The business turns the customer's suggestion down; the document stands. */
+export async function rejectDealProposal({
+  organizationId,
+  dealId,
+  versionId,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  versionId: string;
+  actor: Actor;
+}) {
+  return await runTransition(async (tx) => {
+    const deal = await loadDealForUpdate(tx, organizationId, dealId);
+    const step = activeStep(deal);
+    const proposal = step.document?.versions.find(
+      (version) => version.id === versionId && version.state === "proposed",
+    );
+    if (!step.document || !proposal) {
+      throw new DealTransitionError("proposalNotFound");
+    }
+    await tx.dealDocumentVersion.update({
+      data: { state: "rejected" },
+      where: { id: proposal.id },
+    });
+    await tx.dealDocument.update({
+      data: { status: "viewed" },
+      where: { id: step.document.id },
+    });
+    await recordEvent(tx, deal.id, "proposalRejected", actor, {
+      documentId: step.document.id,
+      payload: { version: proposal.version },
+    });
+  });
+}
+
+/** Adds a message to the deal's conversation. */
+export async function postDealMessage({
+  organizationId,
+  dealId,
+  body,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  body: string;
+  actor: Actor;
+}) {
+  return await runTransition(async (tx) => {
+    const deal = await tx.deal.findFirst({
+      select: { id: true },
+      where: { id: dealId, organizationId },
+    });
+    if (!deal) {
+      throw new DealTransitionError("dealNotFound");
+    }
+    const message = await tx.dealMessage.create({
+      data: {
+        author: actor.party,
+        body,
+        dealId,
+        userId: actor.party === "business" ? actor.userId : null,
+      },
+    });
+    // Touch the deal so lists sort it to the top.
+    await tx.deal.update({ data: {}, where: { id: dealId } });
+    return message;
+  });
+}
+
+/** Gives the deal a new share link; every older link stops working. */
+export async function resetDealShareLink({
+  organizationId,
+  dealId,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  actor: Actor;
+}) {
+  return await runTransition(async (tx) => {
+    const deal = await loadDealForUpdate(tx, organizationId, dealId);
+    await tx.deal.update({
+      data: { shareNonce: createId(), shareRevokedAt: null },
+      where: { id: deal.id },
+    });
+    await recordEvent(tx, deal.id, "shareLinkReset", actor);
   });
 }
