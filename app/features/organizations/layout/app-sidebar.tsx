@@ -1,9 +1,13 @@
 import {
   CircleHelpIcon,
   HammerIcon,
+  HandshakeIcon,
   LayoutDashboardIcon,
+  PackageIcon,
   SettingsIcon,
   ShoppingCartIcon,
+  UsersIcon,
+  WorkflowIcon,
 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
@@ -71,6 +75,34 @@ export function AppSidebar({
               icon: ShoppingCartIcon,
               title: "Checkout",
               url: href("/organizations/:organizationSlug/checkout-pages", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: PackageIcon,
+              title: t("app.products"),
+              url: href("/organizations/:organizationSlug/products", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: UsersIcon,
+              title: t("app.customers"),
+              url: href("/organizations/:organizationSlug/customers", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: WorkflowIcon,
+              title: t("app.workflows"),
+              url: href("/organizations/:organizationSlug/workflows", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: HandshakeIcon,
+              title: t("app.deals"),
+              url: href("/organizations/:organizationSlug/deals", {
                 organizationSlug,
               }),
             },

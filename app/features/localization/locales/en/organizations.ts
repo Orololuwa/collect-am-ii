@@ -64,6 +64,13 @@ export default {
       title: "Recent activity",
     },
     attention: {
+      dealDeclined: "{{customer}} declined a document in {{deal}}",
+      dealDeclinedDetail: "Revise it and send it again, or close the deal",
+      dealMessage: "{{customer}} sent a message about {{deal}}",
+      dealMessageDetail: "Nobody has replied yet",
+      dealProposal: "{{customer}} suggested changes to {{deal}}",
+      dealProposalDetail:
+        "Approve them, turn them down or make a counter-offer",
       allClear: "Nothing needs your attention.",
       expiring: "{{name}} closes {{when}}",
       expiringDetail: "The checkout page stops taking payments then",
@@ -97,7 +104,8 @@ export default {
       currencyLabel: "Currency",
       greeting: "Welcome back, {{name}}",
       greetingNoName: "Welcome back",
-      newCheckoutPage: "New checkout page",
+      newDeal: "New deal",
+      newWorkflow: "New workflow",
       periodLabel: "Period",
       periodOption_one: "{{count}} day",
       periodOption_other: "{{count}} days",
@@ -273,6 +281,10 @@ export default {
     appSidebar: {
       nav: {
         app: {
+          customers: "Customers",
+          products: "Products",
+          workflows: "Workflows",
+          deals: "Deals",
           analytics: "Analytics",
           templates: "Templates",
           dashboard: "Dashboard",

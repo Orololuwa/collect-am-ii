@@ -40,7 +40,7 @@ async function getSetupProgress(organizationId: string) {
     prisma.checkoutPage.count({ where: { organizationId } }),
     prisma.payment.count({
       where: {
-        checkoutPage: { organizationId },
+        organizationId,
         status: { in: [...COLLECTED_STATUSES] },
       },
     }),
@@ -64,7 +64,7 @@ async function getPaymentCurrencies(organizationId: string) {
   const groups = await prisma.payment.groupBy({
     _count: { _all: true },
     by: ["currency"],
-    where: { checkoutPage: { organizationId } },
+    where: { organizationId },
   });
   return groups
     .sort((a, b) => b._count._all - a._count._all)
@@ -87,7 +87,7 @@ async function getPaymentStats({
   now: Date;
 }) {
   const { currentStart, previousStart } = getPeriodRanges(period, now);
-  const inOrganization = { checkoutPage: { organizationId } };
+  const inOrganization = { organizationId };
   const inCurrency = {
     currency: { equals: currency, mode: "insensitive" as const },
   };
@@ -111,10 +111,12 @@ async function getPaymentStats({
         createdAt: { gte: currentStart },
       },
     }),
+    // Deal payments get their receipts from the deal, not this table.
     prisma.payment.findMany({
       select: { receipt: { select: { sentAt: true } } },
       where: {
         ...inOrganization,
+        checkoutPageId: { not: null },
         ...inCurrency,
         createdAt: { gte: currentStart },
         status: { in: [...COLLECTED_STATUSES] },
@@ -127,6 +129,7 @@ async function getPaymentStats({
       by: ["checkoutPageId"],
       where: {
         ...inOrganization,
+        checkoutPageId: { not: null },
         ...inCurrency,
         createdAt: { gte: currentStart },
         status: { in: [...COLLECTED_STATUSES] },
@@ -166,7 +169,13 @@ async function getPaymentStats({
     .slice(0, TOP_PAGES);
   const topPageNames = await prisma.checkoutPage.findMany({
     select: { id: true, name: true },
-    where: { id: { in: topPageTotals.map((page) => page.checkoutPageId) } },
+    where: {
+      id: {
+        in: topPageTotals.flatMap((page) =>
+          page.checkoutPageId ? [page.checkoutPageId] : [],
+        ),
+      },
+    },
   });
 
   return {
@@ -194,7 +203,7 @@ async function getPaymentStats({
     },
     topPages: topPageTotals.map((page) => ({
       amountMinor: page._sum.amountMinor ?? 0,
-      id: page.checkoutPageId,
+      id: page.checkoutPageId ?? "",
       lastPaymentAt: page._max.createdAt,
       name:
         topPageNames.find((named) => named.id === page.checkoutPageId)?.name ??
@@ -214,16 +223,27 @@ async function getRecentPayments(organizationId: string) {
       currency: true,
       customerEmail: true,
       customerName: true,
+      deal: { select: { id: true, title: true } },
       id: true,
       provider: true,
       status: true,
     },
     take: RECENT_PAYMENTS,
-    where: { checkoutPage: { organizationId } },
+    where: { organizationId },
   });
-  return payments.map((payment) => ({
+  return payments.map(({ checkoutPage, deal, ...payment }) => ({
     ...payment,
     currency: payment.currency.toUpperCase(),
+    /** Where the payment came from: a checkout page or a deal. */
+    source: checkoutPage
+      ? {
+          id: checkoutPage.id,
+          kind: "checkoutPage" as const,
+          name: checkoutPage.name,
+        }
+      : deal
+        ? { id: deal.id, kind: "deal" as const, name: deal.title }
+        : null,
   }));
 }
 
@@ -232,7 +252,7 @@ async function getRecentPayments(organizationId: string) {
  * emailed, checkout pages about to close, and pages with no receipt template.
  */
 async function getAttentionItems(organizationId: string, now: Date) {
-  const inOrganization = { checkoutPage: { organizationId } };
+  const inOrganization = { organizationId };
   const activePage = {
     organizationId,
     isActive: true,
@@ -251,6 +271,7 @@ async function getAttentionItems(organizationId: string, now: Date) {
       prisma.payment.count({
         where: {
           ...inOrganization,
+          checkoutPageId: { not: null },
           createdAt: { gte: subDays(now, 30) },
           OR: [{ receipt: null }, { receipt: { sentAt: null } }],
           status: { in: [...COLLECTED_STATUSES] },
@@ -274,7 +295,65 @@ async function getAttentionItems(organizationId: string, now: Date) {
       }),
     ]);
 
-  return { expiringPages, failedPayments, pagesWithoutReceipt, unsentReceipts };
+  return {
+    deals: await getDealsNeedingAttention(organizationId),
+    expiringPages,
+    failedPayments,
+    pagesWithoutReceipt,
+    unsentReceipts,
+  };
+}
+
+/** How many deals the attention list shows at most. */
+const ATTENTION_DEALS = 5;
+
+/**
+ * Open deals waiting on the business: customer suggestions to review,
+ * declined documents and customer messages nobody has answered.
+ */
+async function getDealsNeedingAttention(organizationId: string) {
+  const deals = await prisma.deal.findMany({
+    orderBy: { updatedAt: "desc" },
+    select: {
+      customer: { select: { name: true } },
+      documents: {
+        select: { status: true },
+        where: { status: { in: ["changesRequested", "declined"] } },
+      },
+      id: true,
+      messages: {
+        orderBy: { createdAt: "desc" },
+        select: { author: true },
+        take: 1,
+      },
+      title: true,
+    },
+    take: 50,
+    where: { organizationId, status: "open" },
+  });
+  return deals
+    .flatMap((deal) => {
+      const reason = deal.documents.some(
+        (document) => document.status === "changesRequested",
+      )
+        ? ("proposal" as const)
+        : deal.documents.some((document) => document.status === "declined")
+          ? ("declined" as const)
+          : deal.messages[0]?.author === "customer"
+            ? ("message" as const)
+            : null;
+      return reason
+        ? [
+            {
+              customer: deal.customer.name,
+              id: deal.id,
+              reason,
+              title: deal.title,
+            },
+          ]
+        : [];
+    })
+    .slice(0, ATTENTION_DEALS);
 }
 
 async function getTemplateSummary(organizationId: string, now: Date) {
@@ -328,11 +407,12 @@ async function getRecentActivity(
         currency: true,
         customerEmail: true,
         customerName: true,
+        deal: { select: { title: true } },
         id: true,
       },
       take: ACTIVITY_ITEMS,
       where: {
-        checkoutPage: { organizationId },
+        organizationId,
         createdAt: { gte: since },
         status: { in: [...COLLECTED_STATUSES] },
       },
@@ -367,7 +447,7 @@ async function getRecentActivity(
       customer: payment.customerName || payment.customerEmail,
       id: `payment-${payment.id}`,
       kind: "payment" as const,
-      pageName: payment.checkoutPage.name,
+      pageName: payment.checkoutPage?.name ?? payment.deal?.title ?? "",
       timestamp: payment.createdAt,
     })),
     ...members.map((membership) => ({

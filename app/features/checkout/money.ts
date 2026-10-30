@@ -4,6 +4,11 @@ const currencyMinorUnitMap: Record<string, number> = {
   VND: 0,
 };
 
+/** Number of decimal places a currency's minor unit has (2 for USD, 0 for JPY). */
+export function getCurrencyMinorUnitExponent(currency: string) {
+  return currencyMinorUnitMap[currency.toUpperCase()] ?? 2;
+}
+
 export function toMinorUnits({
   amountMajor,
   currency,
@@ -11,8 +16,7 @@ export function toMinorUnits({
   amountMajor: string;
   currency: string;
 }) {
-  const normalizedCurrency = currency.toUpperCase();
-  const exponent = currencyMinorUnitMap[normalizedCurrency] ?? 2;
+  const exponent = getCurrencyMinorUnitExponent(currency);
 
   const n = Number(amountMajor);
   if (!Number.isFinite(n) || n <= 0) {
@@ -31,7 +35,7 @@ export function fromMinorUnits({
   amountMinor: number;
   currency: string;
 }) {
-  const exponent = currencyMinorUnitMap[currency.toUpperCase()] ?? 2;
+  const exponent = getCurrencyMinorUnitExponent(currency);
   return amountMinor / 10 ** exponent;
 }
 

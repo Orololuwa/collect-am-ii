@@ -11,6 +11,7 @@ const schema = z.object({
   COOKIE_SECRET: z.string(),
   EMAIL_FROM: z.string().optional(),
   DATABASE_URL: z.string(),
+  DEAL_LINK_SECRET: z.string().optional(), // Optional, falls back to COOKIE_SECRET
   HONEYPOT_SECRET: z.string(),
   MOCKS: z.literal("true").optional(),
   NODE_ENV: z.enum(["production", "development", "test"] as const),

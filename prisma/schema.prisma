@@ -22,6 +22,10 @@ model UserAccount {
   memberships               OrganizationMembership[]
   stripeSubscriptionsBought StripeSubscription[]
   createdApiKeys            OrganizationApiKey[]
+  createdDeals              Deal[]                        @relation("DealCreatedBy")
+  createdDealVersions       DealDocumentVersion[]         @relation("DealVersionCreatedBy")
+  dealMessages              DealMessage[]                 @relation("DealMessageAuthor")
+  dealEvents                DealEvent[]                   @relation("DealEventActor")
 }
 
 model Organization {
@@ -49,6 +53,12 @@ model Organization {
   apiKey                      OrganizationApiKey?
   templates                   Template[]
   checkoutPages               CheckoutPage[]
+  products                    Product[]
+  customers                   Customer[]
+  workflows                   Workflow[]
+  deals                       Deal[]
+  documentSequences           DocumentSequence[]
+  payments                    Payment[]
 }
 
 model OrganizationMembership {
@@ -246,6 +256,8 @@ model Template {
   sourceTemplateId            String?
   organization                Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   checkoutPagesUsingAsReceipt CheckoutPage[] @relation("CheckoutReceiptTemplate")
+  workflowSteps               WorkflowStep[]
+  dealSteps                   DealStep[]
   generatedReceipts           Receipt[]
 
   @@index([organizationId, type])
@@ -298,8 +310,18 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  checkoutPageId String
-  checkoutPage   CheckoutPage @relation(fields: [checkoutPageId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// Set for payments taken on a checkout page.
+  checkoutPageId String?
+  checkoutPage   CheckoutPage? @relation(fields: [checkoutPageId], references: [id], onDelete: Cascade)
+
+  /// Set for payments toward a deal's payment step, online or recorded by hand.
+  dealId     String?
+  deal       Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  dealStepId String?
+  dealStep   DealStep? @relation(fields: [dealStepId], references: [id], onDelete: SetNull)
 
   provider           String
   providerPaymentId  String
@@ -320,7 +342,9 @@ model Payment {
   metadata Json?
 
   @@unique([provider, providerPaymentId])
+  @@index([organizationId, createdAt])
   @@index([checkoutPageId])
+  @@index([dealId])
   @@index([providerPaymentId])
   @@index([status])
   @@index([customerEmail])
@@ -441,4 +465,326 @@ enum PaymentStatus {
   canceled
   refunded
   partially_refunded
+}
+
+/// An item in an organization's catalogue that documents and deals are built
+/// from. Money is stored in minor units (e.g. kobo, cents).
+model Product {
+  id             String       @id @default(cuid(2))
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String       @default("")
+  /// Optional stock-keeping unit, unique within the organization.
+  sku            String?
+  unitPriceMinor Int
+  currency       String
+  /// What one unit is, e.g. "item", "hour", "kg".
+  unit           String       @default("item")
+  /// Tax rate in basis points (750 = 7.5%).
+  taxRateBps     Int          @default(0)
+  imageUrl       String       @default("")
+  archivedAt     DateTime?
+
+  @@unique([organizationId, sku])
+  @@index([organizationId, archivedAt])
+}
+
+/// Someone an organization sells to.
+model Customer {
+  id              String       @id @default(cuid(2))
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  /// Stored lower-case.
+  email           String
+  phone           String       @default("")
+  companyName     String       @default("")
+  billingAddress  String       @default("")
+  shippingAddress String       @default("")
+  notes           String       @default("")
+  archivedAt      DateTime?
+  deals           Deal[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId, name])
+}
+
+/// What a workflow step does: send a document, collect a payment, or issue a
+/// receipt for the payment before it.
+enum WorkflowStepKind {
+  document
+  payment
+  receipt
+}
+
+/// How a step starts once the step before it is done.
+enum StepAdvanceMode {
+  /// Sent or issued straight away.
+  automatic
+  /// Prepared, then waits for someone in the organization to review and send.
+  manual
+}
+
+/// What a document step's lines are built from.
+enum StepCarryForward {
+  /// The items of the latest accepted document (or products picked for the
+  /// first document).
+  items
+  /// One line: a percentage of the latest priced document's total.
+  deposit
+  /// One line: what's left of that total after payments so far.
+  balance
+}
+
+/// A reusable sequence of documents and payments, usually started from a
+/// sample, that deals follow.
+model Workflow {
+  id             String         @id @default(cuid(2))
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String         @default("")
+  /// The sample it was created from, if any.
+  sampleKey      String?
+  archivedAt     DateTime?
+  steps          WorkflowStep[]
+  deals          Deal[]
+
+  @@index([organizationId, archivedAt])
+}
+
+model WorkflowStep {
+  id                 String           @id @default(cuid(2))
+  workflowId         String
+  workflow           Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  position           Int
+  kind               WorkflowStepKind
+  name               String
+  /// The document to send (document steps); receipt steps always use receipt.
+  documentType       TemplateType?
+  /// The organization's template to use; null means its default for the type.
+  templateId         String?
+  template           Template?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  requiresAcceptance Boolean          @default(false)
+  advanceMode        StepAdvanceMode  @default(manual)
+  carryForward       StepCarryForward @default(items)
+  /// For deposit steps, in basis points (5000 = 50%).
+  depositPercentBps  Int?
+  /// Quotes and estimates: days until they expire.
+  validityDays       Int?
+  /// Invoices: days until payment is due.
+  paymentTermsDays   Int?
+
+  @@unique([workflowId, position])
+}
+
+enum DealStatus {
+  open
+  won
+  lost
+  cancelled
+}
+
+/// Who did something on a deal.
+enum DealParty {
+  business
+  customer
+  system
+}
+
+enum DealStepStatus {
+  /// Not reached yet.
+  pending
+  /// The step the deal is on.
+  active
+  done
+}
+
+enum DealDocumentStatus {
+  /// Prepared, not sent to the customer yet.
+  draft
+  sent
+  viewed
+  changesRequested
+  accepted
+  declined
+}
+
+enum DealVersionState {
+  /// The version the document shows.
+  current
+  /// Replaced by a later version.
+  superseded
+  /// The customer suggested it and the business hasn't decided yet.
+  proposed
+  /// The customer suggested it and the business turned it down.
+  rejected
+}
+
+/// One run of a workflow for one customer.
+model Deal {
+  id             String         @id @default(cuid(2))
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workflowId     String?
+  workflow       Workflow?      @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+  /// The workflow's name when the deal started.
+  workflowName   String
+  customerId     String
+  customer       Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  title          String
+  currency       String
+  status         DealStatus     @default(open)
+  closedAt       DateTime?
+  /// Signed into the share link. Changing it makes old links stop working.
+  shareNonce     String         @default(cuid(2))
+  shareRevokedAt DateTime?
+  createdById    String?
+  createdBy      UserAccount?   @relation("DealCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  steps          DealStep[]
+  documents      DealDocument[]
+  messages       DealMessage[]
+  events         DealEvent[]
+  payments       Payment[]
+
+  @@index([organizationId, status, updatedAt])
+  @@index([customerId])
+}
+
+/// A copy of a workflow step taken when the deal started, so later changes to
+/// the workflow don't change running deals.
+model DealStep {
+  id                 String           @id @default(cuid(2))
+  dealId             String
+  deal               Deal             @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  position           Int
+  kind               WorkflowStepKind
+  name               String
+  documentType       TemplateType?
+  templateId         String?
+  template           Template?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  requiresAcceptance Boolean          @default(false)
+  advanceMode        StepAdvanceMode  @default(manual)
+  carryForward       StepCarryForward @default(items)
+  depositPercentBps  Int?
+  validityDays       Int?
+  paymentTermsDays   Int?
+  status             DealStepStatus   @default(pending)
+  startedAt          DateTime?
+  completedAt        DateTime?
+  /// Payment steps: what's due, set when the step starts.
+  amountDueMinor     Int?
+  /// Payment steps: what was paid and how.
+  amountPaidMinor    Int?
+  paidAt             DateTime?
+  paymentMethod      String           @default("")
+  paymentReference   String           @default("")
+  document           DealDocument?
+  payments           Payment[]
+
+  @@unique([dealId, position])
+}
+
+/// The document a document or receipt step produces.
+model DealDocument {
+  id                String                @id @default(cuid(2))
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  dealId            String
+  deal              Deal                  @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  stepId            String                @unique
+  step              DealStep              @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  type              TemplateType
+  /// e.g. QUO-0003. Given when the document is first sent.
+  number            String?
+  status            DealDocumentStatus    @default(draft)
+  issuedAt          DateTime?
+  /// Quotes and estimates: when they expire. Invoices: when payment is due.
+  dueAt             DateTime?
+  sentAt            DateTime?
+  acceptedAt        DateTime?
+  acceptedVersionId String?
+  acceptedByName    String                @default("")
+  declinedAt        DateTime?
+  declineReason     String                @default("")
+  versions          DealDocumentVersion[]
+
+  @@index([dealId])
+}
+
+/// One set of lines and totals for a document. Every change is a new version,
+/// which makes up the deal's trail.
+model DealDocumentVersion {
+  id             String           @id @default(cuid(2))
+  createdAt      DateTime         @default(now())
+  dealDocumentId String
+  dealDocument   DealDocument     @relation(fields: [dealDocumentId], references: [id], onDelete: Cascade)
+  version        Int
+  proposedBy     DealParty
+  state          DealVersionState
+  /// `[{ productId, name, description, unit, quantity, unitPriceMinor, taxRateBps, discountBps }]`
+  items          Json
+  subtotalMinor  Int
+  discountMinor  Int              @default(0)
+  taxMinor       Int
+  totalMinor     Int
+  note           String           @default("")
+  createdById    String?
+  createdBy      UserAccount?     @relation("DealVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  /// The document as sent: template sections with the deal's data filled in.
+  sections       Json?
+  globalStyles   Json?
+  colorPalette   Json?
+
+  @@unique([dealDocumentId, version])
+}
+
+model DealMessage {
+  id        String       @id @default(cuid(2))
+  createdAt DateTime     @default(now())
+  dealId    String
+  deal      Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  author    DealParty
+  userId    String?
+  user      UserAccount? @relation("DealMessageAuthor", fields: [userId], references: [id], onDelete: SetNull)
+  body      String
+
+  @@index([dealId, createdAt])
+}
+
+/// The deal's trail. Rows are only ever added.
+model DealEvent {
+  id         String       @id @default(cuid(2))
+  createdAt  DateTime     @default(now())
+  dealId     String
+  deal       Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  type       String
+  actor      DealParty
+  userId     String?
+  user       UserAccount? @relation("DealEventActor", fields: [userId], references: [id], onDelete: SetNull)
+  documentId String?
+  payload    Json         @default("{}")
+  ip         String       @default("")
+  userAgent  String       @default("")
+
+  @@index([dealId, createdAt])
+}
+
+/// The next number for each document type, per organization (QUO-0001, …).
+model DocumentSequence {
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           TemplateType
+  next           Int          @default(1)
+
+  @@id([organizationId, type])
 }

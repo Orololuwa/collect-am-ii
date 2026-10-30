@@ -4,7 +4,12 @@ import { z } from "zod";
 
 import type { Route } from "./+types/paystack.payment";
 import { retrieveCheckoutPageFromDatabaseBySlug } from "~/features/checkout/checkout-pages-model.server";
-import { toMinorUnits } from "~/features/checkout/money";
+import {
+  computeCheckoutPagePayment,
+  getHasCheckoutPaymentAccess,
+  getIsCheckoutPageOpenForPayment,
+  getIsClientAmountMatching,
+} from "~/features/checkout/checkout-payment-start.server";
 import { upsertPaymentToDatabaseByProviderAndProviderPaymentId } from "~/features/checkout/payments-model.server";
 import { initializePaystackTransaction } from "~/features/checkout/paystack.server";
 import type { Prisma } from "~/generated/client";
@@ -14,16 +19,9 @@ const cuid = init({ length: 10 });
 
 const schema = z.object({
   provider: z.literal("paystack"),
-  amountMajor: z.string(),
+  /** What the customer saw; only checked against the server total, never charged. */
+  amountMajor: z.string().optional(),
   currency: z.string().min(3),
-  items: z
-    .union([z.array(z.any()), z.string()])
-    .optional()
-    .transform((val) => {
-      if (!val) return [];
-      if (typeof val === "string") return JSON.parse(val) as unknown[];
-      return val;
-    }),
   customerEmail: z.string().email(),
   customerName: z.string().optional().default(""),
 });
@@ -36,7 +34,15 @@ export async function action({ request, params }: Route.ActionArgs) {
   const checkoutPage = await retrieveCheckoutPageFromDatabaseBySlug({
     slug: params.checkoutPageSlug,
   });
-  if (!checkoutPage || !checkoutPage.isActive) throw notFound();
+  if (!checkoutPage || !getIsCheckoutPageOpenForPayment(checkoutPage)) {
+    throw notFound();
+  }
+  if (!(await getHasCheckoutPaymentAccess({ checkoutPage, request }))) {
+    return data(
+      { error: "Enter the checkout password before paying" },
+      { status: 403 },
+    );
+  }
   if (!checkoutPage.paymentProviders.includes("paystack")) {
     return data(
       { error: "Paystack is not enabled for this checkout page" },
@@ -55,10 +61,27 @@ export async function action({ request, params }: Route.ActionArgs) {
     return data({ error: "Currency not allowed" }, { status: 400 });
   }
 
-  const amountMinor = toMinorUnits({
-    amountMajor: parsed.data.amountMajor,
-    currency,
-  });
+  const payment = computeCheckoutPagePayment({ checkoutPage, currency });
+  if (!payment) {
+    return data(
+      { error: "This checkout has no payable total" },
+      { status: 400 },
+    );
+  }
+  if (
+    parsed.data.amountMajor !== undefined &&
+    !getIsClientAmountMatching({
+      amountMajor: parsed.data.amountMajor,
+      amountMinor: payment.amountMinor,
+      currency,
+    })
+  ) {
+    return data(
+      { error: "The order total has changed. Reload the page and try again." },
+      { status: 400 },
+    );
+  }
+  const { amountMinor, items } = payment;
   const reference = `chk_${cuid()}`;
 
   const appUrl = process.env.APP_URL?.replace(/\/$/, "");
@@ -98,11 +121,12 @@ export async function action({ request, params }: Route.ActionArgs) {
     create: {
       amountMinor,
       checkoutPage: { connect: { id: checkoutPage.id } },
+      organization: { connect: { id: checkoutPage.organizationId } },
       currency,
       customerEmail: parsed.data.customerEmail,
       customerName: parsed.data.customerName || null,
       customerPhone: null,
-      items: (parsed.data.items ?? []) as unknown as Prisma.InputJsonValue,
+      items: items as unknown as Prisma.InputJsonValue,
       metadata: { paystack: { reference } } as unknown as Prisma.InputJsonValue,
       provider: "paystack",
       providerCustomerId: null,
@@ -114,7 +138,7 @@ export async function action({ request, params }: Route.ActionArgs) {
       currency,
       customerEmail: parsed.data.customerEmail,
       customerName: parsed.data.customerName || null,
-      items: (parsed.data.items ?? []) as unknown as Prisma.InputJsonValue,
+      items: items as unknown as Prisma.InputJsonValue,
       status: "pending",
     },
   });

@@ -56,10 +56,15 @@ async function createPayment(
     daysAgo?: number;
   },
 ) {
+  const { organizationId } = await prisma.checkoutPage.findUniqueOrThrow({
+    select: { organizationId: true },
+    where: { id: checkoutPageId },
+  });
   return prisma.payment.create({
     data: {
       amountMinor,
       checkoutPageId,
+      organizationId,
       createdAt: subDays(now, daysAgo),
       currency,
       customerEmail: `${createId()}@example.com`,
