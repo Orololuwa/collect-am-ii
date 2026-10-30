@@ -6,6 +6,20 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["react-router", "dev", "--port", "3002", "--strictPort"],
       "port": 3002
+    },
+    {
+      "name": "dev-3002-mocks",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "MOCKS=true",
+        "npx",
+        "react-router",
+        "dev",
+        "--port",
+        "3002",
+        "--strictPort"
+      ],
+      "port": 3002
     }
   ]
 }

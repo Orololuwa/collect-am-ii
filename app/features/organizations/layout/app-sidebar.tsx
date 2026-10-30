@@ -1,6 +1,7 @@
 import {
   CircleHelpIcon,
   HammerIcon,
+  HandshakeIcon,
   LayoutDashboardIcon,
   PackageIcon,
   SettingsIcon,
@@ -60,6 +61,13 @@ export function AppSidebar({
               icon: LayoutDashboardIcon,
               title: t("app.dashboard"),
               url: href("/organizations/:organizationSlug/dashboard", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: HandshakeIcon,
+              title: t("app.deals"),
+              url: href("/organizations/:organizationSlug/deals", {
                 organizationSlug,
               }),
             },

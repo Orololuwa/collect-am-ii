@@ -3,6 +3,7 @@ import type { ResourceLanguage } from "i18next";
 import billing from "./billing";
 import colorScheme from "./color-scheme";
 import customers from "./customers";
+import deals from "./deals";
 import docs from "./docs";
 import dragAndDrop from "./drag-and-drop";
 import landing from "./landing";
@@ -19,6 +20,7 @@ export default {
   billing,
   colorScheme,
   customers,
+  deals,
   docs,
   dragAndDrop,
   landing,

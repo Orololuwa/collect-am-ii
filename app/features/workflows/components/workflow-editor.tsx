@@ -94,7 +94,9 @@ export function WorkflowEditor({
 }) {
   const { t } = useTranslation("workflows");
   const [steps, setSteps] = useState<EditorStep[]>(() =>
-    workflow.steps.map((step) => ({ ...step, key: createId() })),
+    // Keys of the saved steps must match between server and client render;
+    // steps added later get random ones.
+    workflow.steps.map((step, index) => ({ ...step, key: `saved-${index}` })),
   );
   const [isDirty, setIsDirty] = useState(false);
 

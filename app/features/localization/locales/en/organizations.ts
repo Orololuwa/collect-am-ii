@@ -276,6 +276,7 @@ export default {
           customers: "Customers",
           products: "Products",
           workflows: "Workflows",
+          deals: "Deals",
           analytics: "Analytics",
           templates: "Templates",
           dashboard: "Dashboard",
