@@ -58,6 +58,7 @@ model Organization {
   workflows                   Workflow[]
   deals                       Deal[]
   documentSequences           DocumentSequence[]
+  payments                    Payment[]
 }
 
 model OrganizationMembership {
@@ -309,8 +310,18 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  checkoutPageId String
-  checkoutPage   CheckoutPage @relation(fields: [checkoutPageId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// Set for payments taken on a checkout page.
+  checkoutPageId String?
+  checkoutPage   CheckoutPage? @relation(fields: [checkoutPageId], references: [id], onDelete: Cascade)
+
+  /// Set for payments toward a deal's payment step, online or recorded by hand.
+  dealId     String?
+  deal       Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  dealStepId String?
+  dealStep   DealStep? @relation(fields: [dealStepId], references: [id], onDelete: SetNull)
 
   provider           String
   providerPaymentId  String
@@ -331,7 +342,9 @@ model Payment {
   metadata Json?
 
   @@unique([provider, providerPaymentId])
+  @@index([organizationId, createdAt])
   @@index([checkoutPageId])
+  @@index([dealId])
   @@index([providerPaymentId])
   @@index([status])
   @@index([customerEmail])
@@ -641,6 +654,7 @@ model Deal {
   documents      DealDocument[]
   messages       DealMessage[]
   events         DealEvent[]
+  payments       Payment[]
 
   @@index([organizationId, status, updatedAt])
   @@index([customerId])
@@ -675,6 +689,7 @@ model DealStep {
   paymentMethod      String           @default("")
   paymentReference   String           @default("")
   document           DealDocument?
+  payments           Payment[]
 
   @@unique([dealId, position])
 }

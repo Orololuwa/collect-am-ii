@@ -74,6 +74,7 @@ async function setupPendingPaystackPayment() {
       amountMinor: 2550,
       checkoutPageId: checkoutPage.id,
       currency: "NGN",
+      organizationId: checkoutPage.organizationId,
       customerEmail: "customer@example.com",
       items: [],
       metadata: { paystack: { reference } },

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher, useRevalidator } from "react-router";
+import { Form, useFetcher, useNavigation, useRevalidator } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 
 import type { DealLineItem } from "../deal-items";
@@ -21,6 +21,7 @@ import {
   lineNetMinor,
   MAX_ITEM_QUANTITY,
 } from "../deal-items";
+import type { DealPaymentProvider } from "../deal-payments.server";
 import type { DealRoomView } from "../deal-room.server";
 import {
   ACCEPT_DOCUMENT_INTENT,
@@ -64,6 +65,13 @@ import {
 import { cn } from "~/lib/utils";
 
 type RoomStep = DealRoomView["steps"][number];
+
+export type RoomPayment = {
+  /** Ways the customer can pay online right now; empty means pay offline. */
+  providers: DealPaymentProvider[];
+  /** The customer just came back from the payment provider. */
+  processing: boolean;
+};
 type RoomDocument = NonNullable<RoomStep["document"]>;
 type Links = {
   pdf: (documentId: string) => string;
@@ -799,7 +807,97 @@ function AnswerPanel({
   );
 }
 
-function CurrentStep({ room, links }: { room: DealRoomView; links: Links }) {
+const PROVIDER_KEYS = {
+  paystack: "payment.payWithPaystack",
+  stripe: "payment.payWithStripe",
+} as const satisfies Record<DealPaymentProvider, string>;
+
+function PaymentStep({
+  amountMinor,
+  currency,
+  organization,
+  payment,
+  token,
+}: {
+  amountMinor: number;
+  currency: string;
+  organization: string;
+  payment: RoomPayment;
+  token: string;
+}) {
+  const { t } = useTranslation("dealRoom");
+  const money = useMoney(currency);
+  const navigation = useNavigation();
+  const paying =
+    navigation.state !== "idle" && navigation.formAction?.endsWith("/pay");
+  const canPayOnline = payment.providers.length > 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CreditCardIcon aria-hidden="true" className="size-4" />
+          {t("current.paymentTitle")}
+        </CardTitle>
+        <CardDescription>
+          {canPayOnline
+            ? t("payment.onlineDescription", { organization })
+            : t("current.paymentDescription", { organization })}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="font-semibold text-3xl tabular-nums tracking-tight">
+          {money(amountMinor)}
+        </p>
+        {payment.processing ? (
+          <output className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm">
+            <Spinner />
+            {t("payment.processing")}
+          </output>
+        ) : null}
+        {canPayOnline ? (
+          <Form
+            action={`/d/${token}/pay`}
+            className="flex flex-wrap gap-2"
+            method="POST"
+            reloadDocument
+          >
+            <HoneypotInputs />
+            {payment.providers.map((provider, index) => (
+              <Button
+                disabled={paying}
+                key={provider}
+                name="provider"
+                type="submit"
+                value={provider}
+                variant={index === 0 ? "default" : "outline"}
+              >
+                {t(PROVIDER_KEYS[provider], { amount: money(amountMinor) })}
+              </Button>
+            ))}
+          </Form>
+        ) : null}
+        {canPayOnline ? (
+          <p className="text-muted-foreground text-xs">
+            {t("payment.secureNote", { organization })}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CurrentStep({
+  room,
+  links,
+  payment,
+  token,
+}: {
+  room: DealRoomView;
+  links: Links;
+  payment: RoomPayment;
+  token: string;
+}) {
   const { t } = useTranslation("dealRoom", { keyPrefix: "current" });
   const { t: tRoom, i18n } = useTranslation("dealRoom");
   const typeName = useTypeName();
@@ -828,22 +926,13 @@ function CurrentStep({ room, links }: { room: DealRoomView; links: Links }) {
   }
   if (active.kind === "payment") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCardIcon aria-hidden="true" className="size-4" />
-            {t("paymentTitle")}
-          </CardTitle>
-          <CardDescription>
-            {t("paymentDescription", { organization })}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="font-semibold text-3xl tabular-nums tracking-tight">
-            {money(active.amountDueMinor ?? 0)}
-          </p>
-        </CardContent>
-      </Card>
+      <PaymentStep
+        amountMinor={active.amountDueMinor ?? 0}
+        currency={room.currency}
+        organization={organization}
+        payment={payment}
+        token={token}
+      />
     );
   }
   const document = active.document;
@@ -1169,7 +1258,9 @@ export function DealRoom({
   room,
   token,
   appName,
+  payment,
 }: {
+  payment: RoomPayment;
   room: DealRoomView;
   token: string;
   appName: string;
@@ -1230,7 +1321,12 @@ export function DealRoom({
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col gap-6">
-            <CurrentStep links={links} room={room} />
+            <CurrentStep
+              links={links}
+              payment={payment}
+              room={room}
+              token={token}
+            />
             <Documents links={links} onPreview={setPreviewId} room={room} />
           </div>
           <div className="flex min-w-0 flex-col gap-6">

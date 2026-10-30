@@ -41,6 +41,8 @@ export const PAYMENT_METHOD_NAMES: Record<string, string> = {
   cash: "Cash",
   mobileMoney: "Mobile money",
   other: "Other",
+  paystack: "Paystack",
+  stripe: "Card (Stripe)",
 };
 
 export function paymentMethodName(method: string) {

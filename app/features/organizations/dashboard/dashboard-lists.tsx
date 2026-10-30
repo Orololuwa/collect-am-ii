@@ -3,6 +3,8 @@ import {
   ClockIcon,
   CreditCardIcon,
   FileTextIcon,
+  HandshakeIcon,
+  MessageCircleIcon,
   ReceiptIcon,
   ShoppingCartIcon,
   UserPlusIcon,
@@ -124,7 +126,7 @@ export function RecentPayments({
                   </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {payment.checkoutPage.name}
+                  {payment.source?.name ?? "—"}
                 </TableCell>
                 <TableCell className="text-right font-semibold">
                   {formatMoney({
@@ -192,7 +194,44 @@ export function NeedsAttention({
   const warn =
     "bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300";
 
+  const dealReasons = {
+    declined: {
+      detail: t("dealDeclinedDetail"),
+      icon: CircleAlertIcon,
+      iconClassName: bad,
+      title: "dealDeclined",
+    },
+    message: {
+      detail: t("dealMessageDetail"),
+      icon: MessageCircleIcon,
+      iconClassName:
+        "bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300",
+      title: "dealMessage",
+    },
+    proposal: {
+      detail: t("dealProposalDetail"),
+      icon: HandshakeIcon,
+      iconClassName: warn,
+      title: "dealProposal",
+    },
+  } as const;
+
   const items: AttentionItem[] = [
+    ...attention.deals.map((deal) => {
+      const reason = dealReasons[deal.reason];
+      return {
+        action: t("open"),
+        detail: reason.detail,
+        icon: reason.icon,
+        iconClassName: reason.iconClassName,
+        key: `deal-${deal.id}`,
+        title: t(reason.title, { customer: deal.customer, deal: deal.title }),
+        to: href("/organizations/:organizationSlug/deals/:dealId", {
+          dealId: deal.id,
+          organizationSlug,
+        }),
+      };
+    }),
     ...(attention.failedPayments > 0
       ? [
           {

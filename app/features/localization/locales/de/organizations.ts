@@ -68,6 +68,14 @@ export default {
       title: "Letzte Aktivitäten",
     },
     attention: {
+      dealDeclined: "{{customer}} hat ein Dokument in {{deal}} abgelehnt",
+      dealDeclinedDetail:
+        "Überarbeite und sende es erneut oder schließe den Deal",
+      dealMessage: "{{customer}} hat eine Nachricht zu {{deal}} gesendet",
+      dealMessageDetail: "Noch hat niemand geantwortet",
+      dealProposal: "{{customer}} hat Änderungen an {{deal}} vorgeschlagen",
+      dealProposalDetail:
+        "Genehmige sie, lehne sie ab oder mache ein Gegenangebot",
       allClear: "Gerade braucht nichts deine Aufmerksamkeit.",
       expiring: "{{name}} schließt {{when}}",
       expiringDetail: "Danach nimmt die Checkout-Seite keine Zahlungen mehr an",

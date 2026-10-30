@@ -65,13 +65,6 @@ export function AppSidebar({
               }),
             },
             {
-              icon: HandshakeIcon,
-              title: t("app.deals"),
-              url: href("/organizations/:organizationSlug/deals", {
-                organizationSlug,
-              }),
-            },
-            {
               icon: HammerIcon,
               title: t("app.templates"),
               url: href("/organizations/:organizationSlug/templates", {
@@ -103,6 +96,13 @@ export function AppSidebar({
               icon: WorkflowIcon,
               title: t("app.workflows"),
               url: href("/organizations/:organizationSlug/workflows", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: HandshakeIcon,
+              title: t("app.deals"),
+              url: href("/organizations/:organizationSlug/deals", {
                 organizationSlug,
               }),
             },

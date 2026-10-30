@@ -98,6 +98,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     create: {
       amountMinor,
       checkoutPage: { connect: { id: checkoutPage.id } },
+      organization: { connect: { id: checkoutPage.organizationId } },
       currency,
       customerEmail: parsed.data.customerEmail,
       customerName: parsed.data.customerName || null,

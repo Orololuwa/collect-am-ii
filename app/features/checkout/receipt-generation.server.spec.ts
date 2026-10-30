@@ -59,6 +59,7 @@ async function setupPaymentWithReceiptTemplate({
       amountMinor,
       checkoutPageId: checkoutPage.id,
       currency,
+      organizationId: checkoutPage.organizationId,
       customerEmail: "customer@example.com",
       items,
       provider: "stripe",

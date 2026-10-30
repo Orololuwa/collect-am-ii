@@ -98,6 +98,7 @@ Then edit `.env`:
 | `APP_URL` | `https://collect-am.orololuwa.dev` |
 | `COOKIE_SECRET` | a generated secret |
 | `HONEYPOT_SECRET` | a generated secret |
+| `DEAL_LINK_SECRET` | a generated secret. Signs the deal share links sent to customers. Optional (falls back to `COOKIE_SECRET`), but set it so rotating the cookie secret doesn't break links customers already have. Changing it makes every share link stop working. |
 | `API_KEY_ENCRYPTION_KEY` | a generated secret. Optional (falls back to `COOKIE_SECRET`), but set it so rotating the cookie secret doesn't break stored API keys. Never change it once keys exist. |
 | `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` | from the Auth0 application |
 | `CLOUDINARY_URL` | `cloudinary://<api_key>:<api_secret>@df1fw15ei` |

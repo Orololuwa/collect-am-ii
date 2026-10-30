@@ -9,6 +9,7 @@ import {
   generateReceiptForPaymentInDatabaseById,
   sendReceiptEmailForReceiptInDatabaseById,
 } from "~/features/checkout/receipt-generation.server";
+import { finishDealOnlinePayment } from "~/features/deals/deal-payments.server";
 import { prisma } from "~/utils/database.server";
 import { getErrorMessage } from "~/utils/get-error-message";
 
@@ -87,6 +88,7 @@ export async function action({ request }: Route.ActionArgs) {
           amountMinor: true,
           checkoutPageId: true,
           currency: true,
+          dealId: true,
           metadata: true,
           status: true,
         },
@@ -97,10 +99,12 @@ export async function action({ request }: Route.ActionArgs) {
       }
 
       if (payment.status === "succeeded") {
-        await prisma.checkoutPage.update({
-          data: { isActive: false },
-          where: { id: payment.checkoutPageId },
-        });
+        if (payment.checkoutPageId) {
+          await prisma.checkoutPage.update({
+            data: { isActive: false },
+            where: { id: payment.checkoutPageId },
+          });
+        }
         return json({ message: "OK" });
       }
 
@@ -149,6 +153,14 @@ export async function action({ request }: Route.ActionArgs) {
           providerCustomerId: verified.customer?.email ?? null,
         },
       });
+
+      if (payment.dealId) {
+        await finishDealOnlinePayment(payment.id);
+        return json({ message: "OK" });
+      }
+      if (!payment.checkoutPageId) {
+        return json({ message: "OK" });
+      }
 
       await prisma.checkoutPage.update({
         data: {

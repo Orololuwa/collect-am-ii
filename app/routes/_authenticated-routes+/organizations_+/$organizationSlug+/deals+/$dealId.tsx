@@ -135,6 +135,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
         paidAt: step.paidAt,
         paymentMethod: step.paymentMethod,
         paymentReference: step.paymentReference,
+        payments: step.payments,
         requiresAcceptance: step.requiresAcceptance,
         status: step.status,
         validityDays: step.validityDays,

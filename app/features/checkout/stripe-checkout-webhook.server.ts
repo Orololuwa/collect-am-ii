@@ -8,6 +8,10 @@ import {
   generateReceiptForPaymentInDatabaseById,
   sendReceiptEmailForReceiptInDatabaseById,
 } from "~/features/checkout/receipt-generation.server";
+import {
+  finishDealOnlinePayment,
+  upsertDealPaymentFromStripePaymentIntent,
+} from "~/features/deals/deal-payments.server";
 import type { Prisma } from "~/generated/client";
 import { prisma } from "~/utils/database.server";
 
@@ -65,6 +69,7 @@ export async function upsertPaymentRecordFromStripePaymentIntentIfMissing(
     create: {
       amountMinor: pi.amount,
       checkoutPage: { connect: { id: checkoutPage.id } },
+      organization: { connect: { id: checkoutPage.organizationId } },
       currency: pi.currency.toUpperCase(),
       customerEmail,
       customerName,
@@ -95,6 +100,18 @@ export async function handleStripeCheckoutPaymentIntentSucceeded(
 ): Promise<void> {
   const providerPaymentId = pi.id;
 
+  if (pi.metadata?.source === "deal_payment") {
+    const payment = await upsertDealPaymentFromStripePaymentIntent(pi);
+    if (!payment || payment.status === "succeeded") return;
+    await updatePaymentStatusInDatabaseByProviderAndProviderPaymentId({
+      provider: "stripe",
+      providerPaymentId,
+      status: "succeeded",
+    });
+    await finishDealOnlinePayment(payment.id);
+    return;
+  }
+
   await upsertPaymentRecordFromStripePaymentIntentIfMissing(pi);
 
   const payment = await prisma.payment.findUnique({
@@ -113,6 +130,8 @@ export async function handleStripeCheckoutPaymentIntentSucceeded(
   });
 
   if (!payment) return;
+
+  if (!payment.checkoutPageId) return;
 
   if (payment.status === "succeeded") {
     await prisma.checkoutPage.update({

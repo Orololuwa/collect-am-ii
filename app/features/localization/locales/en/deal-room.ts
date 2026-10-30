@@ -29,6 +29,21 @@ export default {
     downloadPdf: "Download PDF",
     documentFrame: "{{type}} {{number}}",
   },
+  payment: {
+    onlineDescription:
+      "Pay {{organization}} securely online. Your receipt arrives as soon as the payment goes through.",
+    payWithPaystack: "Pay {{amount}} with Paystack",
+    payWithStripe: "Pay {{amount}} by card",
+    processing:
+      "Thanks! We're confirming your payment. This page updates on its own.",
+    secureNote:
+      "You'll finish paying on the provider's secure page, then come back here.",
+    errors: {
+      notPayable: "There is nothing to pay right now. Refresh the page.",
+      providerUnavailable: "That payment method isn't available for this deal.",
+      providerFailed: "We couldn't start the payment. Try again in a moment.",
+    },
+  },
   accept: {
     tab: "Accept",
     nameLabel: "Your full name",

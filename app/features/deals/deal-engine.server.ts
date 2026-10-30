@@ -766,21 +766,127 @@ export async function recordDealPayment({
     if (step.id !== stepId || step.kind !== "payment") {
       throw new DealTransitionError("notPaymentStep");
     }
-    const amountPaidMinor = step.amountDueMinor ?? 0;
-    await tx.dealStep.update({
+    const amountMinor = step.amountDueMinor ?? 0;
+    // Kept as a payment too, so it counts in the dashboard's totals.
+    await tx.payment.create({
       data: {
-        amountPaidMinor,
-        paidAt: new Date(),
-        paymentMethod: method,
-        paymentReference: reference,
+        amountMinor,
+        currency: deal.currency,
+        customerEmail: deal.customer.email,
+        customerName: deal.customer.name,
+        dealId: deal.id,
+        dealStepId: step.id,
+        items: [
+          { description: step.name, quantity: 1, unitPriceMinor: amountMinor },
+        ],
+        metadata: { method, reference },
+        organizationId,
+        provider: "manual",
+        providerPaymentId: `manual_${step.id}`,
+        status: "succeeded",
       },
-      where: { id: step.id },
     });
-    await recordEvent(tx, deal.id, "paymentRecorded", actor, {
-      payload: { amountMinor: amountPaidMinor, method, reference },
+    await settlePaymentStep(tx, deal, step, {
+      actor,
+      amountMinor,
+      effects,
+      method,
+      reference,
     });
-    await completeStep(tx, deal, step.id, actor, effects);
   });
+}
+
+async function settlePaymentStep(
+  tx: Tx,
+  deal: LoadedDeal,
+  step: StepWithDocument,
+  {
+    amountMinor,
+    method,
+    reference,
+    actor,
+    effects,
+    online = false,
+  }: {
+    amountMinor: number;
+    method: string;
+    reference: string;
+    actor: Actor;
+    effects: DealEffects;
+    online?: boolean;
+  },
+) {
+  await tx.dealStep.update({
+    data: {
+      amountPaidMinor: amountMinor,
+      paidAt: new Date(),
+      paymentMethod: method,
+      paymentReference: reference,
+    },
+    where: { id: step.id },
+  });
+  await recordEvent(tx, deal.id, "paymentRecorded", actor, {
+    payload: { amountMinor, method, online, reference },
+  });
+  await completeStep(tx, deal, step.id, actor, effects);
+}
+
+/**
+ * Applies a confirmed online payment to the deal step it was taken for. Does
+ * nothing (and says so) when the step was already paid, moved on or the deal
+ * was closed, so a repeated webhook can't pay a step twice.
+ */
+export async function applyOnlinePaymentToDeal({
+  paymentId,
+}: {
+  paymentId: string;
+}) {
+  const payment = await prisma.payment.findUnique({
+    select: {
+      amountMinor: true,
+      dealId: true,
+      dealStepId: true,
+      organizationId: true,
+      provider: true,
+      providerPaymentId: true,
+      status: true,
+    },
+    where: { id: paymentId },
+  });
+  if (
+    !payment?.dealId ||
+    !payment.dealStepId ||
+    payment.status !== "succeeded"
+  ) {
+    return { applied: false as const, effects: { emails: [] } };
+  }
+  const { dealId, dealStepId } = payment;
+
+  const { result: applied, effects } = await runTransition(
+    async (tx, effects) => {
+      const deal = await loadDealForUpdate(tx, payment.organizationId, dealId);
+      const step = deal.steps.find((candidate) => candidate.id === dealStepId);
+      if (
+        deal.status !== "open" ||
+        !step ||
+        step.kind !== "payment" ||
+        step.status !== "active" ||
+        step.paidAt
+      ) {
+        return false;
+      }
+      await settlePaymentStep(tx, deal, step, {
+        actor: { party: "customer", userId: null },
+        amountMinor: payment.amountMinor,
+        effects,
+        method: payment.provider,
+        online: true,
+        reference: payment.providerPaymentId,
+      });
+      return true;
+    },
+  );
+  return { applied, effects };
 }
 
 /** Closes an open deal as lost or cancelled. */

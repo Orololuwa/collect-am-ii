@@ -103,6 +103,17 @@ export async function retrieveDealFromDatabaseById({
       },
       steps: {
         include: {
+          payments: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              amountMinor: true,
+              createdAt: true,
+              id: true,
+              provider: true,
+              status: true,
+            },
+            where: { provider: { not: "manual" } },
+          },
           document: {
             include: {
               versions: {

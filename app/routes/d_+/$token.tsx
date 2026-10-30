@@ -3,6 +3,7 @@ import { data } from "react-router";
 import type { Route } from "./+types/$token";
 import { DealRoom } from "~/features/deals/components/deal-room";
 import { markDealDocumentViewed } from "~/features/deals/deal-engine.server";
+import { getDealPaymentProviders } from "~/features/deals/deal-payments.server";
 import {
   documentName,
   notifyDealMembers,
@@ -61,6 +62,9 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
   }
 
   const view = toDealRoomView(room);
+  const paymentStep = view.steps.find(
+    (step) => step.status === "active" && step.kind === "payment",
+  );
   return data(
     {
       appName: i18n.t("translation:appName"),
@@ -68,6 +72,12 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
         organization: view.organization.name,
         title: view.title,
       }),
+      payment: {
+        processing:
+          Boolean(paymentStep) &&
+          new URL(request.url).searchParams.get("payment") === "processing",
+        providers: paymentStep ? getDealPaymentProviders(view.currency) : [],
+      },
       room: view,
     },
     { headers: privateHeaders },
@@ -94,6 +104,7 @@ export default function DealRoomRoute({
   return (
     <DealRoom
       appName={loaderData.appName}
+      payment={loaderData.payment}
       room={loaderData.room}
       token={params.token}
     />

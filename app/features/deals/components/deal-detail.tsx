@@ -18,6 +18,7 @@ import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { href, useFetcher, useRevalidator } from "react-router";
 
+import { paymentMethodName } from "../deal-documents";
 import type { DealLineItem } from "../deal-items";
 import { lineNetMinor } from "../deal-items";
 import type { DealEventType } from "../deals-constants";
@@ -92,6 +93,7 @@ import type {
   DealParty,
   DealStatus,
   DealStepStatus,
+  PaymentStatus,
   TemplateType,
   WorkflowStepKind,
 } from "~/generated/browser";
@@ -145,6 +147,14 @@ export type DealStepView = {
   paidAt: Date | null;
   paymentMethod: string;
   paymentReference: string;
+  /** Online payment attempts for a payment step, newest first. */
+  payments: Array<{
+    id: string;
+    provider: string;
+    status: PaymentStatus;
+    amountMinor: number;
+    createdAt: Date;
+  }>;
   document: DealDocumentView | null;
 };
 
@@ -193,6 +203,16 @@ const kindIcons = {
 } as const satisfies Record<WorkflowStepKind, unknown>;
 
 const selectClassName = cn(inputClassName, "read-only:opacity-100");
+
+const PAYMENT_STATUS_KEYS = {
+  canceled: "paymentStatus.canceled",
+  failed: "paymentStatus.failed",
+  partially_refunded: "paymentStatus.refunded",
+  pending: "paymentStatus.pending",
+  processing: "paymentStatus.pending",
+  refunded: "paymentStatus.refunded",
+  succeeded: "paymentStatus.succeeded",
+} as const satisfies Record<PaymentStatus, string>;
 
 const stepStatusKeys = {
   active: "stepStatus.active",
@@ -1017,6 +1037,32 @@ function PaymentStep({ deal, step }: { deal: DealView; step: DealStepView }) {
             })}
           </p>
         </div>
+        {step.payments.length > 0 ? (
+          <div className="space-y-2">
+            <p className="font-medium text-sm">{t("onlineAttempts")}</p>
+            <ul className="divide-y rounded-lg border text-sm">
+              {step.payments.map((payment) => (
+                <li
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                  key={payment.id}
+                >
+                  <span>
+                    {paymentMethodName(payment.provider)} ·{" "}
+                    {formatMoney({
+                      amountMinor: payment.amountMinor,
+                      currency: deal.currency,
+                      locale: i18n.language,
+                    })}
+                  </span>
+                  <span className="flex items-center gap-2 text-muted-foreground text-xs">
+                    {tDeals(PAYMENT_STATUS_KEYS[payment.status])} ·{" "}
+                    {formatRelativeTime(payment.createdAt, i18n.language)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <fetcher.Form
           className="grid gap-4 border-t pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
           method="POST"
@@ -1290,13 +1336,21 @@ function Activity({ deal }: { deal: DealView }) {
                   className="absolute top-1.5 -left-[21px] size-2 rounded-full bg-border ring-4 ring-card"
                 />
                 <p className="text-sm">
-                  {t(EVENT_KEYS[event.type], {
-                    actor,
-                    amount,
-                    document: event.document ? label(event.document) : "",
-                    name: String(event.payload.acceptedByName ?? ""),
-                    version: String(event.payload.version ?? ""),
-                  })}
+                  {t(
+                    event.type === "paymentRecorded" && event.payload.online
+                      ? "events.paymentReceivedOnline"
+                      : EVENT_KEYS[event.type],
+                    {
+                      actor,
+                      amount,
+                      document: event.document ? label(event.document) : "",
+                      method: paymentMethodName(
+                        String(event.payload.method ?? ""),
+                      ),
+                      name: String(event.payload.acceptedByName ?? ""),
+                      version: String(event.payload.version ?? ""),
+                    },
+                  )}
                 </p>
                 <p className="text-muted-foreground text-xs">
                   {formatRelativeTime(event.createdAt, i18n.language)}

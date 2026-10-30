@@ -29,6 +29,23 @@ export default {
     downloadPdf: "PDF herunterladen",
     documentFrame: "{{type}} {{number}}",
   },
+  payment: {
+    onlineDescription:
+      "Bezahle {{organization}} sicher online. Deine Quittung kommt, sobald die Zahlung durch ist.",
+    payWithPaystack: "{{amount}} mit Paystack bezahlen",
+    payWithStripe: "{{amount}} mit Karte bezahlen",
+    processing:
+      "Danke! Wir bestätigen deine Zahlung. Diese Seite aktualisiert sich von selbst.",
+    secureNote:
+      "Du schließt die Zahlung auf der sicheren Seite des Anbieters ab und kommst dann hierher zurück.",
+    errors: {
+      notPayable: "Gerade ist nichts zu bezahlen. Lade die Seite neu.",
+      providerUnavailable:
+        "Diese Zahlungsart ist für diesen Deal nicht verfügbar.",
+      providerFailed:
+        "Die Zahlung konnte nicht gestartet werden. Versuche es gleich noch einmal.",
+    },
+  },
   accept: {
     tab: "Annehmen",
     nameLabel: "Dein vollständiger Name",

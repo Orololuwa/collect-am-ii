@@ -210,12 +210,13 @@ export async function generateReceiptForPaymentInDatabaseById({
 
   if (!payment) return null;
   if (payment.receipt) return payment.receipt;
-  if (!payment.checkoutPage.receiptTemplateId) return null;
+  // Deal payments get their receipt from the deal's own receipt step.
+  if (!payment.checkoutPage?.receiptTemplateId) return null;
 
   const template = await prisma.template.findFirst({
     where: {
       id: payment.checkoutPage.receiptTemplateId,
-      organizationId: payment.checkoutPage.organizationId,
+      organizationId: payment.organizationId,
     },
   });
 

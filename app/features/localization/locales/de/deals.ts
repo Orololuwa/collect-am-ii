@@ -26,6 +26,13 @@ export default {
     invoice: "Rechnung",
     receipt: "Quittung",
   },
+  paymentStatus: {
+    pending: "Ausstehend",
+    succeeded: "Bezahlt",
+    failed: "Fehlgeschlagen",
+    canceled: "Abgebrochen",
+    refunded: "Erstattet",
+  },
   list: {
     title: "Deals",
     description:
@@ -196,6 +203,7 @@ export default {
     versions_other: "{{count}} Versionen",
     activity: "Aktivität",
     previewTitle: "Vorschau: {{type}}",
+    onlineAttempts: "Online-Zahlungen",
     shareLink: "Freigabelink",
     shareLinkDescription:
       "Wer diesen Link hat, sieht die Dokumente des Deals, kann sie annehmen, Änderungen vorschlagen und dir schreiben. Er steht in jeder E-Mail, die du sendest.",
@@ -239,6 +247,7 @@ export default {
     documentAccepted: "{{document}} angenommen von {{name}}",
     documentDeclined: "{{document}} abgelehnt",
     paymentRecorded: "{{actor}} hat eine Zahlung über {{amount}} erfasst",
+    paymentReceivedOnline: "{{amount}} online bezahlt mit {{method}}",
     documentViewed: "{{actor}} hat {{document}} angesehen",
     changesProposed: "{{actor}} hat Änderungen an {{document}} vorgeschlagen",
     proposalApproved:

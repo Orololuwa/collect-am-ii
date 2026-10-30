@@ -64,6 +64,13 @@ export default {
       title: "Recent activity",
     },
     attention: {
+      dealDeclined: "{{customer}} declined a document in {{deal}}",
+      dealDeclinedDetail: "Revise it and send it again, or close the deal",
+      dealMessage: "{{customer}} sent a message about {{deal}}",
+      dealMessageDetail: "Nobody has replied yet",
+      dealProposal: "{{customer}} suggested changes to {{deal}}",
+      dealProposalDetail:
+        "Approve them, turn them down or make a counter-offer",
       allClear: "Nothing needs your attention.",
       expiring: "{{name}} closes {{when}}",
       expiringDetail: "The checkout page stops taking payments then",
