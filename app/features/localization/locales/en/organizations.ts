@@ -275,6 +275,7 @@ export default {
         app: {
           customers: "Customers",
           products: "Products",
+          workflows: "Workflows",
           analytics: "Analytics",
           templates: "Templates",
           dashboard: "Dashboard",

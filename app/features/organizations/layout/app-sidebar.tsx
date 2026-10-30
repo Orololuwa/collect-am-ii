@@ -6,6 +6,7 @@ import {
   SettingsIcon,
   ShoppingCartIcon,
   UsersIcon,
+  WorkflowIcon,
 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
@@ -87,6 +88,13 @@ export function AppSidebar({
               icon: UsersIcon,
               title: t("app.customers"),
               url: href("/organizations/:organizationSlug/customers", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: WorkflowIcon,
+              title: t("app.workflows"),
+              url: href("/organizations/:organizationSlug/workflows", {
                 organizationSlug,
               }),
             },

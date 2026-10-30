@@ -13,6 +13,7 @@ import products from "./products";
 import settings from "./settings";
 import translation from "./translation";
 import userAuthentication from "./user-authentication";
+import workflows from "./workflows";
 
 export default {
   billing,
@@ -28,4 +29,5 @@ export default {
   settings,
   translation,
   userAuthentication,
+  workflows,
 } satisfies ResourceLanguage;

@@ -33,6 +33,7 @@ import { Input, inputClassName } from "~/components/ui/input";
 import { Spinner } from "~/components/ui/spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { COMMON_CURRENCIES } from "~/features/templates/shared/common-currencies";
+import { cn } from "~/lib/utils";
 
 export type ProductFormDefaults = {
   name: string;
@@ -123,7 +124,9 @@ export function ProductForm({
                 </FieldLabel>
                 <select
                   {...fields.currency.inputProps}
-                  className={inputClassName}
+                  // Browsers treat <select> as :read-only, which the input
+                  // style dims.
+                  className={cn(inputClassName, "read-only:opacity-100")}
                   defaultValue={defaults.currency}
                 >
                   {COMMON_CURRENCIES.map((currency) => (
