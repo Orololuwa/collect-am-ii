@@ -56,6 +56,19 @@ export default {
     validityDays: "Valid for (days)",
   },
   gallery: {
+    categories: {
+      goods: "Selling goods",
+      projects: "Projects and custom work",
+      services: "Services",
+    },
+    highlights: {
+      deposit: "{{percent}}% upfront",
+      paidUpfront: "Paid before delivery",
+      terms_one: "Invoice due in {{count}} day",
+      terms_other: "Invoice due in {{count}} days",
+      validity_one: "{{type}} valid {{count}} day",
+      validity_other: "{{type}} valid {{count}} days",
+    },
     blankDescription: "Start with a single quote and build the steps yourself.",
     blankTitle: "Start from scratch",
     description:
@@ -105,39 +118,64 @@ export default {
   newPageTitle: "New workflow",
   pageTitle: "Workflows",
   samples: {
-    b2bWholesale: {
+    agencyProject: {
       description:
-        "For selling to businesses on credit: quote, order confirmation, then an invoice with payment terms.",
-      name: "B2B wholesale",
+        "An estimate the client signs off, half upfront to kick off, and the rest when you deliver. For websites, branding and campaigns.",
+      name: "Agency or design project",
+    },
+    constructionProject: {
+      description:
+        "An estimate for the job, 40% mobilisation so you can buy materials, then a completion invoice when the work is done.",
+      name: "Building, renovation or installation",
+    },
+    eventCatering: {
+      description:
+        "Quote the menu, confirm the order, collect 70% before you buy ingredients and the rest the day before the event.",
+      name: "Catering and event supply",
+    },
+    freelanceJob: {
+      description:
+        "Send a quote, invoice as soon as it's accepted and get paid within a week. For one-off jobs like a logo, an audit or a few days of consulting.",
+      name: "Freelance or consulting job",
     },
     madeToOrder: {
       description:
-        "For custom work with long lead times: quote, sales order, a 30% deposit, then the balance on delivery.",
+        "For furniture, tailoring, printing and other custom work: quote, a sales order the customer approves, 60% to start and the balance before delivery.",
       name: "Made to order",
     },
-    quoteToCash: {
+    photographyBooking: {
       description:
-        "The simplest flow: the customer accepts a quote, gets the invoice, pays and gets a receipt.",
-      name: "Quote to cash",
+        "A quote to hold the date, a 30% booking deposit, and the balance just before the shoot or event.",
+      name: "Photography or event booking",
     },
-    retailPrepaid: {
+    retailOrder: {
       description:
-        "For orders paid upfront: the customer confirms the order, pays and gets a receipt.",
-      name: "Retail prepaid",
+        "The customer confirms what they're buying, pays upfront and gets a receipt. For orders taken in store, on WhatsApp or on Instagram.",
+      name: "Shop or online order",
     },
-    servicesDeposit: {
+    wholesaleOnCredit: {
       description:
-        "For agencies and contractors: an estimate, a 50% deposit to start, then the balance when the work is done.",
-      name: "Services with deposit",
+        "For distributors supplying shops and businesses: a quote, a sales order, then an invoice they pay within 30 days.",
+      name: "Wholesale on credit",
     },
   },
   stepNames: {
+    balanceInvoice: "Balance invoice",
+    balancePayment: "Balance payment",
+    bookingDeposit: "Booking deposit",
+    bookingDepositInvoice: "Booking deposit invoice",
+    completionInvoice: "Completion invoice",
+    completionPayment: "Completion payment",
     depositInvoice: "Deposit invoice",
     depositPayment: "Deposit payment",
     estimate: "Estimate",
     finalInvoice: "Final invoice",
     finalPayment: "Final payment",
     invoice: "Invoice",
+    kickoffInvoice: "Kick-off invoice",
+    kickoffPayment: "Kick-off payment",
+    mobilisationInvoice: "Mobilisation invoice",
+    mobilisationPayment: "Mobilisation payment",
     orderConfirmation: "Order confirmation",
     payment: "Payment",
     quote: "Quote",

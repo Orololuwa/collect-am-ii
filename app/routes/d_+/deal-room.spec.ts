@@ -78,14 +78,12 @@ async function setupSentDeal({ send = true } = {}) {
     description: "",
     name: "Services with deposit",
     organizationId: organization.id,
-    sampleKey: "servicesDeposit",
-    steps: WORKFLOW_SAMPLES.servicesDeposit.map(
-      ({ stepName, ...settings }) => ({
-        ...settings,
-        name: stepName,
-        templateId: null,
-      }),
-    ),
+    sampleKey: "agencyProject",
+    steps: WORKFLOW_SAMPLES.agencyProject.map(({ stepName, ...settings }) => ({
+      ...settings,
+      name: stepName,
+      templateId: null,
+    })),
   });
   const { result: started } = await startDeal({
     actor: { party: "business", userId: user.id },

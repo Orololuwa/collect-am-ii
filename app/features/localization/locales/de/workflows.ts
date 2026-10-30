@@ -56,6 +56,19 @@ export default {
     validityDays: "Gültig für (Tage)",
   },
   gallery: {
+    categories: {
+      goods: "Warenverkauf",
+      projects: "Projekte und Einzelanfertigungen",
+      services: "Dienstleistungen",
+    },
+    highlights: {
+      deposit: "{{percent}} % im Voraus",
+      paidUpfront: "Bezahlt vor Lieferung",
+      terms_one: "Rechnung fällig in {{count}} Tag",
+      terms_other: "Rechnung fällig in {{count}} Tagen",
+      validity_one: "{{type}} {{count}} Tag gültig",
+      validity_other: "{{type}} {{count}} Tage gültig",
+    },
     blankDescription:
       "Beginne mit einem einzelnen Angebot und baue die Schritte selbst auf.",
     blankTitle: "Ohne Vorlage beginnen",
@@ -108,39 +121,64 @@ export default {
   newPageTitle: "Neuer Workflow",
   pageTitle: "Workflows",
   samples: {
-    b2bWholesale: {
+    agencyProject: {
       description:
-        "Für den Verkauf an Firmen auf Rechnung: Angebot, Auftragsbestätigung, dann eine Rechnung mit Zahlungsziel.",
-      name: "B2B-Großhandel",
+        "Ein Kostenvoranschlag, den der Kunde freigibt, die Hälfte zum Start und der Rest bei Lieferung. Für Websites, Branding und Kampagnen.",
+      name: "Agentur- oder Designprojekt",
+    },
+    constructionProject: {
+      description:
+        "Ein Kostenvoranschlag, 40 % Anzahlung für das Material und eine Schlussrechnung, wenn die Arbeit fertig ist.",
+      name: "Bau, Renovierung oder Installation",
+    },
+    eventCatering: {
+      description:
+        "Menü anbieten, Auftrag bestätigen, 70 % vor dem Einkauf und den Rest am Tag vor der Veranstaltung kassieren.",
+      name: "Catering und Eventbedarf",
+    },
+    freelanceJob: {
+      description:
+        "Angebot senden, nach der Annahme sofort abrechnen und innerhalb einer Woche bezahlt werden. Für Einzelaufträge wie ein Logo, ein Audit oder ein paar Beratungstage.",
+      name: "Freelance- oder Beratungsauftrag",
     },
     madeToOrder: {
       description:
-        "Für Auftragsfertigung mit langer Lieferzeit: Angebot, Kundenauftrag, 30 % Anzahlung, dann der Rest bei Lieferung.",
+        "Für Möbel, Schneiderei, Druck und andere Einzelanfertigungen: Angebot, ein Kundenauftrag zur Freigabe, 60 % zum Start und der Rest vor der Lieferung.",
       name: "Auftragsfertigung",
     },
-    quoteToCash: {
+    photographyBooking: {
       description:
-        "Der einfachste Ablauf: Der Kunde nimmt ein Angebot an, erhält die Rechnung, bezahlt und bekommt eine Quittung.",
-      name: "Angebot bis Zahlung",
+        "Ein Angebot, um den Termin zu reservieren, 30 % Buchungsanzahlung und der Rest kurz vor dem Shooting oder Event.",
+      name: "Fotografie- oder Eventbuchung",
     },
-    retailPrepaid: {
+    retailOrder: {
       description:
-        "Für Bestellungen mit Vorauszahlung: Der Kunde bestätigt die Bestellung, bezahlt und bekommt eine Quittung.",
-      name: "Einzelhandel mit Vorkasse",
+        "Der Kunde bestätigt seinen Einkauf, zahlt im Voraus und bekommt eine Quittung. Für Bestellungen im Laden, über WhatsApp oder Instagram.",
+      name: "Laden- oder Onlinebestellung",
     },
-    servicesDeposit: {
+    wholesaleOnCredit: {
       description:
-        "Für Agenturen und Dienstleister: eine Kostenschätzung, 50 % Anzahlung zum Start, dann der Rest nach Abschluss.",
-      name: "Dienstleistung mit Anzahlung",
+        "Für Händler, die Läden und Firmen beliefern: Angebot, Kundenauftrag und eine Rechnung mit 30 Tagen Zahlungsziel.",
+      name: "Großhandel auf Rechnung",
     },
   },
   stepNames: {
+    balanceInvoice: "Restrechnung",
+    balancePayment: "Restzahlung",
+    bookingDeposit: "Buchungsanzahlung",
+    bookingDepositInvoice: "Rechnung Buchungsanzahlung",
+    completionInvoice: "Schlussrechnung",
+    completionPayment: "Schlusszahlung",
     depositInvoice: "Anzahlungsrechnung",
     depositPayment: "Anzahlung",
-    estimate: "Kostenschätzung",
+    estimate: "Kostenvoranschlag",
     finalInvoice: "Schlussrechnung",
     finalPayment: "Schlusszahlung",
     invoice: "Rechnung",
+    kickoffInvoice: "Startrechnung",
+    kickoffPayment: "Startzahlung",
+    mobilisationInvoice: "Materialanzahlung (Rechnung)",
+    mobilisationPayment: "Materialanzahlung",
     orderConfirmation: "Auftragsbestätigung",
     payment: "Zahlung",
     quote: "Angebot",

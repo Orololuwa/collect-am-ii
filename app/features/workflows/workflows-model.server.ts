@@ -123,3 +123,12 @@ export async function retrieveWorkflowStepTemplatesFromDatabase(
     },
   });
 }
+
+/** Whether the organization has a workflow deals can be started from. */
+export async function hasActiveWorkflowInDatabase(organizationId: string) {
+  const workflow = await prisma.workflow.findFirst({
+    select: { id: true },
+    where: { archivedAt: null, organizationId },
+  });
+  return workflow !== null;
+}

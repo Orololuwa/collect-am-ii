@@ -114,7 +114,7 @@ describe("workflows routes", () => {
     const response = (await callRoute({
       formData: toFormData({
         intent: CREATE_WORKFLOW_INTENT,
-        sampleKey: "servicesDeposit",
+        sampleKey: "agencyProject",
       }),
       handler: newAction,
       params: { organizationSlug: organization.slug },
@@ -132,15 +132,15 @@ describe("workflows routes", () => {
       `/organizations/${organization.slug}/workflows/${workflow.id}`,
     );
     expect(workflow).toMatchObject({
-      name: "Services with deposit",
-      sampleKey: "servicesDeposit",
+      name: "Agency or design project",
+      sampleKey: "agencyProject",
     });
     expect(
       workflow.steps.map((step) => [step.kind, step.name, step.carryForward]),
     ).toEqual([
       ["document", "Estimate", "items"],
-      ["document", "Deposit invoice", "deposit"],
-      ["payment", "Deposit payment", "items"],
+      ["document", "Kick-off invoice", "deposit"],
+      ["payment", "Kick-off payment", "items"],
       ["receipt", "Receipt", "items"],
       ["document", "Final invoice", "balance"],
       ["payment", "Final payment", "items"],

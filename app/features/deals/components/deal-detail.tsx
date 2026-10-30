@@ -46,6 +46,7 @@ import { DealStatusBadge, DocumentStatusBadge } from "./deal-badges";
 import type { DealProductOption } from "./deal-items-editor";
 import { DealItemsEditor } from "./deal-items-editor";
 import { DealItemsTable } from "./deal-items-table";
+import { DocumentTypeIcon } from "./document-type-icon";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1191,19 +1192,22 @@ function DocumentsList({
                 className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
                 key={document.id}
               >
-                <div className="min-w-0 space-y-1">
-                  <p className="flex flex-wrap items-center gap-2 font-medium text-sm">
-                    {label(document)}
-                    <DocumentStatusBadge status={document.status} />
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {formatMoney({
-                      amountMinor: document.current.totalMinor,
-                      currency: deal.currency,
-                      locale: i18n.language,
-                    })}{" "}
-                    · {t("versions", { count: document.versionCount })}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <DocumentTypeIcon type={document.type} />
+                  <div className="min-w-0 space-y-1">
+                    <p className="flex flex-wrap items-center gap-2 font-medium text-sm">
+                      {label(document)}
+                      <DocumentStatusBadge status={document.status} />
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {formatMoney({
+                        amountMinor: document.current.totalMinor,
+                        currency: deal.currency,
+                        locale: i18n.language,
+                      })}{" "}
+                      · {t("versions", { count: document.versionCount })}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex gap-1">
                   <Button

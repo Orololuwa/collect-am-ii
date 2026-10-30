@@ -62,7 +62,7 @@ const total = 10_750_000;
  * so it waits on its payment step.
  */
 async function setupDealAwaitingPayment(
-  sampleKey: WorkflowSampleKey = "retailPrepaid",
+  sampleKey: WorkflowSampleKey = "retailOrder",
   { accept = true } = {},
 ) {
   const { user, organization } = await setupUserWithOrgAndAddAsMember();
@@ -284,7 +284,7 @@ describe("deal payments", () => {
   });
 
   test("given: nothing to pay yet, should: send the customer back with an error", async () => {
-    const { token, deal } = await setupDealAwaitingPayment("retailPrepaid", {
+    const { token, deal } = await setupDealAwaitingPayment("retailOrder", {
       accept: false,
     });
 
@@ -330,7 +330,7 @@ describe("deal payments", () => {
   });
 
   test("given: a customer's suggested changes, should: list the deal as needing attention", async () => {
-    const { deal, document } = await setupDealAwaitingPayment("retailPrepaid", {
+    const { deal, document } = await setupDealAwaitingPayment("retailOrder", {
       accept: false,
     });
     await proposeDealChanges({

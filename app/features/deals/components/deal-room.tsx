@@ -4,7 +4,6 @@ import {
   CreditCardIcon,
   DownloadIcon,
   EyeIcon,
-  FileTextIcon,
   PlusIcon,
   SendIcon,
   Undo2Icon,
@@ -33,6 +32,7 @@ import {
 } from "../deals-constants";
 import { DealStatusBadge, DocumentStatusBadge } from "./deal-badges";
 import { StepsProgress } from "./deal-detail";
+import { DocumentTypeIcon } from "./document-type-icon";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -1081,10 +1081,7 @@ function Documents({
                 key={document.id}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <FileTextIcon
-                    aria-hidden="true"
-                    className="size-4 shrink-0 text-muted-foreground"
-                  />
+                  <DocumentTypeIcon type={document.type} />
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-2 font-medium text-sm">
                       {typeName(document.type)} {document.number}

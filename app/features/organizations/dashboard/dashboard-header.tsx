@@ -30,7 +30,10 @@ export function DashboardHeader({
   period,
   currency,
   currencies,
+  hasWorkflow,
 }: {
+  /** Without a workflow no deal can start, so the main button makes one. */
+  hasWorkflow: boolean;
   userName: string;
   organizationName: string;
   organizationSlug: string;
@@ -100,12 +103,18 @@ export function DashboardHeader({
 
         <Button asChild>
           <Link
-            to={href("/organizations/:organizationSlug/checkout-pages/new", {
-              organizationSlug,
-            })}
+            to={
+              hasWorkflow
+                ? href("/organizations/:organizationSlug/deals/new", {
+                    organizationSlug,
+                  })
+                : href("/organizations/:organizationSlug/workflows/new", {
+                    organizationSlug,
+                  })
+            }
           >
             <PlusIcon />
-            {t("newCheckoutPage")}
+            {hasWorkflow ? t("newDeal") : t("newWorkflow")}
           </Link>
         </Button>
       </div>

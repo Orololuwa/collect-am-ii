@@ -61,7 +61,7 @@ const items: DealLineItem[] = [
 // 1,000,000.00 + 100,000.00 + 7.5% of 100,000.00
 const total = 100_000_000 + 10_000_000 + 750_000;
 
-async function setup(sampleKey: WorkflowSampleKey = "servicesDeposit") {
+async function setup(sampleKey: WorkflowSampleKey = "agencyProject") {
   const { user, organization } = await setupUserWithOrgAndAddAsMember();
   const customer = await prisma.customer.create({
     data: createPopulatedCustomer({ organizationId: organization.id }),

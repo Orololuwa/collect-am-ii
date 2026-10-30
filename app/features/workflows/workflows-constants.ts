@@ -1,4 +1,8 @@
-import type { SampleStepName, WorkflowSampleKey } from "./workflow-samples";
+import type {
+  SampleStepName,
+  WorkflowSampleCategory,
+  WorkflowSampleKey,
+} from "./workflow-samples";
 import type {
   WorkflowDocumentType,
   WorkflowStepIssueCode,
@@ -16,38 +20,66 @@ export const BLANK_WORKFLOW_KEY = "blank";
 // `t` cheap to type-check; never build these keys with template literals.
 
 export const SAMPLE_TEXT_KEYS = {
-  b2bWholesale: {
-    description: "samples.b2bWholesale.description",
-    name: "samples.b2bWholesale.name",
+  agencyProject: {
+    description: "samples.agencyProject.description",
+    name: "samples.agencyProject.name",
+  },
+  constructionProject: {
+    description: "samples.constructionProject.description",
+    name: "samples.constructionProject.name",
+  },
+  eventCatering: {
+    description: "samples.eventCatering.description",
+    name: "samples.eventCatering.name",
+  },
+  freelanceJob: {
+    description: "samples.freelanceJob.description",
+    name: "samples.freelanceJob.name",
   },
   madeToOrder: {
     description: "samples.madeToOrder.description",
     name: "samples.madeToOrder.name",
   },
-  quoteToCash: {
-    description: "samples.quoteToCash.description",
-    name: "samples.quoteToCash.name",
+  photographyBooking: {
+    description: "samples.photographyBooking.description",
+    name: "samples.photographyBooking.name",
   },
-  retailPrepaid: {
-    description: "samples.retailPrepaid.description",
-    name: "samples.retailPrepaid.name",
+  retailOrder: {
+    description: "samples.retailOrder.description",
+    name: "samples.retailOrder.name",
   },
-  servicesDeposit: {
-    description: "samples.servicesDeposit.description",
-    name: "samples.servicesDeposit.name",
+  wholesaleOnCredit: {
+    description: "samples.wholesaleOnCredit.description",
+    name: "samples.wholesaleOnCredit.name",
   },
 } as const satisfies Record<
   WorkflowSampleKey,
   { name: string; description: string }
 >;
 
+export const SAMPLE_CATEGORY_KEYS = {
+  goods: "gallery.categories.goods",
+  projects: "gallery.categories.projects",
+  services: "gallery.categories.services",
+} as const satisfies Record<WorkflowSampleCategory, string>;
+
 export const STEP_NAME_KEYS = {
+  balanceInvoice: "stepNames.balanceInvoice",
+  balancePayment: "stepNames.balancePayment",
+  bookingDeposit: "stepNames.bookingDeposit",
+  bookingDepositInvoice: "stepNames.bookingDepositInvoice",
+  completionInvoice: "stepNames.completionInvoice",
+  completionPayment: "stepNames.completionPayment",
   depositInvoice: "stepNames.depositInvoice",
   depositPayment: "stepNames.depositPayment",
   estimate: "stepNames.estimate",
   finalInvoice: "stepNames.finalInvoice",
   finalPayment: "stepNames.finalPayment",
   invoice: "stepNames.invoice",
+  kickoffInvoice: "stepNames.kickoffInvoice",
+  kickoffPayment: "stepNames.kickoffPayment",
+  mobilisationInvoice: "stepNames.mobilisationInvoice",
+  mobilisationPayment: "stepNames.mobilisationPayment",
   orderConfirmation: "stepNames.orderConfirmation",
   payment: "stepNames.payment",
   quote: "stepNames.quote",

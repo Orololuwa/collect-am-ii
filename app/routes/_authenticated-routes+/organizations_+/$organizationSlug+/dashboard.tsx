@@ -23,6 +23,7 @@ import {
 } from "~/features/organizations/dashboard/dashboard-overview";
 import { SetupChecklist } from "~/features/organizations/dashboard/setup-checklist";
 import { organizationMembershipContext } from "~/features/organizations/organizations-middleware.server";
+import { hasActiveWorkflowInDatabase } from "~/features/workflows/workflows-model.server";
 import { getPageTitle } from "~/utils/get-page-title.server";
 import { validateFormData } from "~/utils/validate-form-data.server";
 
@@ -34,11 +35,14 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const t = i18n.t.bind(i18n);
   const searchParams = new URL(request.url).searchParams;
 
-  const dashboardData = await getDashboardData({
-    organizationId: organization.id,
-    period: parseDashboardPeriod(searchParams.get("period")),
-    requestedCurrency: searchParams.get("currency"),
-  });
+  const [dashboardData, hasWorkflow] = await Promise.all([
+    getDashboardData({
+      organizationId: organization.id,
+      period: parseDashboardPeriod(searchParams.get("period")),
+      requestedCurrency: searchParams.get("currency"),
+    }),
+    hasActiveWorkflowInDatabase(organization.id),
+  ]);
 
   return data(
     {
@@ -49,6 +53,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         }),
       },
       dashboardData,
+      hasWorkflow,
       organizationName: organization.name,
       pageTitle: getPageTitle(t, "organizations:dashboard.pageTitle"),
       userName: user.name,
@@ -81,7 +86,7 @@ export const meta: Route.MetaFunction = ({ loaderData }) => [
 export default function OrganizationDashboardRoute({
   params,
 }: Route.ComponentProps) {
-  const { dashboardData, organizationName, userName } =
+  const { dashboardData, hasWorkflow, organizationName, userName } =
     useLoaderData<typeof loader>();
   const organizationSlug = params.organizationSlug;
 
@@ -100,6 +105,7 @@ export default function OrganizationDashboardRoute({
           <DashboardHeader
             currencies={dashboardData.currencies}
             currency={dashboardData.currency}
+            hasWorkflow={hasWorkflow}
             organizationName={organizationName}
             organizationSlug={organizationSlug}
             period={dashboardData.period}
