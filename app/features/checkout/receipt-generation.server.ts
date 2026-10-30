@@ -1,5 +1,6 @@
 import { init } from "@paralleldrive/cuid2";
 
+import { getCurrencyMinorUnitExponent } from "~/features/checkout/money";
 import {
   generateReceiptExportHTML,
   generateReceiptPreviewHTML,
@@ -12,10 +13,11 @@ import { prisma } from "~/utils/database.server";
 
 const cuid = init({ length: 6 });
 
-type PaymentItem = {
-  description?: string;
-  quantity?: number;
-  unitPriceMinor?: number;
+type ReceiptLineItem = {
+  description: string;
+  quantity: number;
+  /** Null when the stored item has no unit price at all. */
+  unitPriceMinor: number | null;
 };
 
 function createReceiptNumber() {
@@ -24,8 +26,54 @@ function createReceiptNumber() {
 }
 
 function formatMinorToMajor(amountMinor: number, currency: string) {
-  const exponent = currency.toUpperCase() === "JPY" ? 0 : 2;
+  const exponent = getCurrencyMinorUnitExponent(currency);
   return (amountMinor / 10 ** exponent).toFixed(exponent);
+}
+
+function toFiniteNumber(x: unknown): number | null {
+  if (typeof x !== "number" && typeof x !== "string") return null;
+  if (typeof x === "string" && x.trim() === "") return null;
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Reads a stored payment item. Current rows hold
+ * `{ description, quantity: number, unitPriceMinor: number }`; older rows hold
+ * the checkout line shape `{ description, quantity, unitPrice, total }` with
+ * major-unit strings.
+ */
+function parsePaymentItem(raw: unknown, currency: string): ReceiptLineItem {
+  const item =
+    typeof raw === "object" && raw !== null
+      ? (raw as Record<string, unknown>)
+      : {};
+  const description =
+    typeof item.description === "string" && item.description
+      ? item.description
+      : "Item";
+  const quantity = toFiniteNumber(item.quantity) ?? 1;
+
+  const unitPriceMinor = toFiniteNumber(item.unitPriceMinor);
+  if (unitPriceMinor !== null) {
+    return {
+      description,
+      quantity,
+      unitPriceMinor: Math.round(unitPriceMinor),
+    };
+  }
+
+  const unitPriceMajor = toFiniteNumber(item.unitPrice);
+  if (unitPriceMajor !== null) {
+    const factor = 10 ** getCurrencyMinorUnitExponent(currency);
+    return {
+      description,
+      quantity,
+      unitPriceMinor: Math.round(unitPriceMajor * factor),
+    };
+  }
+
+  return { description, quantity, unitPriceMinor: null };
 }
 
 type UnknownSection = { type?: unknown; data?: unknown };
@@ -60,22 +108,24 @@ function buildReceiptSections({
   };
   receiptNumber: string;
 }) {
-  const itemsArray: PaymentItem[] = Array.isArray(payment.items)
-    ? (payment.items as PaymentItem[])
+  const itemsArray = Array.isArray(payment.items)
+    ? payment.items.map((raw) => parsePaymentItem(raw, payment.currency))
     : [];
 
   const lineItems =
     itemsArray.length > 0
       ? itemsArray.map((item) => {
-          const quantity = item.quantity ?? 1;
+          // Only a lone item without a price can safely take the paid amount.
           const unitPriceMinor =
             item.unitPriceMinor ??
-            Math.round(payment.amountMinor / Math.max(1, quantity));
-          const totalMinor = unitPriceMinor * quantity;
+            (itemsArray.length === 1
+              ? Math.round(payment.amountMinor / Math.max(1, item.quantity))
+              : 0);
+          const totalMinor = Math.round(unitPriceMinor * item.quantity);
 
           return {
-            description: item.description ?? "Item",
-            quantity: String(quantity),
+            description: item.description,
+            quantity: String(item.quantity),
             unitPrice: formatMinorToMajor(unitPriceMinor, payment.currency),
             total: formatMinorToMajor(totalMinor, payment.currency),
           };

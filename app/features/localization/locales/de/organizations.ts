@@ -283,6 +283,8 @@ export default {
     appSidebar: {
       nav: {
         app: {
+          customers: "Kunden",
+          products: "Produkte",
           analytics: "Analytik",
           templates: "Vorlagen",
           dashboard: "Dashboard",

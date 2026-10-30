@@ -2,8 +2,10 @@ import {
   CircleHelpIcon,
   HammerIcon,
   LayoutDashboardIcon,
+  PackageIcon,
   SettingsIcon,
   ShoppingCartIcon,
+  UsersIcon,
 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
@@ -71,6 +73,20 @@ export function AppSidebar({
               icon: ShoppingCartIcon,
               title: "Checkout",
               url: href("/organizations/:organizationSlug/checkout-pages", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: PackageIcon,
+              title: t("app.products"),
+              url: href("/organizations/:organizationSlug/products", {
+                organizationSlug,
+              }),
+            },
+            {
+              icon: UsersIcon,
+              title: t("app.customers"),
+              url: href("/organizations/:organizationSlug/customers", {
                 organizationSlug,
               }),
             },

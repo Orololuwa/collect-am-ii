@@ -7,7 +7,10 @@ import type { Route } from "./+types/payment-complete";
 import { stripeAdmin } from "~/features/billing/stripe-admin.server";
 import { retrieveCheckoutPageFromDatabaseBySlug } from "~/features/checkout/checkout-pages-model.server";
 import { deactivateCheckoutPageAfterSuccessfulPaymentInDatabase } from "~/features/checkout/deactivate-checkout-after-payment.server";
-import { verifyPaystackTransaction } from "~/features/checkout/paystack.server";
+import {
+  getIsPaystackTransactionMatchingPayment,
+  verifyPaystackTransaction,
+} from "~/features/checkout/paystack.server";
 import { prisma } from "~/utils/database.server";
 import { notFound } from "~/utils/http-responses.server";
 
@@ -74,10 +77,16 @@ export async function loader({ params, request }: Route.LoaderArgs) {
             providerPaymentId: paystackRef,
           },
         },
-        select: { checkoutPageId: true },
+        select: { amountMinor: true, checkoutPageId: true, currency: true },
       });
       const matchesPage = payment?.checkoutPageId === checkoutPage.id;
-      if (matchesPage && verified.status === "success") {
+      const matchesAmount =
+        payment != null &&
+        getIsPaystackTransactionMatchingPayment({
+          payment,
+          transaction: verified,
+        });
+      if (matchesPage && verified.status === "success" && matchesAmount) {
         serverPaymentVerified = "paid";
         await deactivateCheckoutPageAfterSuccessfulPaymentInDatabase({
           checkoutPageId: checkoutPage.id,

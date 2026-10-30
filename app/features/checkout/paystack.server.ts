@@ -126,3 +126,20 @@ export async function verifyPaystackTransaction({
 
   return json.data;
 }
+
+/**
+ * Whether a verified Paystack transaction charged exactly what the stored
+ * Payment row expects. A mismatch must never mark the payment as succeeded.
+ */
+export function getIsPaystackTransactionMatchingPayment({
+  payment,
+  transaction,
+}: {
+  payment: { amountMinor: number; currency: string };
+  transaction: { amount: number; currency: string };
+}) {
+  return (
+    transaction.amount === payment.amountMinor &&
+    transaction.currency.toUpperCase() === payment.currency.toUpperCase()
+  );
+}

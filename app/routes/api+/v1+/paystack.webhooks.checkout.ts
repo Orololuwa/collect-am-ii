@@ -1,6 +1,7 @@
 import type { Route } from "./+types/paystack.webhooks.checkout";
 import { updatePaymentStatusInDatabaseByProviderAndProviderPaymentId } from "~/features/checkout/payments-model.server";
 import {
+  getIsPaystackTransactionMatchingPayment,
   verifyPaystackSignature,
   verifyPaystackTransaction,
 } from "~/features/checkout/paystack.server";
@@ -18,6 +19,10 @@ const notAllowed = () =>
   json({ message: "Method Not Allowed" }, { status: 405 });
 const badRequest = (payload?: { message?: string; error?: string }) =>
   json({ message: "Bad Request", ...payload }, { status: 400 });
+
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return typeof x === "object" && x !== null && !Array.isArray(x);
+}
 
 function referenceFromPaystackWebhookPayload(
   body: unknown,
@@ -81,6 +86,8 @@ export async function action({ request }: Route.ActionArgs) {
           id: true,
           amountMinor: true,
           checkoutPageId: true,
+          currency: true,
+          metadata: true,
           status: true,
         },
       });
@@ -105,6 +112,33 @@ export async function action({ request }: Route.ActionArgs) {
           status: "failed",
         });
         return json({ message: "OK" });
+      }
+
+      if (
+        !getIsPaystackTransactionMatchingPayment({
+          payment,
+          transaction: verified,
+        })
+      ) {
+        // Leave the payment pending and the page open, and keep what Paystack
+        // reported so the business can follow up. A 200 stops Paystack retrying
+        // an event that can never become valid.
+        console.error(
+          `Paystack charge ${reference} does not match its payment: expected ${payment.amountMinor} ${payment.currency}, got ${verified.amount} ${verified.currency}`,
+        );
+        await prisma.payment.update({
+          data: {
+            metadata: {
+              ...(isRecord(payment.metadata) ? payment.metadata : {}),
+              paystackMismatch: {
+                amount: verified.amount,
+                currency: verified.currency,
+              },
+            },
+          },
+          where: { id: payment.id },
+        });
+        return json({ message: "Ignored: amount or currency mismatch" });
       }
 
       await updatePaymentStatusInDatabaseByProviderAndProviderPaymentId({

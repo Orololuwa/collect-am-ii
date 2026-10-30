@@ -49,6 +49,8 @@ model Organization {
   apiKey                      OrganizationApiKey?
   templates                   Template[]
   checkoutPages               CheckoutPage[]
+  products                    Product[]
+  customers                   Customer[]
 }
 
 model OrganizationMembership {
@@ -441,4 +443,50 @@ enum PaymentStatus {
   canceled
   refunded
   partially_refunded
+}
+
+/// An item in an organization's catalogue that documents and deals are built
+/// from. Money is stored in minor units (e.g. kobo, cents).
+model Product {
+  id             String       @id @default(cuid(2))
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String       @default("")
+  /// Optional stock-keeping unit, unique within the organization.
+  sku            String?
+  unitPriceMinor Int
+  currency       String
+  /// What one unit is, e.g. "item", "hour", "kg".
+  unit           String       @default("item")
+  /// Tax rate in basis points (750 = 7.5%).
+  taxRateBps     Int          @default(0)
+  imageUrl       String       @default("")
+  archivedAt     DateTime?
+
+  @@unique([organizationId, sku])
+  @@index([organizationId, archivedAt])
+}
+
+/// Someone an organization sells to.
+model Customer {
+  id              String       @id @default(cuid(2))
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  /// Stored lower-case.
+  email           String
+  phone           String       @default("")
+  companyName     String       @default("")
+  billingAddress  String       @default("")
+  shippingAddress String       @default("")
+  notes           String       @default("")
+  archivedAt      DateTime?
+
+  @@unique([organizationId, email])
+  @@index([organizationId, name])
 }

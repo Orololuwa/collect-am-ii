@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: test code */
+import { createId } from "@paralleldrive/cuid2";
 import { HttpResponse, http } from "msw";
 import type Stripe from "stripe";
 
@@ -93,6 +94,31 @@ const createCheckoutSessionMock = http.post(
     });
 
     return HttpResponse.json(session);
+  },
+);
+
+const createPaymentIntentMock = http.post(
+  "https://api.stripe.com/v1/payment_intents",
+  async ({ request }) => {
+    const params = new URLSearchParams(await request.text());
+    const metadata: Record<string, string> = {};
+    for (const [key, value] of params.entries()) {
+      const m = /^metadata\[(.+)]$/.exec(key);
+      if (m) metadata[m[1]!] = value;
+    }
+    const id = `pi_${createId()}`;
+
+    return HttpResponse.json({
+      amount: Number(params.get("amount")),
+      client_secret: `${id}_secret_${createId()}`,
+      currency: params.get("currency"),
+      customer: params.get("customer"),
+      id,
+      metadata,
+      object: "payment_intent",
+      receipt_email: params.get("receipt_email"),
+      status: "requires_payment_method",
+    });
   },
 );
 
@@ -332,6 +358,7 @@ export const stripeHandlers = [
   createBillingPortalSessionMock,
   createCheckoutSessionMock,
   createCustomerMock,
+  createPaymentIntentMock,
   createSubscriptionMock,
   deleteSubscriptionMock,
   listSubscriptionsMock,
