@@ -167,6 +167,7 @@ export function toDealRoomView({ deal, products }: DealRoomData) {
                 current: {
                   id: current.id,
                   items: parseDealItems(current.items),
+                  discountMinor: current.discountMinor,
                   subtotalMinor: current.subtotalMinor,
                   taxMinor: current.taxMinor,
                   totalMinor: current.totalMinor,

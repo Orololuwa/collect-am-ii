@@ -43,6 +43,7 @@ const parties: DocumentParties = {
 
 const logo: DealLineItem = {
   description: "Two rounds of changes",
+  discountBps: 0,
   name: "Logo design",
   productId: null,
   quantity: 2,
@@ -185,6 +186,32 @@ describe("buildDocumentSections()", () => {
     expect(footer?.data).toMatchObject({
       paymentMethod: "Bank transfer",
       total: "322500.00",
+    });
+  });
+
+  test("given: a discounted line, should: note it on the line and total it in the footer", () => {
+    const discounted = [{ ...logo, discountBps: 1000 }];
+    const [lines, footer] = buildDocumentSections({
+      content: content({
+        items: discounted,
+        totals: calculateDealTotals(discounted),
+      }),
+      parties,
+      template: template([
+        section("quote-items", { items: [] }),
+        section("quote-footer", {}),
+      ]),
+    });
+
+    expect(lines?.data.items).toMatchObject([
+      { description: "Logo design\nTwo rounds of changes\nDiscount 10%" },
+    ]);
+    // 300,000 − 30,000 = 270,000; 7.5% tax = 20,250
+    expect(footer?.data).toMatchObject({
+      discount: "30000.00",
+      subtotal: "300000.00",
+      taxAmount: "20250.00",
+      total: "290250.00",
     });
   });
 

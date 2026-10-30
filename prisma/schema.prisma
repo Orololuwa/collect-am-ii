@@ -716,9 +716,10 @@ model DealDocumentVersion {
   version        Int
   proposedBy     DealParty
   state          DealVersionState
-  /// `[{ productId, name, description, unit, quantity, unitPriceMinor, taxRateBps }]`
+  /// `[{ productId, name, description, unit, quantity, unitPriceMinor, taxRateBps, discountBps }]`
   items          Json
   subtotalMinor  Int
+  discountMinor  Int              @default(0)
   taxMinor       Int
   totalMinor     Int
   note           String           @default("")

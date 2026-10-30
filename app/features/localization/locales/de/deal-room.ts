@@ -25,6 +25,7 @@ export default {
     validUntil: "Gültig bis {{date}}",
     dueOn: "Fällig am {{date}}",
     total: "Gesamt",
+    preview: "Vorschau",
     downloadPdf: "PDF herunterladen",
     documentFrame: "{{type}} {{number}}",
   },
@@ -41,8 +42,16 @@ export default {
   changes: {
     tab: "Änderungen vorschlagen",
     description:
-      "Ändere Mengen, entferne Positionen oder füge Artikel aus dem Katalog hinzu. {{organization}} prüft deinen Vorschlag und schickt eine aktualisierte Version.",
+      "Ändere Mengen, Preise, Steuersätze oder Rabatte, entferne Positionen oder füge Artikel aus dem Katalog hinzu. {{organization}} sieht genau, was du geändert hast, und schickt eine aktualisierte Version.",
+    item: "Position",
     quantity: "Menge",
+    unitPrice: "Einzelpreis",
+    taxRate: "Steuer %",
+    discount: "Rabatt %",
+    amount: "Betrag",
+    subtotal: "Zwischensumme",
+    discountTotal: "Rabatt",
+    taxTotal: "Steuer",
     remove: "Entfernen",
     removed: "Entfernt",
     undo: "Rückgängig",
@@ -54,8 +63,9 @@ export default {
     submit: "Vorschlag senden",
     submitting: "Wird gesendet…",
     noChanges:
-      "Ändere zuerst eine Menge, entferne eine Position oder füge einen Artikel hinzu.",
-    invalid: "Mengen müssen Zahlen ab 0 sein.",
+      "Ändere zuerst einen Wert, entferne eine Position oder füge einen Artikel hinzu.",
+    invalid:
+      "Prüfe die markierten Positionen: Mengen und Preise müssen Zahlen sein, Steuer und Rabatt zwischen 0 und 100.",
   },
   decline: {
     tab: "Ablehnen",
@@ -72,9 +82,12 @@ export default {
     item: "Position",
     quantity: "Menge",
     unitPrice: "Einzelpreis",
+    tax: "Steuer",
+    discount: "Rabatt",
     amount: "Betrag",
     subtotal: "Zwischensumme",
-    tax: "Steuer",
+    discountTotal: "Rabatt",
+    taxTotal: "Steuer",
     total: "Gesamt",
   },
   documents: {

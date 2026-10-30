@@ -186,9 +186,9 @@ export async function dealRoomAction({
           actor,
           changes: {
             additions: result.data.changes.additions,
-            quantities: Object.fromEntries(
-              Object.entries(result.data.changes.quantities).map(
-                ([index, quantity]) => [Number(index), quantity],
+            lines: Object.fromEntries(
+              Object.entries(result.data.changes.lines).map(
+                ([index, figures]) => [Number(index), figures],
               ),
             ),
           },

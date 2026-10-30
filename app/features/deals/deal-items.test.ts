@@ -10,6 +10,7 @@ import {
 
 const item = (overrides: Partial<DealLineItem> = {}): DealLineItem => ({
   description: "",
+  discountBps: 0,
   name: "Design",
   productId: null,
   quantity: 1,
@@ -22,6 +23,7 @@ const item = (overrides: Partial<DealLineItem> = {}): DealLineItem => ({
 describe("calculateDealTotals()", () => {
   test("given: no items, should: return zeros", () => {
     expect(calculateDealTotals([])).toEqual({
+      discountMinor: 0,
       subtotalMinor: 0,
       taxMinor: 0,
       totalMinor: 0,
@@ -35,6 +37,7 @@ describe("calculateDealTotals()", () => {
         item({ quantity: 1.5, taxRateBps: 0, unitPriceMinor: 2_000_000 }),
       ]),
     ).toEqual({
+      discountMinor: 0,
       subtotalMinor: 33_000_000,
       taxMinor: 2_250_000,
       totalMinor: 35_250_000,
@@ -47,7 +50,33 @@ describe("calculateDealTotals()", () => {
       calculateDealTotals([
         item({ quantity: 3, taxRateBps: 750, unitPriceMinor: 333 }),
       ]),
-    ).toEqual({ subtotalMinor: 999, taxMinor: 75, totalMinor: 1074 });
+    ).toEqual({
+      discountMinor: 0,
+      subtotalMinor: 999,
+      taxMinor: 75,
+      totalMinor: 1074,
+    });
+  });
+});
+
+describe("calculateDealTotals() with discounts", () => {
+  test("given: a discounted line, should: take the discount off before tax", () => {
+    // 2 × 50,000 = 100,000; 10% off = 90,000; 7.5% tax on that = 6,750
+    expect(
+      calculateDealTotals([
+        item({
+          discountBps: 1000,
+          quantity: 2,
+          taxRateBps: 750,
+          unitPriceMinor: 5_000_000,
+        }),
+      ]),
+    ).toEqual({
+      discountMinor: 1_000_000,
+      subtotalMinor: 10_000_000,
+      taxMinor: 675_000,
+      totalMinor: 9_675_000,
+    });
   });
 });
 

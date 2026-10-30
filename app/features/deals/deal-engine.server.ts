@@ -227,6 +227,7 @@ function buildStepItems(
   return [
     {
       description: referenceOf(base),
+      discountBps: 0,
       name:
         step.carryForward === "deposit" ? `Deposit (${percent}%)` : "Balance",
       productId: null,
@@ -242,6 +243,7 @@ function versionTotals(items: DealLineItem[]) {
   const totals = calculateDealTotals(items);
   return {
     items: items as unknown as Prisma.InputJsonValue,
+    discountMinor: totals.discountMinor,
     subtotalMinor: totals.subtotalMinor,
     taxMinor: totals.taxMinor,
     totalMinor: totals.totalMinor,
@@ -839,12 +841,33 @@ export async function markDealDocumentViewed({
   });
 }
 
-export type ProposedChanges = {
-  /** New quantity per line of the current version, by index; 0 removes it. */
-  quantities: Record<number, number>;
-  /** Catalogue products to add. Prices always come from the catalogue. */
-  additions: Array<{ productId: string; quantity: number }>;
+/** The customer's own figures for a line; anything left out stays as it is. */
+export type LineFigures = {
+  quantity?: number;
+  unitPriceMinor?: number;
+  taxRateBps?: number;
+  discountBps?: number;
 };
+
+export type ProposedChanges = {
+  /** Changes per line of the current version, by index; quantity 0 removes it. */
+  lines: Record<number, LineFigures>;
+  /**
+   * Catalogue products to add. Name, unit and description come from the
+   * catalogue; the figures default to it unless the customer gives their own.
+   */
+  additions: Array<{ productId: string; quantity: number } & LineFigures>;
+};
+
+function withFigures(item: DealLineItem, figures: LineFigures): DealLineItem {
+  return {
+    ...item,
+    discountBps: figures.discountBps ?? item.discountBps,
+    quantity: figures.quantity ?? item.quantity,
+    taxRateBps: figures.taxRateBps ?? item.taxRateBps,
+    unitPriceMinor: figures.unitPriceMinor ?? item.unitPriceMinor,
+  };
+}
 
 /**
  * The customer suggests different lines. Their version waits for the
@@ -879,9 +902,11 @@ export async function proposeDealChanges({
       throw new DealTransitionError("documentNotAwaitingAnswer");
     }
 
+    // The customer's figures are a request, not a price change: the business
+    // sees exactly what they asked for and decides.
     const kept = parseDealItems(current.items).flatMap((item, index) => {
-      const quantity = changes.quantities[index] ?? item.quantity;
-      return quantity > 0 ? [{ ...item, quantity }] : [];
+      const changed = withFigures(item, changes.lines[index] ?? {});
+      return changed.quantity > 0 ? [changed] : [];
     });
     const productIds = [
       ...new Set(changes.additions.map((addition) => addition.productId)),
@@ -900,15 +925,19 @@ export async function proposeDealChanges({
       );
       return product && addition.quantity > 0
         ? [
-            {
-              description: product.description,
-              name: product.name,
-              productId: product.id,
-              quantity: addition.quantity,
-              taxRateBps: product.taxRateBps,
-              unit: product.unit,
-              unitPriceMinor: product.unitPriceMinor,
-            },
+            withFigures(
+              {
+                description: product.description,
+                discountBps: 0,
+                name: product.name,
+                productId: product.id,
+                quantity: addition.quantity,
+                taxRateBps: product.taxRateBps,
+                unit: product.unit,
+                unitPriceMinor: product.unitPriceMinor,
+              },
+              addition,
+            ),
           ]
         : [];
     });

@@ -3,6 +3,7 @@ import {
   ClockIcon,
   CreditCardIcon,
   DownloadIcon,
+  EyeIcon,
   FileTextIcon,
   PlusIcon,
   SendIcon,
@@ -17,7 +18,7 @@ import { HoneypotInputs } from "remix-utils/honeypot/react";
 import type { DealLineItem } from "../deal-items";
 import {
   calculateDealTotals,
-  lineSubtotalMinor,
+  lineNetMinor,
   MAX_ITEM_QUANTITY,
 } from "../deal-items";
 import type { DealRoomView } from "../deal-room.server";
@@ -40,6 +41,13 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Checkbox } from "~/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { Input, inputClassName } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Spinner } from "~/components/ui/spinner";
@@ -48,6 +56,11 @@ import {
   formatMoney,
   formatRelativeTime,
 } from "~/features/organizations/dashboard/dashboard-format";
+import {
+  basisPointsToPercent,
+  getCurrencyExponent,
+  minorUnitsToMajorString,
+} from "~/features/products/products-format";
 import { cn } from "~/lib/utils";
 
 type RoomStep = DealRoomView["steps"][number];
@@ -118,7 +131,7 @@ function ItemsTable({
   return (
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full min-w-[420px] text-sm">
+        <table className="w-full min-w-[560px] text-sm">
           <thead className="bg-muted/50 text-muted-foreground text-xs">
             <tr>
               <th className="px-3 py-2 text-left font-medium">{t("item")}</th>
@@ -127,6 +140,10 @@ function ItemsTable({
               </th>
               <th className="px-3 py-2 text-right font-medium">
                 {t("unitPrice")}
+              </th>
+              <th className="px-3 py-2 text-right font-medium">{t("tax")}</th>
+              <th className="px-3 py-2 text-right font-medium">
+                {t("discount")}
               </th>
               <th className="px-3 py-2 text-right font-medium">
                 {t("amount")}
@@ -154,8 +171,18 @@ function ItemsTable({
                 <td className="px-3 py-2 text-right tabular-nums">
                   {money(item.unitPriceMinor)}
                 </td>
+                <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
+                  {item.taxRateBps > 0
+                    ? `${basisPointsToPercent(item.taxRateBps)}%`
+                    : "—"}
+                </td>
+                <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
+                  {item.discountBps > 0
+                    ? `${basisPointsToPercent(item.discountBps)}%`
+                    : "—"}
+                </td>
                 <td className="px-3 py-2 text-right font-medium tabular-nums">
-                  {money(lineSubtotalMinor(item))}
+                  {money(lineNetMinor(item))}
                 </td>
               </tr>
             ))}
@@ -165,7 +192,13 @@ function ItemsTable({
       <dl className="ml-auto grid w-fit min-w-56 grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-sm tabular-nums">
         <dt className="text-muted-foreground">{t("subtotal")}</dt>
         <dd className="text-right">{money(totals.subtotalMinor)}</dd>
-        <dt className="text-muted-foreground">{t("tax")}</dt>
+        {totals.discountMinor > 0 ? (
+          <>
+            <dt className="text-muted-foreground">{t("discountTotal")}</dt>
+            <dd className="text-right">−{money(totals.discountMinor)}</dd>
+          </>
+        ) : null}
+        <dt className="text-muted-foreground">{t("taxTotal")}</dt>
         <dd className="text-right">{money(totals.taxMinor)}</dd>
         <dt className="border-t pt-1 font-medium">{t("total")}</dt>
         <dd className="border-t pt-1 text-right font-semibold">
@@ -235,19 +268,120 @@ function AcceptForm({
   );
 }
 
-type ChangeRow = { quantity: string; removed: boolean };
+/** The figures a customer can change on a line, as typed. */
+type Figures = {
+  quantity: string;
+  unitPrice: string;
+  taxRate: string;
+  discount: string;
+};
 
-/** A typed quantity, or null when it isn't a number from 0 up. */
-function parseQuantity(value: string) {
-  const quantity = Number(value);
-  return value.trim() &&
-    Number.isFinite(quantity) &&
-    quantity >= 0 &&
-    quantity <= MAX_ITEM_QUANTITY
-    ? Math.round(quantity * 1000) / 1000
-    : null;
+type ChangeRow = Figures & { removed: boolean };
+type Addition = Figures & { key: number; productId: string };
+
+function toFigures(
+  item: Pick<
+    DealLineItem,
+    "quantity" | "unitPriceMinor" | "taxRateBps" | "discountBps"
+  >,
+  currency: string,
+): Figures {
+  return {
+    discount: basisPointsToPercent(item.discountBps),
+    quantity: String(item.quantity),
+    taxRate: basisPointsToPercent(item.taxRateBps),
+    unitPrice: minorUnitsToMajorString(item.unitPriceMinor, currency),
+  };
 }
-type Addition = { key: number; productId: string; quantity: string };
+
+/** Typed figures as numbers, or null when one of them isn't valid. */
+function parseFigures(figures: Figures, currency: string) {
+  const exponent = getCurrencyExponent(currency);
+  const pricePattern =
+    exponent > 0 ? new RegExp(`^\\d+(\\.\\d{1,${exponent}})?$`) : /^\d+$/;
+  const quantity = Number(figures.quantity);
+  const taxRate = Number(figures.taxRate || "0");
+  const discount = Number(figures.discount || "0");
+  const price = figures.unitPrice.trim();
+  if (
+    !figures.quantity.trim() ||
+    !Number.isFinite(quantity) ||
+    quantity < 0 ||
+    quantity > MAX_ITEM_QUANTITY ||
+    !pricePattern.test(price) ||
+    !Number.isFinite(taxRate) ||
+    taxRate < 0 ||
+    taxRate > 100 ||
+    !Number.isFinite(discount) ||
+    discount < 0 ||
+    discount > 100
+  ) {
+    return null;
+  }
+  return {
+    discountBps: Math.round(discount * 100),
+    quantity: Math.round(quantity * 1000) / 1000,
+    taxRateBps: Math.round(taxRate * 100),
+    unitPriceMinor: Math.round(Number(price) * 10 ** exponent),
+  };
+}
+
+const FIGURE_KEYS = [
+  "quantity",
+  "unitPriceMinor",
+  "taxRateBps",
+  "discountBps",
+] as const;
+
+function FigureInputs({
+  figures,
+  original,
+  name,
+  onChange,
+}: {
+  figures: Figures;
+  /** The document's figures, to mark what the customer changed. */
+  original: Figures | null;
+  name: string;
+  onChange: (changes: Partial<Figures>) => void;
+}) {
+  const { t } = useTranslation("dealRoom", { keyPrefix: "changes" });
+  const fields = [
+    ["quantity", t("quantity"), "w-20"],
+    ["unitPrice", t("unitPrice"), "w-32"],
+    ["taxRate", t("taxRate"), "w-20"],
+    ["discount", t("discount"), "w-20"],
+  ] as const;
+  return (
+    <>
+      {fields.map(([field, label, width]) => {
+        const changed =
+          original !== null &&
+          Number(figures[field] || "0") !== Number(original[field] || "0");
+        return (
+          <td className="px-1.5 py-2" key={field}>
+            <Input
+              aria-label={`${label}: ${name}`}
+              className={cn(
+                "h-9 text-right tabular-nums",
+                width,
+                changed && "border-amber-500 bg-amber-50 dark:bg-amber-400/10",
+              )}
+              inputMode="decimal"
+              onChange={(event) => onChange({ [field]: event.target.value })}
+              value={figures[field]}
+            />
+            {changed && original ? (
+              <span className="mt-1 block text-right text-muted-foreground text-xs line-through">
+                {original[field] || "0"}
+              </span>
+            ) : null}
+          </td>
+        );
+      })}
+    </>
+  );
+}
 
 function ChangesForm({
   document,
@@ -261,50 +395,81 @@ function ChangesForm({
   const fetcher = useFetcher();
   const id = useId();
   const items = document.current.items;
+  const originals = useMemo(
+    () => items.map((item) => toFigures(item, room.currency)),
+    [items, room.currency],
+  );
   const [rows, setRows] = useState<ChangeRow[]>(() =>
-    items.map((item) => ({ quantity: String(item.quantity), removed: false })),
+    originals.map((figures) => ({ ...figures, removed: false })),
   );
   const [additions, setAdditions] = useState<Addition[]>([]);
   const busy = fetcher.state !== "idle";
 
-  const { changes, valid, hasChanges, estimate } = useMemo(() => {
-    const quantities: Record<string, number> = {};
+  const { changes, valid, hasChanges, totals, lineTotals } = useMemo(() => {
+    const lines: Record<string, Partial<ReturnType<typeof parseFigures>>> = {};
     const proposed: DealLineItem[] = [];
+    const amounts: Array<number | null> = [];
     let ok = true;
     rows.forEach((row, index) => {
       const item = items[index];
       if (!item) return;
-      const quantity = row.removed ? 0 : parseQuantity(row.quantity);
-      if (quantity === null) {
-        ok = false;
+      if (row.removed) {
+        lines[index] = { quantity: 0 };
+        amounts.push(null);
         return;
       }
-      if (quantity !== item.quantity) quantities[index] = quantity;
-      if (quantity > 0) proposed.push({ ...item, quantity });
+      const parsed = parseFigures(row, room.currency);
+      if (!parsed) {
+        ok = false;
+        amounts.push(null);
+        return;
+      }
+      const changed: Partial<NonNullable<typeof parsed>> = {};
+      for (const key of FIGURE_KEYS) {
+        if (parsed[key] !== item[key]) changed[key] = parsed[key];
+      }
+      if (Object.keys(changed).length > 0) lines[index] = changed;
+      const line = { ...item, ...parsed };
+      if (parsed.quantity > 0) proposed.push(line);
+      amounts.push(parsed.quantity > 0 ? lineNetMinor(line) : null);
     });
     const added = additions.flatMap((addition) => {
       const product = room.products.find((p) => p.id === addition.productId);
-      const quantity = parseQuantity(addition.quantity);
-      if (!product || quantity === null) {
+      const parsed = parseFigures(addition, room.currency);
+      if (!product || !parsed) {
         ok = false;
+        amounts.push(null);
         return [];
       }
-      if (quantity > 0) {
-        proposed.push({ ...product, productId: product.id, quantity });
-      }
-      return quantity > 0 ? [{ productId: product.id, quantity }] : [];
+      const line = { ...product, ...parsed, productId: product.id };
+      amounts.push(parsed.quantity > 0 ? lineNetMinor(line) : null);
+      if (parsed.quantity === 0) return [];
+      proposed.push(line);
+      return [{ productId: product.id, ...parsed }];
     });
     return {
-      changes: { additions: added, quantities },
-      estimate: calculateDealTotals(proposed).totalMinor,
-      hasChanges: Object.keys(quantities).length > 0 || added.length > 0,
+      changes: { additions: added, lines },
+      hasChanges: Object.keys(lines).length > 0 || added.length > 0,
+      lineTotals: amounts,
+      totals: calculateDealTotals(proposed),
       valid: ok && proposed.length > 0,
     };
-  }, [rows, additions, items, room.products]);
+  }, [rows, additions, items, room.products, room.currency]);
 
   if (useSucceeded(fetcher)) {
     return null;
   }
+
+  const updateRow = (index: number, update: Partial<ChangeRow>) =>
+    setRows((current) =>
+      current.map((row, i) => (i === index ? { ...row, ...update } : row)),
+    );
+  const updateAddition = (key: number, update: Partial<Addition>) =>
+    setAdditions((current) =>
+      current.map((addition) =>
+        addition.key === key ? { ...addition, ...update } : addition,
+      ),
+    );
 
   return (
     <fetcher.Form className="space-y-4" method="POST">
@@ -314,140 +479,156 @@ function ChangesForm({
       <p className="text-muted-foreground text-sm">
         {t("description", { organization: room.organization.name })}
       </p>
-      <ul className="divide-y rounded-lg border">
-        {items.map((item, index) => {
-          const row = rows[index] ?? { quantity: "", removed: false };
-          return (
-            <li
-              className={cn(
-                "flex flex-wrap items-center gap-3 px-3 py-2",
-                row.removed && "bg-muted/50",
-              )}
-              // biome-ignore lint/suspicious/noArrayIndexKey: lines are matched to the document by index
-              key={index}
-            >
-              <div className="min-w-0 flex-1">
-                <p
+      <div className="overflow-x-auto rounded-lg border bg-card">
+        <table className="w-full min-w-[720px] text-sm">
+          <thead className="bg-muted/50 text-muted-foreground text-xs">
+            <tr>
+              <th className="min-w-44 px-3 py-2 text-left font-medium">
+                {t("item")}
+              </th>
+              <th className="px-1.5 py-2 text-right font-medium">
+                {t("quantity")}
+              </th>
+              <th className="px-1.5 py-2 text-right font-medium">
+                {t("unitPrice")}
+              </th>
+              <th className="px-1.5 py-2 text-right font-medium">
+                {t("taxRate")}
+              </th>
+              <th className="px-1.5 py-2 text-right font-medium">
+                {t("discount")}
+              </th>
+              <th className="px-3 py-2 text-right font-medium">
+                {t("amount")}
+              </th>
+              <th className="w-10" />
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => {
+              const row = rows[index];
+              const original = originals[index];
+              if (!row || !original) return null;
+              return (
+                <tr
                   className={cn(
-                    "font-medium text-sm",
-                    row.removed && "text-muted-foreground line-through",
+                    "border-t align-top",
+                    row.removed && "bg-muted/50",
                   )}
+                  // biome-ignore lint/suspicious/noArrayIndexKey: lines are matched to the document by index
+                  key={index}
                 >
-                  {item.name}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {money(item.unitPriceMinor)}{" "}
-                  {t("perUnit", { unit: item.unit })}
-                </p>
-              </div>
-              {row.removed ? (
-                <Button
-                  onClick={() =>
-                    setRows((current) =>
-                      current.map((r, i) =>
-                        i === index ? { ...r, removed: false } : r,
-                      ),
-                    )
-                  }
-                  size="sm"
-                  type="button"
-                  variant="ghost"
+                  <td className="px-3 py-2 pt-4">
+                    <span
+                      className={cn(
+                        "font-medium",
+                        row.removed && "text-muted-foreground line-through",
+                      )}
+                    >
+                      {item.name}
+                    </span>
+                    <span className="block text-muted-foreground text-xs">
+                      {item.unit}
+                    </span>
+                  </td>
+                  {row.removed ? (
+                    <td
+                      className="px-3 py-2 pt-4 text-muted-foreground text-xs"
+                      colSpan={5}
+                    >
+                      {t("removed")}
+                    </td>
+                  ) : (
+                    <>
+                      <FigureInputs
+                        figures={row}
+                        name={item.name}
+                        onChange={(update) => updateRow(index, update)}
+                        original={original}
+                      />
+                      <td className="px-3 py-2 pt-4 text-right font-medium tabular-nums">
+                        {lineTotals[index] != null
+                          ? money(lineTotals[index] ?? 0)
+                          : "—"}
+                      </td>
+                    </>
+                  )}
+                  <td className="py-2 pr-2">
+                    <Button
+                      aria-label={`${row.removed ? t("undo") : t("remove")}: ${item.name}`}
+                      onClick={() =>
+                        updateRow(index, { removed: !row.removed })
+                      }
+                      size="icon-sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      {row.removed ? (
+                        <Undo2Icon aria-hidden="true" />
+                      ) : (
+                        <XIcon aria-hidden="true" />
+                      )}
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+            {additions.map((addition, offset) => {
+              const product = room.products.find(
+                (p) => p.id === addition.productId,
+              );
+              if (!product) return null;
+              const amount = lineTotals[items.length + offset];
+              return (
+                <tr
+                  className="border-t bg-primary/5 align-top"
+                  key={addition.key}
                 >
-                  <Undo2Icon aria-hidden="true" />
-                  {t("undo")}
-                </Button>
-              ) : (
-                <>
-                  <Input
-                    aria-label={`${t("quantity")}: ${item.name}`}
-                    className="h-9 w-24 text-right tabular-nums"
-                    inputMode="decimal"
-                    onChange={(event) =>
-                      setRows((current) =>
-                        current.map((r, i) =>
-                          i === index
-                            ? { ...r, quantity: event.target.value }
-                            : r,
-                        ),
-                      )
-                    }
-                    value={row.quantity}
+                  <td className="px-3 py-2 pt-4">
+                    <span className="font-medium">
+                      <PlusIcon
+                        aria-hidden="true"
+                        className="mr-1 inline size-3.5"
+                      />
+                      {product.name}
+                    </span>
+                    <span className="block text-muted-foreground text-xs">
+                      {product.unit}
+                    </span>
+                  </td>
+                  <FigureInputs
+                    figures={addition}
+                    name={product.name}
+                    onChange={(update) => updateAddition(addition.key, update)}
+                    original={toFigures(
+                      { ...product, discountBps: 0, quantity: 1 },
+                      room.currency,
+                    )}
                   />
-                  <Button
-                    aria-label={`${t("remove")}: ${item.name}`}
-                    onClick={() =>
-                      setRows((current) =>
-                        current.map((r, i) =>
-                          i === index ? { ...r, removed: true } : r,
-                        ),
-                      )
-                    }
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <XIcon aria-hidden="true" />
-                  </Button>
-                </>
-              )}
-            </li>
-          );
-        })}
-        {additions.map((addition) => {
-          const product = room.products.find(
-            (p) => p.id === addition.productId,
-          );
-          if (!product) return null;
-          return (
-            <li
-              className="flex flex-wrap items-center gap-3 bg-primary/5 px-3 py-2"
-              key={addition.key}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-sm">
-                  <PlusIcon
-                    aria-hidden="true"
-                    className="mr-1 inline size-3.5"
-                  />
-                  {product.name}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {money(product.unitPriceMinor)}{" "}
-                  {t("perUnit", { unit: product.unit })}
-                </p>
-              </div>
-              <Input
-                aria-label={`${t("quantity")}: ${product.name}`}
-                className="h-9 w-24 text-right tabular-nums"
-                inputMode="decimal"
-                onChange={(event) =>
-                  setAdditions((current) =>
-                    current.map((a) =>
-                      a.key === addition.key
-                        ? { ...a, quantity: event.target.value }
-                        : a,
-                    ),
-                  )
-                }
-                value={addition.quantity}
-              />
-              <Button
-                aria-label={`${t("remove")}: ${product.name}`}
-                onClick={() =>
-                  setAdditions((current) =>
-                    current.filter((a) => a.key !== addition.key),
-                  )
-                }
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                <XIcon aria-hidden="true" />
-              </Button>
-            </li>
-          );
-        })}
-      </ul>
+                  <td className="px-3 py-2 pt-4 text-right font-medium tabular-nums">
+                    {amount != null ? money(amount) : "—"}
+                  </td>
+                  <td className="py-2 pr-2">
+                    <Button
+                      aria-label={`${t("remove")}: ${product.name}`}
+                      onClick={() =>
+                        setAdditions((current) =>
+                          current.filter((a) => a.key !== addition.key),
+                        )
+                      }
+                      size="icon-sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <XIcon aria-hidden="true" />
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {room.products.length > 0 ? (
         <div>
@@ -457,15 +638,24 @@ function ChangesForm({
           <select
             className={cn(
               inputClassName,
-              "h-9 w-full sm:w-72 read-only:opacity-100",
+              "h-9 w-full read-only:opacity-100 sm:w-72",
             )}
             id={`${id}-product`}
             onChange={(event) => {
-              const productId = event.target.value;
-              if (!productId) return;
+              const product = room.products.find(
+                (p) => p.id === event.target.value,
+              );
+              if (!product) return;
               setAdditions((current) => [
                 ...current,
-                { key: Date.now(), productId, quantity: "1" },
+                {
+                  key: Date.now(),
+                  productId: product.id,
+                  ...toFigures(
+                    { ...product, discountBps: 0, quantity: 1 },
+                    room.currency,
+                  ),
+                },
               ]);
             }}
             value=""
@@ -485,13 +675,25 @@ function ChangesForm({
         <Textarea id={`${id}-note`} maxLength={500} name="note" rows={2} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm">
-          <span className="text-muted-foreground">{t("estimatedTotal")}: </span>
-          <span className="font-semibold tabular-nums">
-            {valid ? money(estimate) : "—"}
-          </span>
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <dl className="grid grid-cols-[auto_auto] gap-x-6 gap-y-1 text-sm tabular-nums">
+          <dt className="text-muted-foreground">{t("subtotal")}</dt>
+          <dd className="text-right">
+            {valid ? money(totals.subtotalMinor) : "—"}
+          </dd>
+          {valid && totals.discountMinor > 0 ? (
+            <>
+              <dt className="text-muted-foreground">{t("discountTotal")}</dt>
+              <dd className="text-right">−{money(totals.discountMinor)}</dd>
+            </>
+          ) : null}
+          <dt className="text-muted-foreground">{t("taxTotal")}</dt>
+          <dd className="text-right">{valid ? money(totals.taxMinor) : "—"}</dd>
+          <dt className="font-medium">{t("estimatedTotal")}</dt>
+          <dd className="text-right font-semibold">
+            {valid ? money(totals.totalMinor) : "—"}
+          </dd>
+        </dl>
         <Button
           disabled={busy || !valid || !hasChanges}
           name="intent"
@@ -758,7 +960,15 @@ function StatusCard({
   );
 }
 
-function Documents({ room, links }: { room: DealRoomView; links: Links }) {
+function Documents({
+  room,
+  links,
+  onPreview,
+}: {
+  room: DealRoomView;
+  links: Links;
+  onPreview: (documentId: string) => void;
+}) {
   const { t } = useTranslation("dealRoom", { keyPrefix: "documents" });
   const { t: tCurrent } = useTranslation("dealRoom", { keyPrefix: "current" });
   const typeName = useTypeName();
@@ -796,12 +1006,22 @@ function Documents({ room, links }: { room: DealRoomView; links: Links }) {
                     </p>
                   </div>
                 </div>
-                <Button asChild size="sm" variant="ghost">
-                  <a download href={links.pdf(document.id)}>
-                    <DownloadIcon aria-hidden="true" />
-                    {tCurrent("downloadPdf")}
-                  </a>
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    onClick={() => onPreview(document.id)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <EyeIcon aria-hidden="true" />
+                    {tCurrent("preview")}
+                  </Button>
+                  <Button asChild size="sm" variant="ghost">
+                    <a download href={links.pdf(document.id)}>
+                      <DownloadIcon aria-hidden="true" />
+                      {tCurrent("downloadPdf")}
+                    </a>
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
@@ -955,7 +1175,12 @@ export function DealRoom({
   appName: string;
 }) {
   const { t } = useTranslation("dealRoom");
+  const typeName = useTypeName();
+  const [previewId, setPreviewId] = useState<string | null>(null);
   usePolling();
+  const previewDocument =
+    room.steps.find((step) => step.document && step.document.id === previewId)
+      ?.document ?? undefined;
   const links: Links = {
     pdf: (documentId) => `/d/${token}/documents/${documentId}/pdf`,
     preview: (documentId) => `/d/${token}/documents/${documentId}/preview`,
@@ -1006,7 +1231,7 @@ export function DealRoom({
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col gap-6">
             <CurrentStep links={links} room={room} />
-            <Documents links={links} room={room} />
+            <Documents links={links} onPreview={setPreviewId} room={room} />
           </div>
           <div className="flex min-w-0 flex-col gap-6">
             <Messages room={room} />
@@ -1018,6 +1243,41 @@ export function DealRoom({
           {t("poweredBy", { appName })}
         </p>
       </div>
+
+      <Dialog
+        onOpenChange={(open) => (open ? null : setPreviewId(null))}
+        open={previewDocument !== undefined}
+      >
+        <DialogContent className="flex h-[90vh] max-w-4xl flex-col gap-3 sm:max-w-4xl">
+          <DialogHeader className="flex-row items-center justify-between gap-3 pr-8">
+            <DialogTitle>
+              {previewDocument
+                ? `${typeName(previewDocument.type)} ${previewDocument.number ?? ""}`
+                : ""}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("current.preview")}
+            </DialogDescription>
+            {previewDocument ? (
+              <Button asChild size="sm" variant="outline">
+                <a download href={links.pdf(previewDocument.id)}>
+                  <DownloadIcon aria-hidden="true" />
+                  {t("current.downloadPdf")}
+                </a>
+              </Button>
+            ) : null}
+          </DialogHeader>
+          {previewDocument ? (
+            <iframe
+              className="w-full flex-1 rounded-lg border bg-white"
+              // No scripts; same-origin is safe without them.
+              sandbox="allow-same-origin"
+              src={links.preview(previewDocument.id)}
+              title={`${typeName(previewDocument.type)} ${previewDocument.number ?? ""}`}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { href, useFetcher, useRevalidator } from "react-router";
 
 import type { DealLineItem } from "../deal-items";
+import { lineNetMinor } from "../deal-items";
 import type { DealEventType } from "../deals-constants";
 import {
   ACCEPT_DOCUMENT_INTENT,
@@ -38,6 +39,8 @@ import {
   REVISE_DOCUMENT_INTENT,
   SEND_DOCUMENT_INTENT,
 } from "../deals-constants";
+import type { LineChange } from "../proposal-diff";
+import { diffDealItems } from "../proposal-diff";
 import { DealStatusBadge, DocumentStatusBadge } from "./deal-badges";
 import type { DealProductOption } from "./deal-items-editor";
 import { DealItemsEditor } from "./deal-items-editor";
@@ -83,6 +86,7 @@ import {
   formatMoney,
   formatRelativeTime,
 } from "~/features/organizations/dashboard/dashboard-format";
+import { basisPointsToPercent } from "~/features/products/products-format";
 import type {
   DealDocumentStatus,
   DealParty,
@@ -113,6 +117,7 @@ export type DealDocumentView = {
     items: DealLineItem[];
     note: string;
     subtotalMinor: number;
+    discountMinor: number;
     taxMinor: number;
     totalMinor: number;
     createdAt: Date;
@@ -122,6 +127,7 @@ export type DealDocumentView = {
     items: DealLineItem[];
     note: string;
     subtotalMinor: number;
+    discountMinor: number;
     taxMinor: number;
     totalMinor: number;
   };
@@ -675,6 +681,138 @@ function CurrentDocument({
   );
 }
 
+const changeLabelKeys = {
+  added: "detail.proposalAdded",
+  changed: "detail.proposalChanged",
+  removed: "detail.proposalRemoved",
+} as const;
+
+/**
+ * The customer's suggested lines next to the current ones: changed figures
+ * show the old value struck through, and removed or added lines are marked.
+ */
+function ProposalDiffTable({
+  current,
+  proposed,
+  currency,
+}: {
+  current: DealLineItem[];
+  proposed: DealLineItem[];
+  currency: string;
+}) {
+  const { t, i18n } = useTranslation("deals");
+  const money = (amountMinor: number) =>
+    formatMoney({ amountMinor, currency, locale: i18n.language });
+  const percent = (basisPoints: number) =>
+    basisPoints > 0 ? `${basisPointsToPercent(basisPoints)}%` : "—";
+  const changes = diffDealItems(current, proposed);
+
+  const cell = (change: LineChange, show: (item: DealLineItem) => string) => {
+    if (change.kind === "removed") {
+      return (
+        <span className="text-muted-foreground line-through">
+          {show(change.before)}
+        </span>
+      );
+    }
+    if (change.kind === "added") {
+      return show(change.after);
+    }
+    const before = show(change.before);
+    const after = show(change.after);
+    return before === after ? (
+      after
+    ) : (
+      <span className="flex flex-col items-end">
+        <span className="rounded bg-amber-200/70 px-1 font-medium dark:bg-amber-400/25">
+          {after}
+        </span>
+        <span className="text-muted-foreground text-xs line-through">
+          {before}
+        </span>
+      </span>
+    );
+  };
+
+  return (
+    <div className="overflow-x-auto rounded-lg border bg-card">
+      <table className="w-full min-w-[600px] text-sm">
+        <thead className="bg-muted/50 text-muted-foreground text-xs">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium">
+              {t("items.product")}
+            </th>
+            <th className="px-3 py-2 text-right font-medium">
+              {t("items.quantity")}
+            </th>
+            <th className="px-3 py-2 text-right font-medium">
+              {t("items.unitPrice")}
+            </th>
+            <th className="px-3 py-2 text-right font-medium">
+              {t("items.tax")}
+            </th>
+            <th className="px-3 py-2 text-right font-medium">
+              {t("items.discount")}
+            </th>
+            <th className="px-3 py-2 text-right font-medium">
+              {t("items.amount")}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {changes.map((change, index) => {
+            const item =
+              change.kind === "removed" ? change.before : change.after;
+            return (
+              <tr
+                className={cn(
+                  "border-t align-top",
+                  change.kind === "removed" && "bg-muted/40",
+                  change.kind === "added" && "bg-primary/5",
+                )}
+                // biome-ignore lint/suspicious/noArrayIndexKey: lines have no id and the diff never reorders
+                key={index}
+              >
+                <td className="px-3 py-2">
+                  <span
+                    className={cn(
+                      "font-medium",
+                      change.kind === "removed" &&
+                        "text-muted-foreground line-through",
+                    )}
+                  >
+                    {item.name}
+                  </span>
+                  {change.kind !== "same" ? (
+                    <span className="block text-muted-foreground text-xs">
+                      {t(changeLabelKeys[change.kind])}
+                    </span>
+                  ) : null}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {cell(change, (line) => `${line.quantity} ${line.unit}`)}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {cell(change, (line) => money(line.unitPriceMinor))}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {cell(change, (line) => percent(line.taxRateBps))}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {cell(change, (line) => percent(line.discountBps))}
+                </td>
+                <td className="px-3 py-2 text-right font-medium tabular-nums">
+                  {cell(change, (line) => money(lineNetMinor(line)))}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function ProposalReview({
   document,
   proposal,
@@ -687,6 +825,7 @@ function ProposalReview({
   customerName: string;
 }) {
   const { t, i18n } = useTranslation("deals", { keyPrefix: "detail" });
+  const { t: tItems } = useTranslation("deals", { keyPrefix: "items" });
   const money = (amountMinor: number) =>
     formatMoney({ amountMinor, currency, locale: i18n.language });
   return (
@@ -704,12 +843,24 @@ function ProposalReview({
           </p>
         ) : null}
       </div>
-      <DealItemsTable
+      <ProposalDiffTable
         currency={currency}
-        items={proposal.items}
-        totals={proposal}
+        current={document.current.items}
+        proposed={proposal.items}
       />
-      <p className="text-muted-foreground text-sm">
+      <dl className="ml-auto grid w-fit min-w-56 grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-sm tabular-nums">
+        <dt className="text-muted-foreground">{tItems("subtotal")}</dt>
+        <dd className="text-right">{money(proposal.subtotalMinor)}</dd>
+        {proposal.discountMinor > 0 ? (
+          <>
+            <dt className="text-muted-foreground">{tItems("discountTotal")}</dt>
+            <dd className="text-right">−{money(proposal.discountMinor)}</dd>
+          </>
+        ) : null}
+        <dt className="text-muted-foreground">{tItems("taxTotal")}</dt>
+        <dd className="text-right">{money(proposal.taxMinor)}</dd>
+      </dl>
+      <p className="text-right font-medium text-sm">
         {t("proposalTotal", {
           previous: money(document.current.totalMinor),
           total: money(proposal.totalMinor),

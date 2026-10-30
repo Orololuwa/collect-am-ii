@@ -39,6 +39,7 @@ const dealPattern = "/organizations/:organizationSlug/deals/:dealId";
 const items: DealLineItem[] = [
   {
     description: "",
+    discountBps: 0,
     name: "Kitchen fit-out",
     productId: null,
     quantity: 1,
@@ -48,6 +49,7 @@ const items: DealLineItem[] = [
   },
   {
     description: "Per hour",
+    discountBps: 0,
     name: "Site visits",
     productId: null,
     quantity: 4,

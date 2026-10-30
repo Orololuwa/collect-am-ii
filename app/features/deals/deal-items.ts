@@ -18,31 +18,56 @@ export type DealLineItem = {
   quantity: number;
   unitPriceMinor: number;
   taxRateBps: number;
+  /** Discount on this line in basis points (1000 = 10%), taken off before tax. */
+  discountBps: number;
 };
 
 export type DealTotals = {
+  /** Quantity × price for every line, before discounts. */
   subtotalMinor: number;
+  discountMinor: number;
   taxMinor: number;
   totalMinor: number;
 };
 
+/** Quantity × unit price, before any discount. */
 export function lineSubtotalMinor(item: DealLineItem) {
   return Math.round(item.quantity * item.unitPriceMinor);
 }
 
-export function lineTaxMinor(item: DealLineItem) {
-  return Math.round((lineSubtotalMinor(item) * item.taxRateBps) / 10_000);
+export function lineDiscountMinor(item: DealLineItem) {
+  return Math.round((lineSubtotalMinor(item) * item.discountBps) / 10_000);
 }
 
-/** Tax is rounded per line so every line's figures add up on the document. */
+/** What the line comes to after its discount, before tax. */
+export function lineNetMinor(item: DealLineItem) {
+  return lineSubtotalMinor(item) - lineDiscountMinor(item);
+}
+
+/** Tax on the discounted amount. */
+export function lineTaxMinor(item: DealLineItem) {
+  return Math.round((lineNetMinor(item) * item.taxRateBps) / 10_000);
+}
+
+/**
+ * Discounts and tax are rounded per line so every line's figures add up on
+ * the document.
+ */
 export function calculateDealTotals(items: DealLineItem[]): DealTotals {
   let subtotalMinor = 0;
+  let discountMinor = 0;
   let taxMinor = 0;
   for (const item of items) {
     subtotalMinor += lineSubtotalMinor(item);
+    discountMinor += lineDiscountMinor(item);
     taxMinor += lineTaxMinor(item);
   }
-  return { subtotalMinor, taxMinor, totalMinor: subtotalMinor + taxMinor };
+  return {
+    discountMinor,
+    subtotalMinor,
+    taxMinor,
+    totalMinor: subtotalMinor - discountMinor + taxMinor,
+  };
 }
 
 /** `basisPoints` of `amountMinor`, rounded to the nearest minor unit. */
@@ -68,11 +93,13 @@ export function parseDealItems(value: unknown): DealLineItem[] {
     const quantity = Number(item.quantity);
     const unitPriceMinor = Number(item.unitPriceMinor);
     const taxRateBps = Number(item.taxRateBps ?? 0);
+    const discountBps = Number(item.discountBps ?? 0);
     if (
       typeof item.name !== "string" ||
       !Number.isFinite(quantity) ||
       !Number.isInteger(unitPriceMinor) ||
-      !Number.isInteger(taxRateBps)
+      !Number.isInteger(taxRateBps) ||
+      !Number.isInteger(discountBps)
     ) {
       return [];
     }
@@ -80,6 +107,7 @@ export function parseDealItems(value: unknown): DealLineItem[] {
       {
         description:
           typeof item.description === "string" ? item.description : "",
+        discountBps,
         name: item.name,
         productId: typeof item.productId === "string" ? item.productId : null,
         quantity,

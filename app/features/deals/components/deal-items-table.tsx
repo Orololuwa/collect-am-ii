@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { DealLineItem, DealTotals } from "../deal-items";
-import { lineSubtotalMinor } from "../deal-items";
+import { lineNetMinor } from "../deal-items";
 import { formatMoney } from "~/features/organizations/dashboard/dashboard-format";
 import { basisPointsToPercent } from "~/features/products/products-format";
 
@@ -36,6 +36,9 @@ export function DealItemsTable({
               </th>
               <th className="px-3 py-2 text-right font-medium">{t("tax")}</th>
               <th className="px-3 py-2 text-right font-medium">
+                {t("discount")}
+              </th>
+              <th className="px-3 py-2 text-right font-medium">
                 {t("amount")}
               </th>
             </tr>
@@ -66,8 +69,13 @@ export function DealItemsTable({
                     ? `${basisPointsToPercent(item.taxRateBps)}%`
                     : "—"}
                 </td>
+                <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
+                  {item.discountBps > 0
+                    ? `${basisPointsToPercent(item.discountBps)}%`
+                    : "—"}
+                </td>
                 <td className="px-3 py-2 text-right font-medium tabular-nums">
-                  {money(lineSubtotalMinor(item))}
+                  {money(lineNetMinor(item))}
                 </td>
               </tr>
             ))}
@@ -77,6 +85,12 @@ export function DealItemsTable({
       <dl className="ml-auto grid w-fit min-w-56 grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-sm tabular-nums">
         <dt className="text-muted-foreground">{t("subtotal")}</dt>
         <dd className="text-right">{money(totals.subtotalMinor)}</dd>
+        {totals.discountMinor > 0 ? (
+          <>
+            <dt className="text-muted-foreground">{t("discountTotal")}</dt>
+            <dd className="text-right">−{money(totals.discountMinor)}</dd>
+          </>
+        ) : null}
         <dt className="text-muted-foreground">{t("taxTotal")}</dt>
         <dd className="text-right">{money(totals.taxMinor)}</dd>
         <dt className="border-t pt-1 font-medium">{t("total")}</dt>

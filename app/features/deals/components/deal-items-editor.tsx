@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { DealLineItem } from "../deal-items";
 import {
   calculateDealTotals,
-  lineSubtotalMinor,
+  lineNetMinor,
   MAX_DEAL_ITEMS,
   MAX_ITEM_QUANTITY,
 } from "../deal-items";
@@ -39,6 +39,7 @@ type Row = {
   quantity: string;
   unitPrice: string;
   taxRate: string;
+  discount: string;
 };
 
 let nextKey = 0;
@@ -52,6 +53,7 @@ function toRow(item: DealLineItem, currency: string): Row {
     productId: item.productId,
     quantity: String(item.quantity),
     taxRate: basisPointsToPercent(item.taxRateBps),
+    discount: basisPointsToPercent(item.discountBps),
     unit: item.unit,
     unitPrice: minorUnitsToMajorString(item.unitPriceMinor, currency),
   };
@@ -64,6 +66,7 @@ function toItem(row: Row, currency: string): DealLineItem | null {
     exponent > 0 ? new RegExp(`^\\d+(\\.\\d{1,${exponent}})?$`) : /^\d+$/;
   const quantity = Number(row.quantity);
   const taxRate = Number(row.taxRate || "0");
+  const discount = Number(row.discount || "0");
   const price = row.unitPrice.trim();
   if (
     !row.name.trim() ||
@@ -74,7 +77,10 @@ function toItem(row: Row, currency: string): DealLineItem | null {
     !pricePattern.test(price) ||
     !Number.isFinite(taxRate) ||
     taxRate < 0 ||
-    taxRate > 100
+    taxRate > 100 ||
+    !Number.isFinite(discount) ||
+    discount < 0 ||
+    discount > 100
   ) {
     return null;
   }
@@ -84,6 +90,7 @@ function toItem(row: Row, currency: string): DealLineItem | null {
     productId: row.productId,
     quantity: Math.round(quantity * 1000) / 1000,
     taxRateBps: Math.round(taxRate * 100),
+    discountBps: Math.round(discount * 100),
     unit: row.unit,
     unitPriceMinor: Math.round(Number(price) * 10 ** exponent),
   };
@@ -149,6 +156,7 @@ export function DealItemsEditor({
           productId: product.id,
           quantity: 1,
           taxRateBps: product.taxRateBps,
+          discountBps: 0,
           unit: product.unit,
           unitPriceMinor: product.unitPriceMinor,
         },
@@ -167,6 +175,7 @@ export function DealItemsEditor({
           productId: null,
           quantity: 1,
           taxRateBps: 0,
+          discountBps: 0,
           unit: "item",
           unitPriceMinor: 0,
         },
@@ -182,7 +191,7 @@ export function DealItemsEditor({
 
       {rows.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-muted/50 text-muted-foreground text-xs">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">
@@ -196,6 +205,9 @@ export function DealItemsEditor({
                 </th>
                 <th className="w-20 px-2 py-2 text-right font-medium">
                   {t("tax")}
+                </th>
+                <th className="w-20 px-2 py-2 text-right font-medium">
+                  {t("discount")}
                 </th>
                 <th className="w-32 px-3 py-2 text-right font-medium">
                   {t("amount")}
@@ -276,8 +288,19 @@ export function DealItemsEditor({
                         value={row.taxRate}
                       />
                     </td>
+                    <td className="px-2 py-2">
+                      <Input
+                        aria-label={t("discount")}
+                        className="h-9 text-right tabular-nums"
+                        inputMode="decimal"
+                        onChange={(event) =>
+                          updateRow(row.key, { discount: event.target.value })
+                        }
+                        value={row.discount}
+                      />
+                    </td>
                     <td className="px-3 py-2 pt-4 text-right font-medium tabular-nums">
-                      {item ? money(lineSubtotalMinor(item)) : "—"}
+                      {item ? money(lineNetMinor(item)) : "—"}
                     </td>
                     <td className="py-2 pr-2">
                       <Button
@@ -358,6 +381,12 @@ export function DealItemsEditor({
         <dl className="ml-auto grid min-w-56 grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-sm tabular-nums">
           <dt className="text-muted-foreground">{t("subtotal")}</dt>
           <dd className="text-right">{money(totals.subtotalMinor)}</dd>
+          {totals.discountMinor > 0 ? (
+            <>
+              <dt className="text-muted-foreground">{t("discountTotal")}</dt>
+              <dd className="text-right">−{money(totals.discountMinor)}</dd>
+            </>
+          ) : null}
           <dt className="text-muted-foreground">{t("taxTotal")}</dt>
           <dd className="text-right">{money(totals.taxMinor)}</dd>
           <dt className="border-t pt-1 font-medium">{t("total")}</dt>

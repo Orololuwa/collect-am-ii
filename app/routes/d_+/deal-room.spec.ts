@@ -48,6 +48,7 @@ const pattern = "/d/:token";
 const items: DealLineItem[] = [
   {
     description: "",
+    discountBps: 0,
     name: "Design",
     productId: null,
     quantity: 10,
@@ -57,6 +58,7 @@ const items: DealLineItem[] = [
   },
   {
     description: "",
+    discountBps: 0,
     name: "Printing",
     productId: null,
     quantity: 1,
@@ -269,7 +271,7 @@ describe("deal room (/d/:token)", () => {
     ).toEqual("sent");
   });
 
-  test("given: suggested changes with a tampered price, should: price them from the catalogue", async () => {
+  test("given: suggested figures, should: keep the customer's own price, tax and discount", async () => {
     const { token, document, organization, deal, user } = await setupSentDeal();
     const product = await prisma.product.create({
       data: createPopulatedProduct({
@@ -291,29 +293,39 @@ describe("deal room (/d/:token)", () => {
     const response = await act(token, {
       changes: JSON.stringify({
         additions: [
-          { productId: product.id, quantity: 2, unitPriceMinor: 1 },
+          { productId: product.id, quantity: 2, unitPriceMinor: 150_000 },
           { productId: otherProduct.id, quantity: 5 },
         ],
-        quantities: { "0": 8, "1": 0 },
+        lines: {
+          "0": { discountBps: 1000, quantity: 8, unitPriceMinor: 900_000 },
+          "1": { quantity: 0 },
+        },
       }),
       documentId: document.id,
       intent: PROPOSE_CHANGES_INTENT,
-      note: "Fewer hours, no printing",
+      note: "Fewer hours at a better rate, no printing",
     });
 
     expect(response).toMatchObject({ data: { ok: true } });
     const proposal = await prisma.dealDocumentVersion.findFirstOrThrow({
       where: { dealDocumentId: document.id, state: "proposed" },
     });
-    // 8 × 10,000.00 + 2 × 2,000.00 + 7.5% tax on the 4,000.00
+    // Design: 8 × 9,000.00 = 72,000.00, less 10% = 64,800.00.
+    // Added product at their 1,500.00: 2 × 1,500.00 = 3,000.00 + 7.5% tax.
+    // Another organization's product is ignored.
     expect(proposal).toMatchObject({
-      note: "Fewer hours, no printing",
+      discountMinor: 720_000,
+      note: "Fewer hours at a better rate, no printing",
       proposedBy: "customer",
-      subtotalMinor: 8_400_000,
-      taxMinor: 30_000,
-      totalMinor: 8_430_000,
+      subtotalMinor: 7_500_000,
+      taxMinor: 22_500,
+      totalMinor: 6_802_500,
       version: 2,
     });
+    expect(proposal.items).toMatchObject([
+      { discountBps: 1000, name: "Design", unitPriceMinor: 900_000 },
+      { productId: product.id, taxRateBps: 750, unitPriceMinor: 150_000 },
+    ]);
     expect(
       (
         await prisma.dealDocument.findUniqueOrThrow({

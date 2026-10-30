@@ -51,6 +51,7 @@ export const dealItemSchema = z.object({
     .transform(roundQuantity)
     .refine((quantity) => quantity > 0),
   taxRateBps: z.number().int().min(0).max(10_000),
+  discountBps: z.number().int().min(0).max(10_000).optional().default(0),
   unit: z.string().trim().min(1).max(30),
   unitPriceMinor: z.number().int().min(0).max(100_000_000_000),
 });
@@ -158,11 +159,18 @@ const quantity = z
   .max(MAX_ITEM_QUANTITY)
   .transform(roundQuantity);
 
+const lineFiguresSchema = z.object({
+  discountBps: z.number().int().min(0).max(10_000).optional(),
+  quantity: quantity.optional(),
+  taxRateBps: z.number().int().min(0).max(10_000).optional(),
+  unitPriceMinor: z.number().int().min(0).max(100_000_000_000).optional(),
+});
+
 export const proposedChangesSchema = z.object({
   additions: z
-    .array(z.object({ productId: z.string().min(1), quantity }))
+    .array(lineFiguresSchema.extend({ productId: z.string().min(1), quantity }))
     .max(MAX_DEAL_ITEMS),
-  quantities: z.record(z.string().regex(/^\d{1,3}$/), quantity),
+  lines: z.record(z.string().regex(/^\d{1,3}$/), lineFiguresSchema),
 });
 
 /** The customer accepting a document on the share link. */

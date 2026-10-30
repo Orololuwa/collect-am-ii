@@ -100,6 +100,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
                 current: {
                   items: parseDealItems(current.items),
                   note: current.note,
+                  discountMinor: current.discountMinor,
                   subtotalMinor: current.subtotalMinor,
                   taxMinor: current.taxMinor,
                   totalMinor: current.totalMinor,
@@ -115,6 +116,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
                       id: proposal.id,
                       items: parseDealItems(proposal.items),
                       note: proposal.note,
+                      discountMinor: proposal.discountMinor,
                       subtotalMinor: proposal.subtotalMinor,
                       taxMinor: proposal.taxMinor,
                       totalMinor: proposal.totalMinor,

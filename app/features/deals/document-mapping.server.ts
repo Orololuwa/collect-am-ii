@@ -171,9 +171,15 @@ export async function resolveDocumentTemplate({
 
 function toTemplateItems(content: DocumentContent) {
   return content.items.map((item) => ({
-    description: item.description
-      ? `${item.name}\n${item.description}`
-      : item.name,
+    // Templates have no discount column, so a line's discount is noted under
+    // its name; the footer carries the total discount.
+    description: [
+      item.name,
+      item.description,
+      item.discountBps > 0 ? `Discount ${item.discountBps / 100}%` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
     quantity: String(item.quantity),
     total: minorUnitsToMajorString(lineSubtotalMinor(item), content.currency),
     unitPrice: minorUnitsToMajorString(item.unitPriceMinor, content.currency),
@@ -246,17 +252,22 @@ function buildFooterData(
   const { currency, totals, items } = content;
   const major = (minor: number) => minorUnitsToMajorString(minor, currency);
   const rates = new Set(items.map((item) => item.taxRateBps));
+  const discounts = new Set(items.map((item) => item.discountBps));
+  const discountedMinor = totals.subtotalMinor - totals.discountMinor;
   const effectiveRate =
+    discountedMinor > 0 ? (totals.taxMinor / discountedMinor) * 100 : 0;
+  const effectiveDiscount =
     totals.subtotalMinor > 0
-      ? (totals.taxMinor / totals.subtotalMinor) * 100
+      ? (totals.discountMinor / totals.subtotalMinor) * 100
       : 0;
 
   return {
     ...data,
-    discount: major(0),
+    discount: major(totals.discountMinor),
     discountMode: "amount",
-    discountRate: "0.00",
-    // With mixed rates the blended percentage would only confuse.
+    discountRate: effectiveDiscount.toFixed(2),
+    // With mixed rates a blended percentage would only confuse.
+    showDiscountRate: discounts.size <= 1 && data.showDiscountRate !== false,
     showTaxRate: rates.size <= 1 && data.showTaxRate !== false,
     subtotal: major(totals.subtotalMinor),
     taxAmount: major(totals.taxMinor),
