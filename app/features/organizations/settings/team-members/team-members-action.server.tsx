@@ -318,6 +318,7 @@ export async function teamMembersAction({
         const result = await sendEmail({
           react: (
             <InviteEmail
+              appName={i18n.t("translation:appName")}
               buttonText={i18n.t(
                 "organizations:settings.teamMembers.inviteByEmail.inviteEmail.buttonText",
                 {
@@ -335,6 +336,9 @@ export async function teamMembersAction({
                   inviterName: user.name,
                   organizationName: organization.name,
                 },
+              )}
+              footer={i18n.t(
+                "organizations:settings.teamMembers.inviteByEmail.inviteEmail.footer",
               )}
               title={i18n.t(
                 "organizations:settings.teamMembers.inviteByEmail.inviteEmail.title",

@@ -1,8 +1,10 @@
+import { render } from "@react-email/components";
 import { z } from "zod";
 
 import type { Route } from "./+types/send-email";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
 import { organizationMembershipContext } from "~/features/organizations/organizations-middleware.server";
+import { DocumentEmail } from "~/features/templates/shared/components/document-email";
 import { getTemplateById } from "~/features/templates/shared/templates";
 import { retrieveTemplateFromDatabaseById } from "~/features/templates/shared/templates-model.server";
 import {
@@ -12,6 +14,7 @@ import {
 import { generateExportHTML } from "~/features/templates/shared/utils/html-generator.server";
 import { mergeDataIntoTemplate } from "~/features/templates/shared/utils/merge-template-data.server";
 import { generatePDF } from "~/features/templates/shared/utils/pdf-generator.server";
+import { sanitizeQuillHtml } from "~/features/templates/shared/utils/sanitize-quill-html.server";
 import { validateJson } from "~/utils/validate-json.server";
 
 const sendEmailSchema = z.object({
@@ -89,16 +92,31 @@ export async function action({ request, context, params }: Route.ActionArgs) {
 
     const pdfBuffer = await generatePDF(html);
 
+    const appName = getInstance(context).t("translation:appName");
+    const email = (
+      <DocumentEmail
+        appName={appName}
+        bodyHtml={sanitizeQuillHtml(body.body)}
+        organizationName={organization.name}
+        subject={body.subject}
+      />
+    );
+    const [emailHtml, emailText] = await Promise.all([
+      render(email),
+      render(email, { plainText: true }),
+    ]);
+
     // Send email via Resend
     const emailResult = await sendDocumentEmail({
       from: getDocumentSender({
-        appName: getInstance(context).t("translation:appName"),
+        appName,
         organizationName: organization.name,
       }),
       replyTo: body.replyTo || user.email,
       to: body.to,
       subject: body.subject,
-      html: body.body,
+      html: emailHtml,
+      text: emailText,
       pdfBuffer,
       pdfFilename: `${template.name || "template"}.pdf`,
     });

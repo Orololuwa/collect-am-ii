@@ -1,6 +1,11 @@
 import { init } from "@paralleldrive/cuid2";
+import { render } from "@react-email/components";
+import { createElement } from "react";
 
+import { ReceiptEmail } from "./components/receipt-email";
 import { getCurrencyMinorUnitExponent } from "~/features/checkout/money";
+import translation from "~/features/localization/locales/en/translation";
+import { formatMoney } from "~/features/organizations/dashboard/dashboard-format";
 import {
   generateReceiptExportHTML,
   generateReceiptPreviewHTML,
@@ -266,7 +271,10 @@ export async function sendReceiptEmailForReceiptInDatabaseById({
 }) {
   const receipt = await prisma.receipt.findUnique({
     where: { id: receiptId },
-    include: { payment: true, template: true },
+    include: {
+      payment: { include: { organization: { select: { name: true } } } },
+      template: true,
+    },
   });
   if (!receipt) return null;
 
@@ -283,10 +291,32 @@ export async function sendReceiptEmailForReceiptInDatabaseById({
   const html = generateReceiptExportHTML(sections, globalStyles, colorPalette);
   const pdfBuffer = await generatePDF(html);
 
+  const header = sections.find((section) => section.type === "receipt-header");
+  const storeName =
+    (typeof header?.data.storeName === "string" && header.data.storeName) ||
+    receipt.payment.organization.name;
+  const appUrl = (process.env.APP_URL ?? "").replace(/\/$/, "");
+  const email = createElement(ReceiptEmail, {
+    amount: formatMoney({
+      amountMinor: receipt.payment.amountMinor,
+      currency: receipt.payment.currency,
+      locale: "en",
+    }),
+    appName: translation.appName,
+    receiptNumber: receipt.receiptNumber,
+    receiptUrl: `${appUrl}/receipts/${receipt.id}`,
+    storeName,
+  });
+  const [emailHtml, emailText] = await Promise.all([
+    render(email),
+    render(email, { plainText: true }),
+  ]);
+
   // Sent from EMAIL_FROM. The idempotency key stops a retried payment webhook
   // from emailing the same receipt twice.
   const result = await sendDocumentEmail({
-    html: `<p>Your receipt is attached. Receipt #: <strong>${receipt.receiptNumber}</strong></p>`,
+    html: emailHtml,
+    text: emailText,
     pdfBuffer,
     pdfFilename: `receipt-${receipt.receiptNumber}.pdf`,
     idempotencyKey: `receipt-email-${receipt.id}`,

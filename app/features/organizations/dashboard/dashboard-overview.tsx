@@ -1,10 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { href, Link } from "react-router";
 
 import {
   formatMoney,
   formatPercentChange,
-  formatRelativeTime,
   formatShortDate,
   formatSignedNumber,
 } from "./dashboard-format";
@@ -34,10 +32,15 @@ export function DashboardSection({
 function Sparkline({ values }: { values: number[] }) {
   const max = Math.max(...values, 1);
   return (
-    <div aria-hidden="true" className="flex h-8 items-end gap-[3px]">
+    // Takes whatever room the figure leaves, so wide amounts squeeze the
+    // bars instead of pushing them out of the card.
+    <div
+      aria-hidden="true"
+      className="flex h-8 w-full min-w-0 max-w-[112px] items-end justify-end gap-[2px]"
+    >
       {values.map((value, index) => (
         <span
-          className="w-[5px] rounded-sm bg-primary/80"
+          className="min-w-px max-w-[5px] flex-1 rounded-sm bg-primary/80"
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length series
           key={index}
           style={{ height: `${Math.max(8, (value / max) * 100)}%` }}
@@ -45,6 +48,17 @@ function Sparkline({ values }: { values: number[] }) {
       ))}
     </div>
   );
+}
+
+/**
+ * A bar's height as a share of the busiest day. Days with any money get at
+ * least a sliver, so a small day next to a huge one still shows.
+ */
+function barHeight(amountMinor: number, max: number) {
+  if (amountMinor <= 0) {
+    return "0%";
+  }
+  return `max(4px, ${(amountMinor / max) * 100}%)`;
 }
 
 function KpiCard({
@@ -75,11 +89,15 @@ function KpiCard({
           </span>
         ) : null}
       </div>
-      <div className="flex items-end justify-between gap-3">
-        <span className="font-semibold text-[28px] tabular-nums leading-9 tracking-tight">
+      <div className="flex min-w-0 items-end justify-between gap-3">
+        <span className="shrink-0 font-semibold text-[28px] tabular-nums leading-9 tracking-tight">
           {value}
         </span>
-        {spark ? <Sparkline values={spark} /> : null}
+        {spark ? (
+          <div className="flex min-w-0 flex-1 justify-end">
+            <Sparkline values={spark} />
+          </div>
+        ) : null}
       </div>
       <span className="text-muted-foreground text-sm">{note}</span>
     </div>
@@ -272,16 +290,14 @@ export function CollectedChart({
                 >
                   <span
                     className="absolute inset-x-0 bottom-0 rounded-t-[3px] bg-muted"
-                    style={{
-                      height: `${(day.previousAmountMinor / max) * 100}%`,
-                    }}
+                    style={{ height: barHeight(day.previousAmountMinor, max) }}
                   />
                   <span
                     className={cn(
                       "relative w-full rounded-t-[3px]",
                       day === peak ? "bg-primary" : "bg-primary/70",
                     )}
-                    style={{ height: `${(day.amountMinor / max) * 100}%` }}
+                    style={{ height: barHeight(day.amountMinor, max) }}
                   />
                 </div>
               ))}
@@ -303,87 +319,6 @@ export function CollectedChart({
             </div>
           </div>
         </div>
-      )}
-    </DashboardSection>
-  );
-}
-
-export function TopCheckoutPages({
-  pages,
-  currency,
-  organizationSlug,
-}: {
-  pages: FullDashboardData["stats"]["topPages"];
-  currency: string;
-  organizationSlug: string;
-}) {
-  const { t, i18n } = useTranslation("organizations", {
-    keyPrefix: "dashboard.topPages",
-  });
-  const locale = i18n.language;
-  const max = Math.max(...pages.map((page) => page.amountMinor), 1);
-
-  return (
-    <DashboardSection
-      aria-labelledby="top-pages-title"
-      className="flex flex-[1_1_300px] flex-col gap-4"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-semibold text-base" id="top-pages-title">
-          {t("title")}
-        </h2>
-        <Link
-          className="font-medium text-primary text-sm hover:underline"
-          to={href("/organizations/:organizationSlug/checkout-pages", {
-            organizationSlug,
-          })}
-        >
-          {t("viewAll")}
-        </Link>
-      </div>
-      {pages.length === 0 ? (
-        <p className="text-muted-foreground">{t("empty")}</p>
-      ) : (
-        <ul className="flex flex-col gap-4">
-          {pages.map((page) => (
-            <li className="flex flex-col gap-2" key={page.id}>
-              <div className="flex justify-between gap-3">
-                <Link
-                  className="min-w-0 truncate font-medium hover:underline"
-                  to={href(
-                    "/organizations/:organizationSlug/checkout-pages/:checkoutPageId",
-                    { checkoutPageId: page.id, organizationSlug },
-                  )}
-                >
-                  {page.name}
-                </Link>
-                <span className="font-semibold tabular-nums">
-                  {formatMoney({
-                    amountMinor: page.amountMinor,
-                    currency,
-                    locale,
-                    whole: true,
-                  })}
-                </span>
-              </div>
-              <div
-                aria-hidden="true"
-                className="h-1.5 overflow-hidden rounded-full bg-muted"
-              >
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{ width: `${(page.amountMinor / max) * 100}%` }}
-                />
-              </div>
-              <span className="text-muted-foreground text-sm">
-                {t("payments", { count: page.payments })}
-                {page.lastPaymentAt
-                  ? ` · ${t("lastPayment", { when: formatRelativeTime(page.lastPaymentAt, locale) })}`
-                  : null}
-              </span>
-            </li>
-          ))}
-        </ul>
       )}
     </DashboardSection>
   );
