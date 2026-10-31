@@ -1,6 +1,7 @@
-import { Plus, Trash2, X } from "lucide-react";
+import { InfoIcon, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { getSectionInfo } from "../section-info";
 import { useBuilderStore } from "../store/builder-store";
 import type {
   CertificationEntry,
@@ -171,15 +172,21 @@ export function PropertiesPanel() {
   if (!section) {
     return (
       <div
-        className="h-[calc(100vh-4rem)] w-80 bg-muted/30 border-l border-border p-4 md:p-6 hidden md:block"
+        className="h-full w-80 bg-muted/30 border-l border-border p-4 md:p-6 hidden md:block"
         data-testid="properties-panel"
       >
         <div className="text-center text-muted-foreground">
-          <p className="text-sm">Select a section to edit content</p>
+          <p className="text-sm">
+            Click a part of the page, or pick a section on the left, to edit it.
+          </p>
         </div>
       </div>
     );
   }
+
+  const sectionInfo = currentTemplate
+    ? getSectionInfo(currentTemplate.type, section.type)
+    : null;
 
   const updateData = (key: string, value: unknown) => {
     updateSection(section.id, {
@@ -3961,7 +3968,7 @@ export function PropertiesPanel() {
 
   return (
     <div
-      className="h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] w-full md:w-80 bg-muted/30 md:border-l border-border overflow-y-auto"
+      className="h-full w-full md:w-80 bg-muted/30 md:border-l border-border overflow-y-auto"
       data-testid="properties-panel"
     >
       <div className="p-4 border-b border-border flex items-center justify-between">
@@ -3969,7 +3976,7 @@ export function PropertiesPanel() {
           className="font-semibold text-foreground"
           data-testid="content-editor-heading"
         >
-          Content Editor
+          {sectionInfo?.name ?? "Content Editor"}
         </h3>
         <Button
           className="h-8 w-8 md:block hidden"
@@ -3984,6 +3991,28 @@ export function PropertiesPanel() {
       </div>
 
       <div className="p-4 space-y-4">
+        {sectionInfo?.filledByDeal ? (
+          <div
+            className="flex gap-2.5 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100"
+            data-testid="filled-by-deal"
+          >
+            <InfoIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            <div className="flex flex-col gap-1.5 text-xs">
+              <span className="font-semibold text-sm">
+                Filled in by each deal
+              </span>
+              <span>
+                When a deal sends this document, these come from the deal and
+                its customer. You see sample values here.
+              </span>
+              <ul className="list-disc space-y-0.5 pl-4">
+                {sectionInfo.filledByDeal.map((field) => (
+                  <li key={field}>{field}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
         {renderContentEditor()}
         <SectionColorPaletteEditor section={section} />
       </div>

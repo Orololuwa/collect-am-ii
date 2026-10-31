@@ -9,7 +9,6 @@ import {
 import {
   ArrowLeft,
   Check,
-  Cloud,
   CloudOff,
   DownloadIcon,
   Eye,
@@ -17,55 +16,40 @@ import {
   Layers,
   Loader2,
   Mail,
-  MoreVertical,
-  Palette,
-  Settings,
+  MinusIcon,
+  MoreHorizontal,
+  PlusIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  data,
-  href,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router";
+import { data, href, Link, useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import type { Route } from "./+types/_index";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "~/components/ui/command";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { Sheet, SheetContent } from "~/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "~/components/ui/sheet";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
 import { organizationMembershipContext } from "~/features/organizations/organizations-middleware.server";
-import { COMMON_CURRENCIES } from "~/features/templates/shared/common-currencies";
 import { ApiPayloadModal } from "~/features/templates/shared/components/api-payload-modal";
-import { ColorPaletteEditor } from "~/features/templates/shared/components/color-palette-editor";
-import { ComponentPalette } from "~/features/templates/shared/components/component-palette";
-import { InlineEditor } from "~/features/templates/shared/components/inline-editor";
+import { BuilderSectionsPanel } from "~/features/templates/shared/components/builder-sections-panel";
 import { PreviewModal } from "~/features/templates/shared/components/preview-modal";
 import { PropertiesPanel } from "~/features/templates/shared/components/properties-panel";
 import { SendEmailModal } from "~/features/templates/shared/components/send-email-modal";
 import { TemplateCanvas } from "~/features/templates/shared/components/template-canvas";
 import { useBuilderStore } from "~/features/templates/shared/store/builder-store";
+import { getTemplateTypeInfo } from "~/features/templates/shared/template-types";
 import { getTemplateById } from "~/features/templates/shared/templates";
 import {
   createTemplateInDatabase,
@@ -140,64 +124,6 @@ const actionSchema = z.discriminatedUnion("intent", [
   saveTemplateSchema,
   initTemplateSchema,
 ]);
-
-// Helper function to get currency symbol from currency code
-function getCurrencySymbol(currencyCode: string): string {
-  try {
-    // Try with en-US first
-    const formatter = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currencyCode,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
-    const parts = formatter.formatToParts(0);
-    const symbolPart = parts.find((part) => part.type === "currency");
-
-    // If we got a symbol (not the code), return it
-    if (symbolPart && symbolPart.value !== currencyCode) {
-      return symbolPart.value;
-    }
-
-    // Fallback: try with locale specific to the currency
-    const localeMap: Record<string, string> = {
-      NGN: "en-NG", // Nigerian English
-      ZAR: "en-ZA", // South African English
-      EGP: "ar-EG", // Egyptian Arabic
-      KES: "en-KE", // Kenyan English
-      GHS: "en-GH", // Ghanaian English
-      TZS: "en-TZ", // Tanzanian English
-      UGX: "en-UG", // Ugandan English
-      ETB: "en-ET", // Ethiopian English
-      MAD: "ar-MA", // Moroccan Arabic
-    };
-
-    const preferredLocale = localeMap[currencyCode];
-    if (preferredLocale) {
-      try {
-        const altFormatter = new Intl.NumberFormat(preferredLocale, {
-          style: "currency",
-          currency: currencyCode,
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        });
-        const altParts = altFormatter.formatToParts(0);
-        const altSymbolPart = altParts.find((part) => part.type === "currency");
-        if (altSymbolPart && altSymbolPart.value !== currencyCode) {
-          return altSymbolPart.value;
-        }
-      } catch {
-        // Continue to fallback
-      }
-    }
-
-    // Final fallback: return currency code
-    return currencyCode;
-  } catch {
-    // Fallback to currency code if formatting fails
-    return currencyCode;
-  }
-}
 
 export async function loader({ params, context, request }: Route.LoaderArgs) {
   const { organization } = context.get(organizationMembershipContext);
@@ -344,7 +270,9 @@ export const meta: Route.MetaFunction = ({ loaderData }) => [
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-function ExportButtonMenuItem({
+const ZOOM_LEVELS = [0.5, 0.75, 0.9, 1, 1.1, 1.25, 1.5];
+
+function useExportPdf({
   currentTemplate,
   organizationSlug,
   templateId,
@@ -355,7 +283,7 @@ function ExportButtonMenuItem({
 }) {
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleExport = async () => {
+  const exportPdf = async () => {
     if (!currentTemplate || !templateId) return;
 
     setIsExporting(true);
@@ -393,24 +321,59 @@ function ExportButtonMenuItem({
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      alert("Failed to export PDF. Please try again.");
+      toast.error("Couldn't download the PDF. Please try again.");
     } finally {
       setIsExporting(false);
     }
   };
 
+  return { exportPdf, isExporting };
+}
+
+function SaveStatusText({
+  status,
+  lastSavedAt,
+  onRetry,
+}: {
+  status: SaveStatus;
+  lastSavedAt: Date | null;
+  onRetry: () => void;
+}) {
   return (
-    <DropdownMenuItem
-      data-testid="export-button"
-      disabled={!currentTemplate || isExporting}
-      onSelect={(e) => {
-        e.preventDefault();
-        handleExport();
-      }}
+    <output
+      aria-live="polite"
+      className={cn(
+        "flex items-center gap-1.5 whitespace-nowrap text-xs",
+        status === "error" ? "text-destructive" : "text-muted-foreground",
+      )}
+      data-testid="save-status-badge"
     >
-      <DownloadIcon className="h-4 w-4 mr-2" />
-      {isExporting ? "Exporting..." : "Export PDF"}
-    </DropdownMenuItem>
+      {status === "saving" ? (
+        <>
+          <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+          Saving…
+        </>
+      ) : status === "error" ? (
+        <>
+          <CloudOff aria-hidden="true" className="size-3.5" />
+          Couldn't save.
+          <button
+            className="font-medium underline underline-offset-2"
+            onClick={onRetry}
+            type="button"
+          >
+            Try again
+          </button>
+        </>
+      ) : (
+        <>
+          <Check aria-hidden="true" className="size-3.5" />
+          {status === "saved" || !lastSavedAt
+            ? "Saved"
+            : `Saved at ${lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+        </>
+      )}
+    </output>
   );
 }
 
@@ -419,7 +382,6 @@ export default function BuilderEditorRoute({
 }: Route.ComponentProps) {
   const params = useParams();
   const navigate = useNavigate();
-  const [_searchParams] = useSearchParams();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [apiPayloadOpen, setApiPayloadOpen] = useState(false);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
@@ -427,10 +389,9 @@ export default function BuilderEditorRoute({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
-  const [colorPaletteOpen, setColorPaletteOpen] = useState(false);
-  const [componentPaletteOpen, setComponentPaletteOpen] = useState(false);
+  const [sectionsPanelOpen, setSectionsPanelOpen] = useState(false);
   const [propertiesPanelOpen, setPropertiesPanelOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
 
   const {
     currentTemplate,
@@ -438,7 +399,6 @@ export default function BuilderEditorRoute({
     selectSection,
     selectedSectionId,
     setSourceTemplate,
-    updateGlobalStyles,
     isDirty,
     setDirty,
     setTemplateSessionId,
@@ -461,6 +421,14 @@ export default function BuilderEditorRoute({
   const templateId = params.templateId;
   const organizationSlug =
     params.organizationSlug || loaderData.organizationSlug;
+  const templatesUrl = href("/organizations/:organizationSlug/templates", {
+    organizationSlug,
+  });
+  const { exportPdf, isExporting } = useExportPdf({
+    currentTemplate,
+    organizationSlug,
+    templateId,
+  });
 
   // Auto-save function
   const performSave = useCallback(async () => {
@@ -478,7 +446,7 @@ export default function BuilderEditorRoute({
       const formData = new FormData();
       formData.set("intent", "save");
       formData.set("templateId", templateSessionId);
-      formData.set("name", currentTemplate.name || "Untitled Template");
+      formData.set("name", currentTemplate.name.trim() || "Untitled template");
       formData.set("type", currentTemplate.type || "resume");
       formData.set("sections", JSON.stringify(currentTemplate.sections || []));
       formData.set(
@@ -579,16 +547,7 @@ export default function BuilderEditorRoute({
         | string
         | undefined;
 
-      const currencyDocumentTypes = [
-        "invoice",
-        "receipt",
-        "quote",
-        "estimate",
-        "purchase-order",
-        "sales-order",
-        "order-confirmation",
-      ];
-      if (currencyDocumentTypes.includes(template.type) && !currencyToUse) {
+      if (getTemplateTypeInfo(template.type)?.usedInDeals && !currencyToUse) {
         currencyToUse = "USD";
       }
 
@@ -607,7 +566,7 @@ export default function BuilderEditorRoute({
       selectSection(null);
       setTemplateNotFound(false);
       setPropertiesPanelOpen(false);
-      setComponentPaletteOpen(false);
+      setSectionsPanelOpen(false);
 
       // If it's a new template from customize, redirect to the new URL
       if (loaderData.isNewFromDefault && template.id !== templateId) {
@@ -635,11 +594,10 @@ export default function BuilderEditorRoute({
   // Open properties panel sheet on mobile when section is selected
   useEffect(() => {
     if (selectedSectionId) {
-      // Only open on mobile (check window width or use a media query)
       const isMobile = window.innerWidth < 768; // md breakpoint
       if (isMobile) {
         setPropertiesPanelOpen(true);
-        setComponentPaletteOpen(false); // Close component palette if open
+        setSectionsPanelOpen(false);
       }
     } else {
       setPropertiesPanelOpen(false);
@@ -658,35 +616,16 @@ export default function BuilderEditorRoute({
     };
   }, []);
 
-  // Open properties panel sheet on mobile when section is selected
-  useEffect(() => {
-    if (selectedSectionId) {
-      // Only open on mobile (check window width or use a media query)
-      const isMobile = window.innerWidth < 768; // md breakpoint
-      if (isMobile) {
-        setPropertiesPanelOpen(true);
-        setComponentPaletteOpen(false); // Close component palette if open
-      }
-    } else {
-      setPropertiesPanelOpen(false);
-    }
-  }, [selectedSectionId]);
-
   if (templateNotFound) {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Template Not Found</h2>
-          <p className="text-muted-foreground mb-4">
-            The template with ID "{templateId}" could not be found.
+          <h2 className="mb-2 font-semibold text-xl">Template not found</h2>
+          <p className="mb-4 text-muted-foreground">
+            It may have been deleted.
           </p>
-          <Button
-            onClick={() => {
-              navigate(`/organizations/${organizationSlug}/templates`);
-            }}
-            variant="outline"
-          >
-            Back to Templates
+          <Button asChild variant="outline">
+            <Link to={templatesUrl}>Back to templates</Link>
           </Button>
         </div>
       </div>
@@ -707,293 +646,212 @@ export default function BuilderEditorRoute({
     setActiveId(event.active.id as string);
   };
 
-  // Save status indicator
-  const renderSaveStatus = () => {
-    switch (saveStatus) {
-      case "saving":
-        return (
-          <Badge
-            className="gap-1"
-            data-testid="save-status-badge"
-            variant="secondary"
-          >
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Saving...
-          </Badge>
-        );
-      case "saved":
-        return (
-          <Badge
-            className="gap-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-            data-testid="save-status-badge"
-            variant="secondary"
-          >
-            <Check className="h-3 w-3" />
-            Saved
-          </Badge>
-        );
-      case "error":
-        return (
-          <Badge
-            className="gap-1"
-            data-testid="save-status-badge"
-            variant="destructive"
-          >
-            <CloudOff className="h-3 w-3" />
-            Error
-          </Badge>
-        );
-      default:
-        if (templateSessionId) {
-          return (
-            <Badge
-              className="gap-1 text-muted-foreground"
-              data-testid="save-status-badge"
-              variant="outline"
-            >
-              <Cloud className="h-3 w-3" />
-              {lastSavedAt
-                ? `Last saved ${lastSavedAt.toLocaleTimeString()}`
-                : "Auto-save enabled"}
-            </Badge>
-          );
-        }
-        return null;
+  const typeInfo = getTemplateTypeInfo(currentTemplate.type);
+  const zoomIndex = ZOOM_LEVELS.indexOf(zoom);
+
+  const finish = async () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
+    if (isDirty) {
+      await performSave();
+    }
+    navigate(templatesUrl);
   };
 
   return (
     <DndContext onDragStart={handleDragStart} sensors={sensors}>
-      <div className="flex flex-1 max-h-[calc(100vh-4rem)] overflow-hidden select-none">
-        {/* Canvas on the left */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <div className="border-b p-3 md:p-4 bg-background">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              {/* Left side: Title and save status */}
-              <div className="flex flex-col gap-2 flex-1 min-w-0">
-                {/* Row 1: Back button + Title */}
-                <div className="flex items-center gap-3">
-                  <Button
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => {
-                      navigate(-1);
-                    }}
-                    size="icon"
-                    variant="ghost"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="sr-only">Go back</span>
-                  </Button>
-                  <h1 className="text-lg font-semibold -mx-2 -my-1 min-w-0">
-                    <button
-                      className="w-full text-left hover:bg-accent rounded px-2 py-1 transition-colors cursor-pointer truncate"
-                      data-testid="template-editor-title"
-                      onClick={() => setIsEditingTemplateName(true)}
-                      type="button"
-                    >
-                      {currentTemplate?.name || "Untitled Template"}
-                    </button>
-                  </h1>
-                </div>
-                {/* Row 2: Auto-save status */}
-                <div className="flex items-center gap-3 pl-11">
-                  {renderSaveStatus()}
-                </div>
-              </div>
-
-              {/* Right side: Settings and Actions dropdowns */}
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Settings Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      data-testid="settings-button"
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Settings</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {(currentTemplate?.type === "invoice" ||
-                      currentTemplate?.type === "receipt" ||
-                      currentTemplate?.type === "quote" ||
-                      currentTemplate?.type === "estimate" ||
-                      currentTemplate?.type === "purchase-order" ||
-                      currentTemplate?.type === "sales-order" ||
-                      currentTemplate?.type === "order-confirmation") && (
-                      <>
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger>
-                            <span>Currency</span>
-                            <span className="ml-auto text-muted-foreground">
-                              {currentTemplate?.globalStyles.currency
-                                ? (() => {
-                                    const currencyCode = currentTemplate
-                                      ?.globalStyles.currency as string;
-                                    const symbol =
-                                      getCurrencySymbol(currencyCode);
-                                    return symbol !== currencyCode
-                                      ? `${symbol} ${currencyCode}`
-                                      : currencyCode;
-                                  })()
-                                : "Select"}
-                            </span>
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent className="w-[200px]">
-                            <Command>
-                              <CommandInput placeholder="Search currency..." />
-                              <CommandList>
-                                <CommandEmpty>No currency found.</CommandEmpty>
-                                <CommandGroup>
-                                  {COMMON_CURRENCIES.map((currency) => (
-                                    <CommandItem
-                                      key={currency.code}
-                                      onSelect={() => {
-                                        const currencyCode = currency.code;
-                                        updateGlobalStyles({
-                                          currency: currencyCode,
-                                        });
-                                      }}
-                                      value={`${currency.code} ${currency.name}`}
-                                    >
-                                      <svg
-                                        aria-hidden="true"
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          (currentTemplate?.globalStyles
-                                            .currency as string) ===
-                                            currency.code
-                                            ? "opacity-100"
-                                            : "opacity-0",
-                                        )}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                      >
-                                        <path d="M20 6 9 17l-5-5" />
-                                      </svg>
-                                      {currency.name}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
-                    <ColorPaletteEditor
-                      onOpenChange={setColorPaletteOpen}
-                      open={colorPaletteOpen}
-                      trigger={
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setColorPaletteOpen(true);
-                          }}
-                        >
-                          <Palette className="h-4 w-4 mr-2" />
-                          Color Palette
-                        </DropdownMenuItem>
-                      }
-                    />
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Actions Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      data-testid="actions-button"
-                      size="sm"
-                      variant="outline"
-                    >
-                      <MoreVertical className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      data-testid="preview-button"
-                      onSelect={() => setPreviewOpen(true)}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Preview
-                    </DropdownMenuItem>
-                    <ExportButtonMenuItem
-                      currentTemplate={currentTemplate}
-                      organizationSlug={organizationSlug}
-                      templateId={templateId}
-                    />
-                    <DropdownMenuItem
-                      data-testid="send-email-button"
-                      onSelect={() => setSendEmailOpen(true)}
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Send Email
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      data-testid="api-payload-button"
-                      onSelect={() => setApiPayloadOpen(true)}
-                    >
-                      <FileCode className="h-4 w-4 mr-2" />
-                      API Payload Details
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+      <div className="flex h-[calc(100svh-var(--header-height))] min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh-var(--header-height)-1rem)]">
+        {/* Top bar */}
+        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-background px-3 py-2.5 md:px-4">
+          <Button
+            asChild
+            className="shrink-0 text-muted-foreground"
+            size="sm"
+            variant="ghost"
+          >
+            <Link to={templatesUrl}>
+              <ArrowLeft aria-hidden="true" />
+              <span className="hidden sm:inline">Templates</span>
+              <span className="sr-only sm:hidden">Back to templates</span>
+            </Link>
+          </Button>
+          <div className="hidden h-5 w-px bg-border sm:block" />
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <h1 className="min-w-0 flex-1 md:flex-none">
+              <input
+                aria-label="Template name"
+                className="w-full min-w-0 truncate rounded-md border border-transparent bg-transparent px-2 py-1 font-semibold text-base outline-none transition-colors hover:border-input focus:border-ring focus:ring-2 focus:ring-ring/30 md:w-72"
+                data-testid="template-editor-title"
+                maxLength={120}
+                onBlur={(event) => {
+                  if (!event.target.value.trim()) {
+                    updateTemplateName("Untitled template");
+                  }
+                }}
+                onChange={(event) => updateTemplateName(event.target.value)}
+                value={currentTemplate.name}
+              />
+            </h1>
+            {typeInfo ? (
+              <Badge
+                className="hidden gap-1 sm:inline-flex"
+                variant="secondary"
+              >
+                <typeInfo.icon aria-hidden="true" className="size-3" />
+                {typeInfo.label}
+              </Badge>
+            ) : null}
+            {loaderData.template?.isDefault ? (
+              <Badge className="hidden bg-primary/10 text-primary sm:inline-flex">
+                Default
+              </Badge>
+            ) : null}
+            <div className="hidden lg:block">
+              <SaveStatusText
+                lastSavedAt={lastSavedAt}
+                onRetry={() => performSave()}
+                status={saveStatus}
+              />
             </div>
           </div>
-          <TemplateCanvas />
-        </div>
 
-        {/* Side panel on the right - switches between ComponentPalette and PropertiesPanel */}
-        {/* Desktop: Fixed sidebar */}
-        <div className="hidden md:block">
-          {selectedSectionId ? (
-            <PropertiesPanel />
-          ) : (
-            <ComponentPalette
-              initialTemplateType={
-                currentTemplate?.type || loaderData.template?.type
-              }
-            />
-          )}
-        </div>
-
-        {/* Mobile: Sheet drawer for Component Palette */}
-        {!selectedSectionId && (
-          <ComponentPalette
-            asSheet={true}
-            initialTemplateType={
-              currentTemplate?.type || loaderData.template?.type
-            }
-            onOpenChange={setComponentPaletteOpen}
-            open={componentPaletteOpen}
-            trigger={
+          <div className="flex shrink-0 items-center gap-1.5">
+            <fieldset
+              aria-label="Zoom"
+              className="mr-1 hidden items-center rounded-md border xl:flex"
+            >
               <Button
-                className="fixed bottom-4 right-4 z-50 md:hidden shadow-lg h-12 w-12 rounded-full"
-                data-testid="mobile-component-palette-button"
-                onClick={() => setComponentPaletteOpen(true)}
-                size="icon"
+                aria-label="Zoom out"
+                className="rounded-r-none"
+                disabled={zoomIndex <= 0}
+                onClick={() => setZoom(ZOOM_LEVELS[zoomIndex - 1] ?? zoom)}
+                size="icon-sm"
+                variant="ghost"
               >
-                <Layers className="h-5 w-5" />
-                <span className="sr-only">Open components</span>
+                <MinusIcon aria-hidden="true" />
               </Button>
-            }
-          />
-        )}
+              <button
+                className="w-12 text-center font-medium text-xs tabular-nums"
+                onClick={() => setZoom(1)}
+                title="Reset zoom"
+                type="button"
+              >
+                {Math.round(zoom * 100)}%
+              </button>
+              <Button
+                aria-label="Zoom in"
+                className="rounded-l-none"
+                disabled={zoomIndex >= ZOOM_LEVELS.length - 1}
+                onClick={() => setZoom(ZOOM_LEVELS[zoomIndex + 1] ?? zoom)}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <PlusIcon aria-hidden="true" />
+              </Button>
+            </fieldset>
+            <Button
+              className="lg:hidden"
+              data-testid="mobile-component-palette-button"
+              onClick={() => setSectionsPanelOpen(true)}
+              size="sm"
+              variant="outline"
+            >
+              <Layers aria-hidden="true" />
+              <span className="hidden sm:inline">Sections</span>
+            </Button>
+            <Button
+              data-testid="preview-button"
+              onClick={() => setPreviewOpen(true)}
+              size="sm"
+              variant="outline"
+            >
+              <Eye aria-hidden="true" />
+              <span className="hidden sm:inline">Preview</span>
+            </Button>
+            <Button
+              className="hidden md:inline-flex"
+              data-testid="export-button"
+              disabled={isExporting}
+              onClick={() => exportPdf()}
+              size="sm"
+              variant="outline"
+            >
+              {isExporting ? (
+                <Loader2 aria-hidden="true" className="animate-spin" />
+              ) : (
+                <DownloadIcon aria-hidden="true" />
+              )}
+              Download PDF
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label="More actions"
+                  data-testid="actions-button"
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <MoreHorizontal aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem
+                  className="md:hidden"
+                  disabled={isExporting}
+                  onSelect={() => exportPdf()}
+                >
+                  <DownloadIcon aria-hidden="true" />
+                  Download PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  data-testid="send-email-button"
+                  onSelect={() => setSendEmailOpen(true)}
+                >
+                  <Mail aria-hidden="true" />
+                  Send a test email
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  data-testid="api-payload-button"
+                  onSelect={() => setApiPayloadOpen(true)}
+                >
+                  <FileCode aria-hidden="true" />
+                  API details
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button onClick={finish} size="sm">
+              Done
+            </Button>
+          </div>
+        </header>
+
+        <div className="flex min-h-0 flex-1">
+          {/* Left: sections and document style */}
+          <aside
+            aria-label="Sections and style"
+            className="hidden w-64 shrink-0 border-r bg-background lg:flex"
+          >
+            <BuilderSectionsPanel className="w-full" />
+          </aside>
+
+          <TemplateCanvas zoom={zoom} />
+
+          {/* Right: the selected section's content */}
+          <div className="hidden md:block">
+            <PropertiesPanel />
+          </div>
+        </div>
+
+        {/* Below lg: sections and style in a drawer */}
+        <Sheet onOpenChange={setSectionsPanelOpen} open={sectionsPanelOpen}>
+          <SheetContent className="w-72 p-0" side="left">
+            <SheetHeader className="border-b">
+              <SheetTitle>Sections and style</SheetTitle>
+            </SheetHeader>
+            <BuilderSectionsPanel className="flex-1" />
+          </SheetContent>
+        </Sheet>
 
         {/* Mobile: Sheet drawer for Properties Panel */}
         {selectedSectionId && (
@@ -1006,7 +864,7 @@ export default function BuilderEditorRoute({
             }}
             open={propertiesPanelOpen}
           >
-            <SheetContent className="w-full sm:w-80 p-0">
+            <SheetContent className="w-full p-0 sm:w-80">
               <PropertiesPanel />
             </SheetContent>
           </Sheet>
@@ -1021,22 +879,11 @@ export default function BuilderEditorRoute({
       </div>
       <DragOverlay>
         {activeId ? (
-          <div className="p-3 border-2 border-primary rounded-lg bg-background opacity-80 shadow-xl">
-            <span className="font-medium text-sm">Dragging...</span>
+          <div className="rounded-lg border-2 border-primary bg-background p-3 opacity-80 shadow-xl">
+            <span className="font-medium text-sm">Moving section…</span>
           </div>
         ) : null}
       </DragOverlay>
-      <InlineEditor
-        isRichText={false}
-        label="Template Name"
-        onOpenChange={setIsEditingTemplateName}
-        onSave={(newName) => {
-          updateTemplateName(newName);
-          setIsEditingTemplateName(false);
-        }}
-        open={isEditingTemplateName}
-        value={currentTemplate?.name || "Untitled Template"}
-      />
     </DndContext>
   );
 }

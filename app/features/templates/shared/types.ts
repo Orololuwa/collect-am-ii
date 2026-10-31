@@ -196,6 +196,8 @@ export interface Template {
   updatedAt: Date;
   colorPalette: string[];
   sourceTemplateId?: string; // ID of the default template this was created from
+  /** Deals use it for this type when a workflow step doesn't pick a template. */
+  isDefault?: boolean;
 }
 
 export interface ComponentDefinition {
