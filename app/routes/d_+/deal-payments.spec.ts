@@ -134,7 +134,10 @@ async function pay(token: string, provider: string) {
     params,
     request,
     unstable_pattern: pattern,
-  })) as Response;
+  })) as unknown as {
+    data: { error: string | null; url: string | null };
+    init: ResponseInit | null;
+  };
 }
 
 async function sendPaystackWebhook(reference: string) {
@@ -190,8 +193,7 @@ describe("deal payments", () => {
 
     const response = await pay(token, "paystack");
 
-    expect(response.status).toEqual(302);
-    expect(response.headers.get("Location")).toMatch(
+    expect(response.data.url).toMatch(
       /^https:\/\/checkout\.paystack\.com\/deal_/,
     );
     const payment = await prisma.payment.findFirstOrThrow({
@@ -283,15 +285,18 @@ describe("deal payments", () => {
     expect((await loadSteps(deal.id))[1]?.status).toEqual("active");
   });
 
-  test("given: nothing to pay yet, should: send the customer back with an error", async () => {
+  test("given: nothing to pay yet, should: return an error to show on the page", async () => {
     const { token, deal } = await setupDealAwaitingPayment("retailOrder", {
       accept: false,
     });
 
     const response = await pay(token, "paystack");
 
-    expect(response.status).toEqual(302);
-    expect(response.headers.get("Location")).toEqual(`/d/${token}`);
+    expect(response.init?.status).toEqual(400);
+    expect(response.data).toEqual({
+      error: "There is nothing to pay right now. Refresh the page.",
+      url: null,
+    });
     expect(await prisma.payment.count({ where: { dealId: deal.id } })).toEqual(
       0,
     );

@@ -1,4 +1,4 @@
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 
 import type { Route } from "./+types/$token_.pay";
 import {
@@ -12,7 +12,6 @@ import { getInstance } from "~/features/localization/i18next-middleware.server";
 import { checkHoneypot } from "~/utils/honeypot.server";
 import { notFound } from "~/utils/http-responses.server";
 import { consumeRateLimit, getClientIp } from "~/utils/rate-limit.server";
-import { redirectWithToast } from "~/utils/toast.server";
 
 const ERROR_KEYS = {
   notPayable: "payment.errors.notPayable",
@@ -23,14 +22,19 @@ const ERROR_KEYS = {
 export const loader = ({ params }: Route.LoaderArgs) =>
   redirect(`/d/${params.token}`);
 
-/** Sends the customer to Stripe or Paystack to pay the deal's current step. */
+/**
+ * Starts a Stripe or Paystack payment for the deal's current step and returns
+ * the provider's checkout URL, which the page then opens. Errors come back as
+ * a message to show on the page.
+ */
 export async function action({ request, params, context }: Route.ActionArgs) {
   const i18n = getInstance(context);
   const deal = await retrieveDealForShareToken(params.token);
   if (!deal) {
     throw notFound();
   }
-  const roomUrl = `/d/${params.token}`;
+  const fail = (message: string, status: number) =>
+    data({ error: message, url: null }, { status });
 
   if (
     !consumeRateLimit({
@@ -39,10 +43,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       windowMs: 10 * 60 * 1000,
     })
   ) {
-    return redirectWithToast(roomUrl, {
-      title: i18n.t("errors.rateLimited", { ns: "dealRoom" }),
-      type: "error",
-    });
+    return fail(i18n.t("errors.rateLimited", { ns: "dealRoom" }), 429);
   }
 
   const formData = await request.formData();
@@ -51,23 +52,22 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     (candidate) => candidate === formData.get("provider"),
   );
   if (!provider) {
-    return redirectWithToast(roomUrl, {
-      title: i18n.t(ERROR_KEYS.providerUnavailable, { ns: "dealRoom" }),
-      type: "error",
-    });
+    return fail(
+      i18n.t(ERROR_KEYS.providerUnavailable, { ns: "dealRoom" }),
+      400,
+    );
   }
 
   try {
-    return redirect(
-      await startDealOnlinePayment({ dealId: deal.id, provider }),
-    );
+    const url = await startDealOnlinePayment({ dealId: deal.id, provider });
+    return data({ error: null, url });
   } catch (error) {
     if (!(error instanceof DealPaymentError)) {
       throw error;
     }
-    return redirectWithToast(roomUrl, {
-      title: i18n.t(ERROR_KEYS[error.code], { ns: "dealRoom" }),
-      type: "error",
-    });
+    return fail(
+      i18n.t(ERROR_KEYS[error.code], { ns: "dealRoom" }),
+      error.code === "providerFailed" ? 502 : 400,
+    );
   }
 }
