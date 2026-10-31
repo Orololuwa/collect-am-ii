@@ -356,7 +356,7 @@ describe("deal payments", () => {
     });
 
     expect(dashboard).toMatchObject({
-      attention: { deals: [{ id: deal.id, reason: "proposal" }] },
+      attention: [{ attention: { reason: "proposal" }, id: deal.id }],
     });
   });
 });

@@ -68,29 +68,39 @@ export default {
       title: "Letzte Aktivitäten",
     },
     attention: {
-      dealDeclined: "{{customer}} hat ein Dokument in {{deal}} abgelehnt",
+      allClear: "Gerade ist nichts zu tun.",
+      dealDeclined: "{{customer}} hat {{document}} in {{deal}} abgelehnt",
       dealDeclinedDetail:
         "Überarbeite und sende es erneut oder schließe den Deal",
+      dealDraft: "{{step}} für {{deal}} ist bereit zum Senden",
+      dealDraftDetail: "Prüfe es und sende es dann an {{customer}}",
+      dealExpired: "{{document}} für {{deal}} ist {{when}} abgelaufen",
+      dealExpiredDetail:
+        "{{customer}} hat nicht geantwortet. Überarbeite und sende es erneut oder frag nach",
+      dealExpiring: "{{document}} für {{deal}} läuft {{when}} ab",
+      dealExpiringDetail: "Wartet noch auf die Antwort von {{customer}}",
       dealMessage: "{{customer}} hat eine Nachricht zu {{deal}} gesendet",
       dealMessageDetail: "Noch hat niemand geantwortet",
+      dealOverdue: "Zahlung für {{deal}} ist überfällig",
+      dealOverdueDetail: "{{document}} war {{when}} fällig",
       dealProposal: "{{customer}} hat Änderungen an {{deal}} vorgeschlagen",
       dealProposalDetail:
         "Genehmige sie, lehne sie ab oder mache ein Gegenangebot",
-      allClear: "Gerade braucht nichts deine Aufmerksamkeit.",
-      expiring: "{{name}} schließt {{when}}",
-      expiringDetail: "Danach nimmt die Checkout-Seite keine Zahlungen mehr an",
-      failed_one: "{{count}} fehlgeschlagene Zahlung",
-      failed_other: "{{count}} fehlgeschlagene Zahlungen",
-      failedDetail: "In den letzten 7 Tagen",
-      noReceipt: "{{name}} hat keine Quittungsvorlage",
-      noReceiptDetail: "Zahlungen dort erhalten die Standardquittung",
       open: "Öffnen",
-      review: "Ansehen",
       title: "Braucht Aufmerksamkeit",
-      unsent_one: "{{count}} Quittung nicht gesendet",
-      unsent_other: "{{count}} Quittungen nicht gesendet",
-      unsentDetail:
-        "In den letzten 30 Tagen bezahlt, keine Quittung per E-Mail",
+    },
+    openDeals: {
+      empty:
+        "Keine offenen Deals. Starte einen, um einem Kunden sein erstes Dokument zu senden.",
+      stages: {
+        awaitingPayment: "Wartet auf Zahlung",
+        toSend: "Zu senden",
+        withCustomer: "Beim Kunden",
+      },
+      title_one: "{{count}} offener Deal",
+      title_other: "{{count}} offene Deals",
+      value: "Wert {{amount}}",
+      viewAll: "Alle ansehen",
     },
     breadcrumb: "Dashboard",
     chart: {
@@ -270,14 +280,6 @@ export default {
         statement_one: "Kontoauszug",
         statement_other: "Kontoauszüge",
       },
-    },
-    topPages: {
-      empty: "In diesem Zeitraum gab es auf keiner Checkout-Seite Zahlungen.",
-      lastPayment: "zuletzt {{when}}",
-      payments_one: "{{count}} Zahlung",
-      payments_other: "{{count}} Zahlungen",
-      title: "Top-Checkout-Seiten",
-      viewAll: "Alle ansehen",
     },
   },
   getHelp: {

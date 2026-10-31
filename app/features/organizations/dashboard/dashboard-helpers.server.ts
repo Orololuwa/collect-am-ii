@@ -1,5 +1,7 @@
-import { addDays, startOfMonth, subDays } from "date-fns";
+import { startOfMonth, subDays } from "date-fns";
 
+import type { DealStage } from "./dashboard-deals";
+import { sortByAttention, summarizeDeal } from "./dashboard-deals";
 import type { DashboardPeriod } from "./dashboard-metrics";
 import {
   bucketSeries,
@@ -13,7 +15,6 @@ import type { PaymentStatus, TemplateType } from "~/generated/client";
 import { prisma } from "~/utils/database.server";
 
 const RECENT_PAYMENTS = 6;
-const TOP_PAGES = 4;
 const RECENT_TEMPLATES = 3;
 const ACTIVITY_ITEMS = 6;
 
@@ -115,7 +116,7 @@ async function getPaymentStats({
     currency: { equals: currency, mode: "insensitive" as const },
   };
 
-  const [collected, statusCounts, receipts, pageTotals] = await Promise.all([
+  const [collected, statusCounts, receipts] = await Promise.all([
     prisma.payment.findMany({
       select: { amountMinor: true, createdAt: true },
       where: {
@@ -163,19 +164,6 @@ async function getPaymentStats({
         status: { in: [...COLLECTED_STATUSES] },
       },
     }),
-    prisma.payment.groupBy({
-      _count: { _all: true },
-      _max: { createdAt: true },
-      _sum: { amountMinor: true },
-      by: ["checkoutPageId"],
-      where: {
-        ...inOrganization,
-        checkoutPageId: { not: null },
-        ...inCurrency,
-        createdAt: { gte: currentStart },
-        status: { in: [...COLLECTED_STATUSES] },
-      },
-    }),
   ]);
 
   const current = collected.filter((p) => p.createdAt >= currentStart);
@@ -205,20 +193,6 @@ async function getPaymentStats({
       ? Math.round(previousAmountMinor / previousSucceeded)
       : 0;
 
-  const topPageTotals = pageTotals
-    .sort((a, b) => (b._sum.amountMinor ?? 0) - (a._sum.amountMinor ?? 0))
-    .slice(0, TOP_PAGES);
-  const topPageNames = await prisma.checkoutPage.findMany({
-    select: { id: true, name: true },
-    where: {
-      id: {
-        in: topPageTotals.flatMap((page) =>
-          page.checkoutPageId ? [page.checkoutPageId] : [],
-        ),
-      },
-    },
-  });
-
   return {
     average: {
       amountMinor: averageMinor,
@@ -242,15 +216,6 @@ async function getPaymentStats({
       sent: receipts.filter(isReceiptSent).length,
       total: receipts.length,
     },
-    topPages: topPageTotals.map((page) => ({
-      amountMinor: page._sum.amountMinor ?? 0,
-      id: page.checkoutPageId ?? "",
-      lastPaymentAt: page._max.createdAt,
-      name:
-        topPageNames.find((named) => named.id === page.checkoutPageId)?.name ??
-        "",
-      payments: page._count._all,
-    })),
   };
 }
 
@@ -288,113 +253,108 @@ async function getRecentPayments(organizationId: string) {
   }));
 }
 
-/**
- * Things someone should look at: failed payments, receipts that weren't
- * emailed, checkout pages about to close, and pages with no receipt template.
- */
-async function getAttentionItems(organizationId: string, now: Date) {
-  const inOrganization = { organizationId };
-  const activePage = {
-    organizationId,
-    isActive: true,
-    OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-  };
-
-  const [failedPayments, unsentReceipts, expiringPages, pagesWithoutReceipt] =
-    await Promise.all([
-      prisma.payment.count({
-        where: {
-          ...inOrganization,
-          createdAt: { gte: subDays(now, 7) },
-          status: "failed",
-        },
-      }),
-      prisma.payment.count({
-        where: {
-          ...inOrganization,
-          checkoutPageId: { not: null },
-          createdAt: { gte: subDays(now, 30) },
-          OR: [{ receipt: null }, { receipt: { sentAt: null } }],
-          status: { in: [...COLLECTED_STATUSES] },
-        },
-      }),
-      prisma.checkoutPage.findMany({
-        orderBy: { expiresAt: "asc" },
-        select: { expiresAt: true, id: true, name: true },
-        take: 3,
-        where: {
-          organizationId,
-          expiresAt: { gt: now, lte: addDays(now, 7) },
-          isActive: true,
-        },
-      }),
-      prisma.checkoutPage.findMany({
-        orderBy: { updatedAt: "desc" },
-        select: { id: true, name: true },
-        take: 3,
-        where: { ...activePage, receiptTemplateId: null },
-      }),
-    ]);
-
-  return {
-    deals: await getDealsNeedingAttention(organizationId),
-    expiringPages,
-    failedPayments,
-    pagesWithoutReceipt,
-    unsentReceipts,
-  };
-}
-
-/** How many deals the attention list shows at most. */
-const ATTENTION_DEALS = 5;
+/** How many deals the attention list and the open deals card show. */
+const ATTENTION_DEALS = 8;
+const OPEN_DEALS_LISTED = 5;
 
 /**
- * Open deals waiting on the business: customer suggestions to review,
- * declined documents and customer messages nobody has answered.
+ * Open deals: what needs the business to act (customer suggestions, drafts
+ * ready to send, overdue payments, expiring quotes, unanswered messages) and
+ * where the rest are waiting.
  */
-async function getDealsNeedingAttention(organizationId: string) {
+async function getDealOverview({
+  organizationId,
+  currency,
+  now,
+}: {
+  organizationId: string;
+  currency: string;
+  now: Date;
+}) {
   const deals = await prisma.deal.findMany({
     orderBy: { updatedAt: "desc" },
     select: {
+      currency: true,
       customer: { select: { name: true } },
-      documents: {
-        select: { status: true },
-        where: { status: { in: ["changesRequested", "declined"] } },
-      },
       id: true,
       messages: {
         orderBy: { createdAt: "desc" },
         select: { author: true },
         take: 1,
       },
+      steps: {
+        orderBy: { position: "asc" },
+        select: {
+          carryForward: true,
+          document: {
+            select: {
+              dueAt: true,
+              number: true,
+              status: true,
+              type: true,
+              versions: {
+                select: { totalMinor: true },
+                where: { state: "current" },
+              },
+            },
+          },
+          kind: true,
+          name: true,
+          requiresAcceptance: true,
+          status: true,
+        },
+      },
       title: true,
+      updatedAt: true,
     },
-    take: 50,
+    take: 200,
     where: { organizationId, status: "open" },
   });
-  return deals
-    .flatMap((deal) => {
-      const reason = deal.documents.some(
-        (document) => document.status === "changesRequested",
-      )
-        ? ("proposal" as const)
-        : deal.documents.some((document) => document.status === "declined")
-          ? ("declined" as const)
-          : deal.messages[0]?.author === "customer"
-            ? ("message" as const)
-            : null;
-      return reason
-        ? [
-            {
-              customer: deal.customer.name,
-              id: deal.id,
-              reason,
-              title: deal.title,
-            },
-          ]
-        : [];
-    })
-    .slice(0, ATTENTION_DEALS);
+
+  const summaries = deals.map((deal) =>
+    summarizeDeal(
+      {
+        currency: deal.currency,
+        customerName: deal.customer.name,
+        id: deal.id,
+        lastMessageAuthor: deal.messages[0]?.author ?? null,
+        steps: deal.steps.map((step) => ({
+          ...step,
+          document: step.document
+            ? {
+                dueAt: step.document.dueAt,
+                number: step.document.number,
+                status: step.document.status,
+                totalMinor: step.document.versions[0]?.totalMinor ?? null,
+                type: step.document.type,
+              }
+            : null,
+        })),
+        title: deal.title,
+        updatedAt: deal.updatedAt,
+      },
+      now,
+    ),
+  );
+  const count = (stage: DealStage) =>
+    summaries.filter((deal) => deal.stage === stage).length;
+
+  return {
+    attention: sortByAttention(summaries).slice(0, ATTENTION_DEALS),
+    openDeals: {
+      counts: {
+        awaitingPayment: count("awaitingPayment"),
+        toSend: count("toSend"),
+        total: summaries.length,
+        withCustomer: count("withCustomer"),
+      },
+      deals: summaries.slice(0, OPEN_DEALS_LISTED),
+      /** What the open deals in the dashboard's currency are worth. */
+      valueMinor: summaries
+        .filter((deal) => deal.currency.toUpperCase() === currency)
+        .reduce((sum, deal) => sum + (deal.valueMinor ?? 0), 0),
+    },
+  };
 }
 
 async function getTemplateSummary(organizationId: string, now: Date) {
@@ -561,11 +521,11 @@ export async function getDashboardData({
     return { currency, isFirstRun: true as const, period, setup };
   }
 
-  const [stats, recentPayments, attention, templates, activity] =
+  const [stats, recentPayments, { attention, openDeals }, templates, activity] =
     await Promise.all([
       getPaymentStats({ currency, now, organizationId, period }),
       getRecentPayments(organizationId),
-      getAttentionItems(organizationId, now),
+      getDealOverview({ currency, now, organizationId }),
       getTemplateSummary(organizationId, now),
       getRecentActivity(organizationId, now),
     ]);
@@ -576,6 +536,7 @@ export async function getDashboardData({
     currencies: paymentCurrencies.length > 0 ? paymentCurrencies : [currency],
     currency,
     isFirstRun: false as const,
+    openDeals,
     period,
     recentPayments,
     setup,

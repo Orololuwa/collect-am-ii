@@ -184,17 +184,7 @@ describe("getDashboardData()", () => {
     expect(
       result.stats.daily.reduce((sum, day) => sum + day.amountMinor, 0),
     ).toEqual(10_000_000);
-    expect(result.stats.topPages.map((page) => page.name)).toEqual([
-      "Consulting deposit",
-      "Workshop ticket",
-    ]);
-    expect(result.stats.topPages[0]).toMatchObject({
-      amountMinor: 8_000_000,
-      payments: 2,
-    });
     expect(result.recentPayments).toHaveLength(6);
-    expect(result.attention.failedPayments).toEqual(1);
-    expect(result.attention.unsentReceipts).toEqual(4);
   });
 
   test("given: a requested currency, should: show that currency's totals", async () => {
@@ -217,14 +207,10 @@ describe("getDashboardData()", () => {
     expect(result.stats.daily).toHaveLength(7);
   });
 
-  test("given: active checkout pages closing soon or without a receipt template, should: list them as needing attention", async () => {
-    const closing = await createCheckoutPage(organization.id, {
+  test("given: checkout pages but no deals, should: have nothing needing attention and no open deals", async () => {
+    await createCheckoutPage(organization.id, {
       expiresAt: subDays(now, -3),
       name: "Workshop ticket",
-    });
-    await createCheckoutPage(organization.id, {
-      expiresAt: subDays(now, -30),
-      name: "Retainer",
     });
 
     const result = await getDashboardData({
@@ -237,12 +223,12 @@ describe("getDashboardData()", () => {
     if (result.isFirstRun) {
       throw new Error("Expected the full dashboard");
     }
-    expect(result.attention.expiringPages.map((page) => page.id)).toEqual([
-      closing.id,
-    ]);
-    expect(
-      result.attention.pagesWithoutReceipt.map((page) => page.name).sort(),
-    ).toEqual(["Retainer", "Workshop ticket"]);
+    expect(result.attention).toEqual([]);
+    expect(result.openDeals).toMatchObject({
+      counts: { awaitingPayment: 0, toSend: 0, total: 0, withCustomer: 0 },
+      deals: [],
+      valueMinor: 0,
+    });
     expect(result.stats.collected.amountMinor).toEqual(0);
     expect(result.stats.collected.changePercent).toBeNull();
   });

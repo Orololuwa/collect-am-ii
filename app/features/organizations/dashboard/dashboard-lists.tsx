@@ -5,7 +5,7 @@ import {
   FileTextIcon,
   HandshakeIcon,
   MessageCircleIcon,
-  ReceiptIcon,
+  SendIcon,
   ShoppingCartIcon,
   UserPlusIcon,
 } from "lucide-react";
@@ -13,6 +13,7 @@ import type { ComponentType, SVGProps } from "react";
 import { useTranslation } from "react-i18next";
 import { href, Link } from "react-router";
 
+import type { DealAttentionReason, DealStage } from "./dashboard-deals";
 import { formatMoney, formatRelativeTime } from "./dashboard-format";
 import type {
   DashboardActivity,
@@ -27,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { DOCUMENT_TYPE_KEYS } from "~/features/deals/deals-constants";
 import type { PaymentStatus, TemplateType } from "~/generated/browser";
 import { cn } from "~/lib/utils";
 
@@ -168,6 +170,38 @@ type AttentionItem = {
   to: string;
 };
 
+const bad = "bg-red-100 text-red-700 dark:bg-red-400/15 dark:text-red-400";
+const warn =
+  "bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300";
+const info = "bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300";
+
+// Literal keys keep i18next's typed `t` cheap to type-check.
+const attentionKeys = {
+  declined: { detail: "dealDeclinedDetail", title: "dealDeclined" },
+  draft: { detail: "dealDraftDetail", title: "dealDraft" },
+  expired: { detail: "dealExpiredDetail", title: "dealExpired" },
+  expiring: { detail: "dealExpiringDetail", title: "dealExpiring" },
+  message: { detail: "dealMessageDetail", title: "dealMessage" },
+  overdue: { detail: "dealOverdueDetail", title: "dealOverdue" },
+  proposal: { detail: "dealProposalDetail", title: "dealProposal" },
+} as const satisfies Record<
+  DealAttentionReason,
+  { title: string; detail: string }
+>;
+
+const attentionLooks = {
+  declined: { icon: CircleAlertIcon, tone: bad },
+  draft: { icon: SendIcon, tone: info },
+  expired: { icon: ClockIcon, tone: bad },
+  expiring: { icon: ClockIcon, tone: warn },
+  message: { icon: MessageCircleIcon, tone: info },
+  overdue: { icon: CircleAlertIcon, tone: bad },
+  proposal: { icon: HandshakeIcon, tone: warn },
+} as const satisfies Record<
+  DealAttentionReason,
+  { icon: ComponentType<SVGProps<SVGSVGElement>>; tone: string }
+>;
+
 export function NeedsAttention({
   attention,
   organizationSlug,
@@ -178,108 +212,36 @@ export function NeedsAttention({
   const { t, i18n } = useTranslation("organizations", {
     keyPrefix: "dashboard.attention",
   });
+  const { t: tDeals } = useTranslation("deals");
   const locale = i18n.language;
-  const checkoutPages = href(
-    "/organizations/:organizationSlug/checkout-pages",
-    {
-      organizationSlug,
-    },
-  );
-  const checkoutPage = (checkoutPageId: string) =>
-    href("/organizations/:organizationSlug/checkout-pages/:checkoutPageId", {
-      checkoutPageId,
-      organizationSlug,
-    });
-  const bad = "bg-red-100 text-red-700 dark:bg-red-400/15 dark:text-red-400";
-  const warn =
-    "bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300";
+  const documentName = (document: { type: string; number: string | null }) =>
+    `${tDeals(DOCUMENT_TYPE_KEYS[document.type as keyof typeof DOCUMENT_TYPE_KEYS])} ${document.number ?? ""}`.trim();
 
-  const dealReasons = {
-    declined: {
-      detail: t("dealDeclinedDetail"),
-      icon: CircleAlertIcon,
-      iconClassName: bad,
-      title: "dealDeclined",
-    },
-    message: {
-      detail: t("dealMessageDetail"),
-      icon: MessageCircleIcon,
-      iconClassName:
-        "bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300",
-      title: "dealMessage",
-    },
-    proposal: {
-      detail: t("dealProposalDetail"),
-      icon: HandshakeIcon,
-      iconClassName: warn,
-      title: "dealProposal",
-    },
-  } as const;
-
-  const items: AttentionItem[] = [
-    ...attention.deals.map((deal) => {
-      const reason = dealReasons[deal.reason];
-      return {
+  const items: AttentionItem[] = attention.flatMap((deal) => {
+    if (!deal.attention) return [];
+    const { reason, document, dueAt } = deal.attention;
+    const values = {
+      customer: deal.customerName,
+      deal: deal.title,
+      document: document ? documentName(document) : "",
+      step: deal.stepName ?? "",
+      when: dueAt ? formatRelativeTime(dueAt, locale) : "",
+    };
+    return [
+      {
         action: t("open"),
-        detail: reason.detail,
-        icon: reason.icon,
-        iconClassName: reason.iconClassName,
-        key: `deal-${deal.id}`,
-        title: t(reason.title, { customer: deal.customer, deal: deal.title }),
+        detail: t(attentionKeys[reason].detail, values),
+        icon: attentionLooks[reason].icon,
+        iconClassName: attentionLooks[reason].tone,
+        key: deal.id,
+        title: t(attentionKeys[reason].title, values),
         to: href("/organizations/:organizationSlug/deals/:dealId", {
           dealId: deal.id,
           organizationSlug,
         }),
-      };
-    }),
-    ...(attention.failedPayments > 0
-      ? [
-          {
-            action: t("review"),
-            detail: t("failedDetail"),
-            icon: CircleAlertIcon,
-            iconClassName: bad,
-            key: "failed",
-            title: t("failed", { count: attention.failedPayments }),
-            to: checkoutPages,
-          },
-        ]
-      : []),
-    ...(attention.unsentReceipts > 0
-      ? [
-          {
-            action: t("review"),
-            detail: t("unsentDetail"),
-            icon: ReceiptIcon,
-            iconClassName: warn,
-            key: "unsent",
-            title: t("unsent", { count: attention.unsentReceipts }),
-            to: checkoutPages,
-          },
-        ]
-      : []),
-    ...attention.expiringPages.map((page) => ({
-      action: t("open"),
-      detail: t("expiringDetail"),
-      icon: ClockIcon,
-      iconClassName: warn,
-      key: `expiring-${page.id}`,
-      title: t("expiring", {
-        name: page.name,
-        when: page.expiresAt ? formatRelativeTime(page.expiresAt, locale) : "",
-      }),
-      to: checkoutPage(page.id),
-    })),
-    ...attention.pagesWithoutReceipt.map((page) => ({
-      action: t("open"),
-      detail: t("noReceiptDetail"),
-      icon: FileTextIcon,
-      iconClassName: "bg-muted text-muted-foreground",
-      key: `no-receipt-${page.id}`,
-      title: t("noReceipt", { name: page.name }),
-      to: checkoutPage(page.id),
-    })),
-  ];
+      },
+    ];
+  });
 
   return (
     <DashboardSection
@@ -328,6 +290,139 @@ export function NeedsAttention({
             </li>
           ))}
         </ul>
+      )}
+    </DashboardSection>
+  );
+}
+
+const stageKeys = {
+  awaitingPayment: "stages.awaitingPayment",
+  toSend: "stages.toSend",
+  withCustomer: "stages.withCustomer",
+} as const satisfies Record<DealStage, string>;
+
+const stageTones = {
+  awaitingPayment:
+    "bg-green-100 text-green-700 dark:bg-green-400/15 dark:text-green-400",
+  toSend: "bg-muted text-muted-foreground",
+  withCustomer: "bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300",
+} as const satisfies Record<DealStage, string>;
+
+/** How many deals are open, where they're waiting, and the latest ones. */
+export function OpenDeals({
+  openDeals,
+  currency,
+  organizationSlug,
+}: {
+  openDeals: FullDashboardData["openDeals"];
+  currency: string;
+  organizationSlug: string;
+}) {
+  const { t, i18n } = useTranslation("organizations", {
+    keyPrefix: "dashboard.openDeals",
+  });
+  const locale = i18n.language;
+  const { counts, deals, valueMinor } = openDeals;
+  const dealsUrl = href("/organizations/:organizationSlug/deals", {
+    organizationSlug,
+  });
+
+  return (
+    <DashboardSection
+      aria-labelledby="open-deals-title"
+      className="flex flex-[1_1_300px] flex-col gap-4"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold text-base" id="open-deals-title">
+            {t("title", { count: counts.total })}
+          </h2>
+          {counts.total > 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {t("value", {
+                amount: formatMoney({
+                  amountMinor: valueMinor,
+                  currency,
+                  locale,
+                  whole: true,
+                }),
+              })}
+            </p>
+          ) : null}
+        </div>
+        <Link
+          className="font-medium text-primary text-sm hover:underline"
+          to={dealsUrl}
+        >
+          {t("viewAll")}
+        </Link>
+      </div>
+
+      {counts.total === 0 ? (
+        <p className="text-muted-foreground">{t("empty")}</p>
+      ) : (
+        <>
+          <dl className="grid grid-cols-3 gap-2 text-center">
+            {(["toSend", "withCustomer", "awaitingPayment"] as const).map(
+              (stage) => (
+                <div className="rounded-lg bg-muted/50 px-2 py-2" key={stage}>
+                  <dd className="font-semibold text-xl tabular-nums">
+                    {counts[stage]}
+                  </dd>
+                  <dt className="text-muted-foreground text-xs">
+                    {t(stageKeys[stage])}
+                  </dt>
+                </div>
+              ),
+            )}
+          </dl>
+          <ul className="flex flex-col">
+            {deals.map((deal) => (
+              <li
+                className="flex items-center justify-between gap-3 border-t py-2.5 first:border-t-0"
+                key={deal.id}
+              >
+                <Link
+                  className="min-w-0 hover:underline"
+                  to={href("/organizations/:organizationSlug/deals/:dealId", {
+                    dealId: deal.id,
+                    organizationSlug,
+                  })}
+                >
+                  <span className="block truncate font-medium text-sm">
+                    {deal.title}
+                  </span>
+                  <span className="block truncate text-muted-foreground text-xs">
+                    {deal.customerName}
+                    {deal.stepName ? ` · ${deal.stepName}` : ""}
+                  </span>
+                </Link>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {deal.valueMinor !== null ? (
+                    <span className="font-semibold text-sm tabular-nums">
+                      {formatMoney({
+                        amountMinor: deal.valueMinor,
+                        currency: deal.currency,
+                        locale,
+                        whole: true,
+                      })}
+                    </span>
+                  ) : null}
+                  {deal.stage ? (
+                    <span
+                      className={cn(
+                        "rounded-md px-1.5 py-0.5 font-medium text-[11px]",
+                        stageTones[deal.stage],
+                      )}
+                    >
+                      {t(stageKeys[deal.stage])}
+                    </span>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </DashboardSection>
   );

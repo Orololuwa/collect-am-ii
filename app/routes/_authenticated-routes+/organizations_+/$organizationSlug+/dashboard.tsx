@@ -11,6 +11,7 @@ import {
 } from "~/features/organizations/dashboard/dashboard-helpers.server";
 import {
   NeedsAttention,
+  OpenDeals,
   RecentActivity,
   RecentPayments,
   TemplatesSummary,
@@ -19,7 +20,6 @@ import { parseDashboardPeriod } from "~/features/organizations/dashboard/dashboa
 import {
   CollectedChart,
   DashboardKpis,
-  TopCheckoutPages,
 } from "~/features/organizations/dashboard/dashboard-overview";
 import { SetupChecklist } from "~/features/organizations/dashboard/setup-checklist";
 import { organizationMembershipContext } from "~/features/organizations/organizations-middleware.server";
@@ -122,16 +122,16 @@ export default function OrganizationDashboardRoute({
               daily={dashboardData.stats.daily}
               period={dashboardData.period}
             />
-            <TopCheckoutPages
-              currency={dashboardData.currency}
+            <NeedsAttention
+              attention={dashboardData.attention}
               organizationSlug={organizationSlug}
-              pages={dashboardData.stats.topPages}
             />
           </div>
           <div className="flex flex-wrap gap-4">
             <RecentPayments payments={dashboardData.recentPayments} />
-            <NeedsAttention
-              attention={dashboardData.attention}
+            <OpenDeals
+              currency={dashboardData.currency}
+              openDeals={dashboardData.openDeals}
               organizationSlug={organizationSlug}
             />
           </div>

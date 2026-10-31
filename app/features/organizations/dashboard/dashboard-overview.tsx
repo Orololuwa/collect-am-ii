@@ -1,10 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { href, Link } from "react-router";
 
 import {
   formatMoney,
   formatPercentChange,
-  formatRelativeTime,
   formatShortDate,
   formatSignedNumber,
 } from "./dashboard-format";
@@ -321,87 +319,6 @@ export function CollectedChart({
             </div>
           </div>
         </div>
-      )}
-    </DashboardSection>
-  );
-}
-
-export function TopCheckoutPages({
-  pages,
-  currency,
-  organizationSlug,
-}: {
-  pages: FullDashboardData["stats"]["topPages"];
-  currency: string;
-  organizationSlug: string;
-}) {
-  const { t, i18n } = useTranslation("organizations", {
-    keyPrefix: "dashboard.topPages",
-  });
-  const locale = i18n.language;
-  const max = Math.max(...pages.map((page) => page.amountMinor), 1);
-
-  return (
-    <DashboardSection
-      aria-labelledby="top-pages-title"
-      className="flex flex-[1_1_300px] flex-col gap-4"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-semibold text-base" id="top-pages-title">
-          {t("title")}
-        </h2>
-        <Link
-          className="font-medium text-primary text-sm hover:underline"
-          to={href("/organizations/:organizationSlug/checkout-pages", {
-            organizationSlug,
-          })}
-        >
-          {t("viewAll")}
-        </Link>
-      </div>
-      {pages.length === 0 ? (
-        <p className="text-muted-foreground">{t("empty")}</p>
-      ) : (
-        <ul className="flex flex-col gap-4">
-          {pages.map((page) => (
-            <li className="flex flex-col gap-2" key={page.id}>
-              <div className="flex justify-between gap-3">
-                <Link
-                  className="min-w-0 truncate font-medium hover:underline"
-                  to={href(
-                    "/organizations/:organizationSlug/checkout-pages/:checkoutPageId",
-                    { checkoutPageId: page.id, organizationSlug },
-                  )}
-                >
-                  {page.name}
-                </Link>
-                <span className="font-semibold tabular-nums">
-                  {formatMoney({
-                    amountMinor: page.amountMinor,
-                    currency,
-                    locale,
-                    whole: true,
-                  })}
-                </span>
-              </div>
-              <div
-                aria-hidden="true"
-                className="h-1.5 overflow-hidden rounded-full bg-muted"
-              >
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{ width: `${(page.amountMinor / max) * 100}%` }}
-                />
-              </div>
-              <span className="text-muted-foreground text-sm">
-                {t("payments", { count: page.payments })}
-                {page.lastPaymentAt
-                  ? ` · ${t("lastPayment", { when: formatRelativeTime(page.lastPaymentAt, locale) })}`
-                  : null}
-              </span>
-            </li>
-          ))}
-        </ul>
       )}
     </DashboardSection>
   );
