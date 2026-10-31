@@ -152,7 +152,7 @@ export default {
       columns: {
         amount: "Betrag",
         customer: "Kunde",
-        page: "Checkout-Seite",
+        page: "Bezahlt für",
         status: "Status",
         when: "Wann",
       },
@@ -467,6 +467,8 @@ export default {
           submitButton: "E-Mail-Einladung senden",
         },
         inviteEmail: {
+          footer:
+            "Wenn du diese Einladung nicht erwartet hast, kannst du diese E-Mail ignorieren.",
           buttonText: "{{organizationName}} beitreten",
           callToAction:
             "Tritt jetzt bei, um mit deinen Kollegen zusammenzuarbeiten!",

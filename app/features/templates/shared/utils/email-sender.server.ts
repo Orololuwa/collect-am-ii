@@ -8,6 +8,8 @@ export interface SendEmailOptions {
   to: string;
   subject: string;
   html: string;
+  /** Plain-text version; made from `html` when left out. */
+  text?: string;
   pdfBuffer: Buffer;
   pdfFilename?: string;
   /** Stops a retried job from sending the same email twice (24 hours). */
@@ -71,6 +73,7 @@ export async function sendDocumentEmail(
     to,
     subject,
     html,
+    text,
     pdfBuffer,
     pdfFilename = "document.pdf",
     idempotencyKey,
@@ -84,7 +87,7 @@ export async function sendDocumentEmail(
       idempotencyKey,
       replyTo,
       subject,
-      text: htmlToText(html) || "Please see attached document.",
+      text: text || htmlToText(html) || "Please see attached document.",
       to,
     });
 

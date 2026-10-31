@@ -145,7 +145,7 @@ export default {
       columns: {
         amount: "Amount",
         customer: "Customer",
-        page: "Checkout page",
+        page: "Paid for",
         status: "Status",
         when: "When",
       },
@@ -454,6 +454,8 @@ export default {
           submitButton: "Send email invitation",
         },
         inviteEmail: {
+          footer:
+            "If you weren't expecting this invite, you can ignore this email.",
           buttonText: "Join {{organizationName}}",
           callToAction: "Join now to collaborate with your colleagues!",
           description:

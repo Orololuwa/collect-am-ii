@@ -71,6 +71,29 @@ async function getPaymentCurrencies(organizationId: string) {
     .map((group) => group.currency.toUpperCase());
 }
 
+/** Whether a collected payment's receipt has gone out to the customer. */
+function isReceiptSent(payment: {
+  receipt: { sentAt: Date | null } | null;
+  dealStep: {
+    position: number;
+    deal: {
+      steps: Array<{
+        position: number;
+        document: { sentAt: Date | null } | null;
+      }>;
+    };
+  } | null;
+}) {
+  if (payment.dealStep) {
+    const { position, deal } = payment.dealStep;
+    return Boolean(
+      deal.steps.find((step) => step.position === position + 1)?.document
+        ?.sentAt,
+    );
+  }
+  return Boolean(payment.receipt?.sentAt);
+}
+
 /**
  * Money, payment counts and receipts for the current and previous period, in
  * one currency.
@@ -111,12 +134,30 @@ async function getPaymentStats({
         createdAt: { gte: currentStart },
       },
     }),
-    // Deal payments get their receipts from the deal, not this table.
+    // Checkout payments have a Receipt row; deal payments get theirs from
+    // the deal's receipt step that follows the payment step.
     prisma.payment.findMany({
-      select: { receipt: { select: { sentAt: true } } },
+      select: {
+        dealStep: {
+          select: {
+            deal: {
+              select: {
+                steps: {
+                  select: {
+                    document: { select: { sentAt: true } },
+                    position: true,
+                  },
+                  where: { kind: "receipt" },
+                },
+              },
+            },
+            position: true,
+          },
+        },
+        receipt: { select: { sentAt: true } },
+      },
       where: {
         ...inOrganization,
-        checkoutPageId: { not: null },
         ...inCurrency,
         createdAt: { gte: currentStart },
         status: { in: [...COLLECTED_STATUSES] },
@@ -198,7 +239,7 @@ async function getPaymentStats({
       succeeded,
     },
     receipts: {
-      sent: receipts.filter((payment) => payment.receipt?.sentAt).length,
+      sent: receipts.filter(isReceiptSent).length,
       total: receipts.length,
     },
     topPages: topPageTotals.map((page) => ({

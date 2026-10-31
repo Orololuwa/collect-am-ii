@@ -225,6 +225,10 @@ describe("deals", () => {
       expect(loaded.steps[0]?.document?.versions[0]?.sections).not.toBeNull();
       const email = await readEmail(context.customer.email);
       expect(email?.subject).toContain("Estimate EST-0001");
+      // A button to the share link, and the link itself for text-only clients.
+      expect(email?.html).toContain("Review estimate");
+      expect(email?.html).toContain(`/d/${deal.id}.`);
+      expect(email?.text).toContain(`/d/${deal.id}.`);
 
       // The customer accepts: the deposit invoice is sent automatically.
       await call(dealAction, {

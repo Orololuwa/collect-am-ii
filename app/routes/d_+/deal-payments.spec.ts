@@ -326,6 +326,8 @@ describe("deal payments", () => {
       recentPayments: [
         { source: { id: deal.id, kind: "deal", name: "Party order" } },
       ],
+      // The retail workflow sends its receipt straight after the payment.
+      stats: { receipts: { sent: 1, total: 1 } },
     });
   });
 
