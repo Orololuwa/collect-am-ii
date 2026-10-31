@@ -836,6 +836,8 @@ function PaymentStep({
   const pending = busy ? (fetcher.formData?.get("provider") ?? null) : null;
   const [chosen, setChosen] = useState<string | null>(null);
 
+  // A plain form post can't redirect to the provider: the CSP's form-action
+  // 'self' blocks redirects to other origins. So fetch the URL, then go there.
   useEffect(() => {
     if (checkoutUrl) {
       window.location.assign(checkoutUrl);
