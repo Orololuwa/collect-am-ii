@@ -4,7 +4,9 @@ import { TemplateType } from "~/generated/enums";
 import { prisma } from "~/utils/database.server";
 
 // Helper to convert Prisma TemplateType enum to TypeScript TemplateType
-function convertPrismaTemplateTypeToTS(prismaType: string): Template["type"] {
+export function convertPrismaTemplateTypeToTS(
+  prismaType: string,
+): Template["type"] {
   if (!prismaType) {
     return "resume"; // Default fallback
   }
@@ -26,7 +28,7 @@ function convertPrismaTemplateTypeToTS(prismaType: string): Template["type"] {
 }
 
 // Helper to convert TypeScript TemplateType to Prisma TemplateType enum
-function convertTSTemplateTypeToPrisma(
+export function convertTSTemplateTypeToPrisma(
   tsType: Template["type"],
 ): (typeof TemplateType)[keyof typeof TemplateType] {
   // Map TypeScript kebab-case to Prisma camelCase
@@ -100,6 +102,7 @@ export async function retrieveTemplateFromDatabaseById({
     organizationId: template.organizationId,
     sections: template.sections as unknown as TemplateSection[],
     sourceTemplateId: template.sourceTemplateId || undefined,
+    isDefault: template.isDefault,
     type: convertPrismaTemplateTypeToTS(template.type),
     updatedAt: template.updatedAt,
   };
@@ -144,6 +147,7 @@ export async function retrieveTemplatesByOrganizationIdAndType({
     sections: template.sections as unknown as TemplateSection[],
     type: convertPrismaTemplateTypeToTS(template.type),
     updatedAt: template.updatedAt,
+    isDefault: template.isDefault,
   }));
 }
 

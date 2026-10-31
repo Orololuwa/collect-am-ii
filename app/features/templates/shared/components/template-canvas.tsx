@@ -4,6 +4,8 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { FilePlusIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { useBuilderStore } from "../store/builder-store";
 import type { Template, TemplateSection } from "../types";
@@ -11,9 +13,10 @@ import { generateSectionId } from "../utils/generate-section-id";
 import { componentLibrary } from "./component-library-registry";
 import { SectionRenderer } from "./section-renderer";
 import { SectionWrapper } from "./section-wrapper";
+import { cn } from "~/lib/utils";
 
 // Create default section config for new sections using template data
-function createDefaultSectionConfig(
+export function createDefaultSectionConfig(
   type: string,
   existingSections: TemplateSection[] = [],
   sourceTemplate: Template | null = null,
@@ -81,7 +84,10 @@ function createDefaultSectionConfig(
   };
 }
 
-export function TemplateCanvas() {
+/** A4 at 96 dpi. */
+const PAGE_WIDTH = 794;
+
+export function TemplateCanvas({ zoom = 1 }: { zoom?: number } = {}) {
   const {
     currentTemplate,
     selectedSectionId,
@@ -218,6 +224,21 @@ export function TemplateCanvas() {
     },
   });
 
+  // Below A4 width, scale the page down so the whole width stays visible.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(1);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const available = entry?.contentRect.width ?? PAGE_WIDTH;
+      setFit(Math.min(1, available / PAGE_WIDTH));
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+  const scale = zoom * fit;
+
   if (!currentTemplate) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -238,40 +259,26 @@ export function TemplateCanvas() {
 
     return (
       <div
-        className={`min-h-[400px] md:min-h-[600px] p-2 md:p-4 rounded-lg transition-colors bg-card ${
-          isOver
-            ? "bg-blue-50 border-2 border-blue-500 border-dashed"
-            : "border-2 border-transparent"
-        } ${
-          sortedSections.length === 0 ? "flex items-center justify-center" : ""
-        }`}
+        className={cn(
+          "flex min-h-[400px] flex-col gap-3 rounded-[3px] transition-colors md:min-h-[600px]",
+          isOver && "bg-primary/5 outline-2 outline-primary/40 outline-dashed",
+          sortedSections.length === 0 && "items-center justify-center",
+        )}
         data-testid="canvas-droppable"
         ref={setNodeRef}
       >
         {sortedSections.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            <div className="mb-4">
-              <svg
-                aria-label="Document icon"
-                className="w-16 h-16 mx-auto text-gray-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <title>Document</title>
-                <path
-                  d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-700">
-              Start Building Your Template
+          <div className="flex max-w-xs flex-col items-center gap-2 py-16 text-center">
+            <FilePlusIcon
+              aria-hidden="true"
+              className="size-10 text-muted-foreground/50"
+            />
+            <h3 className="font-semibold text-foreground">
+              This page is empty
             </h3>
-            <p className="text-sm text-gray-500">
-              Drag components from the right panel to add them here
+            <p className="text-muted-foreground text-sm">
+              Use Add section on the left to put the header, line items and
+              totals back.
             </p>
           </div>
         ) : (
@@ -287,7 +294,6 @@ export function TemplateCanvas() {
                 section={section}
               >
                 <SectionRenderer
-                  isSelected={selectedSectionId === section.id}
                   onSelect={() => selectSection(section.id)}
                   section={section}
                 />
@@ -301,10 +307,15 @@ export function TemplateCanvas() {
 
   return (
     <div
-      className="flex-1 bg-muted p-2 md:p-4 lg:p-8 overflow-auto"
+      className="w-0 min-w-0 flex-1 overflow-auto bg-muted px-3 py-6 md:px-8 md:py-10"
       data-testid="template-canvas"
+      ref={containerRef}
     >
-      <div className="max-w-4xl mx-auto bg-card shadow-lg rounded-lg p-4 md:p-6 lg:p-8">
+      {/* An A4 sheet, scaled by the zoom and to fit narrow screens. */}
+      <div
+        className="mx-auto min-h-[1123px] w-[794px] bg-white px-12 pt-12 pb-12 text-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06)]"
+        style={scale === 1 ? undefined : { zoom: scale }}
+      >
         <DroppableCanvas />
       </div>
     </div>

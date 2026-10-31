@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, useFetcher, useNavigation, useRevalidator } from "react-router";
+import { useFetcher, useRevalidator } from "react-router";
 import { HoneypotInputs } from "remix-utils/honeypot/react";
 
 import type { DealLineItem } from "../deal-items";
@@ -33,6 +33,7 @@ import {
 import { DealStatusBadge, DocumentStatusBadge } from "./deal-badges";
 import { StepsProgress } from "./deal-detail";
 import { DocumentTypeIcon } from "./document-type-icon";
+import { PaymentProviderLogo } from "./payment-provider-logo";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -827,10 +828,21 @@ function PaymentStep({
 }) {
   const { t } = useTranslation("dealRoom");
   const money = useMoney(currency);
-  const navigation = useNavigation();
-  const paying =
-    navigation.state !== "idle" && navigation.formAction?.endsWith("/pay");
+  const fetcher = useFetcher<{ error: string | null; url: string | null }>();
+  const checkoutUrl = fetcher.data?.url;
   const canPayOnline = payment.providers.length > 0;
+  // Busy from the click until the provider's page has taken over.
+  const busy = fetcher.state !== "idle" || Boolean(checkoutUrl);
+  const pending = busy ? (fetcher.formData?.get("provider") ?? null) : null;
+  const [chosen, setChosen] = useState<string | null>(null);
+
+  // A plain form post can't redirect to the provider: the CSP's form-action
+  // 'self' blocks redirects to other origins. So fetch the URL, then go there.
+  useEffect(() => {
+    if (checkoutUrl) {
+      window.location.assign(checkoutUrl);
+    }
+  }, [checkoutUrl]);
 
   return (
     <Card>
@@ -856,30 +868,43 @@ function PaymentStep({
           </output>
         ) : null}
         {canPayOnline ? (
-          <Form
+          <fetcher.Form
             action={`/d/${token}/pay`}
             className="flex flex-wrap gap-2"
             method="POST"
-            reloadDocument
           >
             <HoneypotInputs />
-            {payment.providers.map((provider, index) => (
+            {payment.providers.map((provider) => (
               <Button
-                disabled={paying}
+                className="h-11 gap-2.5 px-4"
+                disabled={busy}
                 key={provider}
                 name="provider"
+                onClick={() => setChosen(provider)}
                 type="submit"
                 value={provider}
-                variant={index === 0 ? "default" : "outline"}
+                variant="outline"
               >
-                {t(PROVIDER_KEYS[provider], { amount: money(amountMinor) })}
+                {(pending ?? (checkoutUrl ? chosen : null)) === provider ? (
+                  <Spinner />
+                ) : (
+                  <PaymentProviderLogo provider={provider} />
+                )}
+                {t(PROVIDER_KEYS[provider])}
               </Button>
             ))}
-          </Form>
+          </fetcher.Form>
+        ) : null}
+        {fetcher.data?.error && !busy ? (
+          <p className="text-destructive text-sm" role="alert">
+            {fetcher.data.error}
+          </p>
         ) : null}
         {canPayOnline ? (
           <p className="text-muted-foreground text-xs">
-            {t("payment.secureNote", { organization })}
+            {checkoutUrl
+              ? t("payment.redirecting")
+              : t("payment.secureNote", { organization })}
           </p>
         ) : null}
       </CardContent>

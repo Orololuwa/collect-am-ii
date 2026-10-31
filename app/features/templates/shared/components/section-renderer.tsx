@@ -20,7 +20,6 @@ import { InlineEditor } from "./inline-editor";
 
 interface SectionRendererProps {
   section: TemplateSection;
-  isSelected: boolean;
   onSelect: () => void;
 }
 
@@ -38,11 +37,7 @@ interface EducationEntry {
   year: string;
 }
 
-export function SectionRenderer({
-  section,
-  isSelected,
-  onSelect,
-}: SectionRendererProps) {
+export function SectionRenderer({ section, onSelect }: SectionRendererProps) {
   const { updateSection, currentTemplate } = useBuilderStore();
   const [editingField, setEditingField] = useState<{
     path: string[];
@@ -63,6 +58,8 @@ export function SectionRenderer({
     isRichText: boolean,
   ) => {
     e.stopPropagation();
+    // Editing a field also selects its section, so the panel follows along.
+    onSelect();
     setEditingField({ isRichText, label, path, value: String(value || "") });
     setIsModalOpen(true);
   };
@@ -6292,7 +6289,7 @@ export function SectionRenderer({
       `}</style>
       <section
         aria-label={`${section.type} section content`}
-        className={`relative ${isSelected ? "ring-2 ring-blue-500 ring-offset-2" : ""}`}
+        className="relative"
         onClick={handleSectionClick}
         onKeyDown={handleKeyDown}
       >

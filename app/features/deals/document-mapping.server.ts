@@ -81,8 +81,8 @@ export function formatDocumentDate(date: Date) {
 
 /**
  * The template a step's document is rendered with: the step's own template,
- * else the organization's most recently edited one of that type, else the
- * first built-in one.
+ * else the organization's default for that type, else its most recently
+ * edited one of that type, else the first built-in one.
  */
 const COMPANY_FIELDS = [
   "companyName",
@@ -129,8 +129,9 @@ export async function resolveDocumentTemplate({
   type: DealDocumentType;
   templateId: string | null;
 }): Promise<DocumentTemplate> {
+  // The step's own template, else the type's default, else the latest edited.
   const template = await prisma.template.findFirst({
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
     select: { colorPalette: true, globalStyles: true, sections: true },
     where: {
       organizationId,
@@ -142,7 +143,7 @@ export async function resolveDocumentTemplate({
     template ??
     (templateId
       ? await prisma.template.findFirst({
-          orderBy: { updatedAt: "desc" },
+          orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
           select: { colorPalette: true, globalStyles: true, sections: true },
           where: { organizationId, type },
         })

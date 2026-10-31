@@ -15,6 +15,36 @@ const previewSchema = z.object({
     .default({}),
 });
 
+/**
+ * The template as HTML with its own sample content, for thumbnails on the
+ * templates page and starter designs in the new template picker.
+ */
+export async function loader({ context, params }: Route.LoaderArgs) {
+  const { organization } = context.get(organizationMembershipContext);
+  const template =
+    (await retrieveTemplateFromDatabaseById({
+      organizationId: organization.id,
+      templateId: params.templateId,
+    })) ?? getTemplateById(params.templateId);
+  if (!template) {
+    throw new Response("Template not found", { status: 404 });
+  }
+  return new Response(
+    generatePreviewHTML(
+      template.sections,
+      template.globalStyles,
+      template.type,
+      template.colorPalette,
+    ),
+    {
+      headers: {
+        "Cache-Control": "private, max-age=30",
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    },
+  );
+}
+
 export async function action({ request, context, params }: Route.ActionArgs) {
   const { organization, headers } = context.get(organizationMembershipContext);
   const typedParams = params as {

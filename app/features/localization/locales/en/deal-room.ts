@@ -32,8 +32,9 @@ export default {
   payment: {
     onlineDescription:
       "Pay {{organization}} securely online. Your receipt arrives as soon as the payment goes through.",
-    payWithPaystack: "Pay {{amount}} with Paystack",
-    payWithStripe: "Pay {{amount}} by card",
+    payWithPaystack: "Pay with Paystack",
+    payWithStripe: "Pay with Stripe",
+    redirecting: "Taking you to the secure payment page…",
     processing:
       "Thanks! We're confirming your payment. This page updates on its own.",
     secureNote:
