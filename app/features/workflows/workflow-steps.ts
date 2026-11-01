@@ -47,7 +47,7 @@ export type WorkflowStepIssueCode =
   | "depositPercentOutOfRange"
   | "paymentNeedsDocument"
   | "receiptMustFollowPayment"
-  | "cautionRefundNeedsCaution"
+  | "cautionIsALineItem"
   | "cautionOnlyOnce";
 
 export type WorkflowStepIssue = {
@@ -86,7 +86,6 @@ export function validateWorkflowSteps(
 
   let hasItemisedDocument = false;
   let hasDocumentSincePayment = false;
-  let cautions = 0;
   let cautionRefunds = 0;
 
   steps.forEach((step, stepIndex) => {
@@ -130,24 +129,19 @@ export function validateWorkflowSteps(
         break;
       }
       case "receipt": {
-        const before = steps[stepIndex - 1]?.kind;
-        if (before !== "payment" && before !== "caution") {
+        if (steps[stepIndex - 1]?.kind !== "payment") {
           issues.push({ code: "receiptMustFollowPayment", stepIndex });
         }
         break;
       }
       case "caution": {
-        cautions += 1;
-        if (cautions > 1) {
-          issues.push({ code: "cautionOnlyOnce", stepIndex });
-        }
+        // Cautions are now a line on a quote or invoice, not a step.
+        issues.push({ code: "cautionIsALineItem", stepIndex });
         break;
       }
       case "cautionRefund": {
         cautionRefunds += 1;
-        if (cautions === 0) {
-          issues.push({ code: "cautionRefundNeedsCaution", stepIndex });
-        } else if (cautionRefunds > 1) {
+        if (cautionRefunds > 1) {
           issues.push({ code: "cautionOnlyOnce", stepIndex });
         }
         break;

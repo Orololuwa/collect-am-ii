@@ -139,6 +139,7 @@ export default {
     dealWon: "All steps done",
   },
   refund: {
+    heldTitleNoAmount: "Your caution is held",
     evidenceFor: "Photos and videos for {{reason}}",
     accountGiven:
       "Thanks. {{organization}} will send your refund to {{account}}. You'll get an email when it's on its way.",

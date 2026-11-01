@@ -212,28 +212,21 @@ describe("normalizeWorkflowStep()", () => {
       kind: "cautionRefund",
       name: "Refund",
     });
-    const receipt = documentStep({
-      documentType: null,
-      kind: "receipt",
-      name: "Receipt",
+
+    test("given: a caution refund after the documents, should: pass", () => {
+      expect(validateWorkflowSteps([documentStep(), refund])).toEqual([]);
     });
 
-    test("given: a caution, its receipt and its refund, should: pass", () => {
-      expect(
-        validateWorkflowSteps([documentStep(), caution, receipt, refund]),
-      ).toEqual([]);
-    });
-
-    test("given: a refund without a caution, should: flag it", () => {
-      expect(validateWorkflowSteps([documentStep(), refund])).toEqual([
-        { code: "cautionRefundNeedsCaution", stepIndex: 1 },
+    test("given: a separate caution step, should: ask for a line item instead", () => {
+      expect(validateWorkflowSteps([documentStep(), caution, refund])).toEqual([
+        { code: "cautionIsALineItem", stepIndex: 1 },
       ]);
     });
 
-    test("given: two cautions, should: flag the second", () => {
-      expect(
-        validateWorkflowSteps([documentStep(), caution, caution, refund]),
-      ).toEqual([{ code: "cautionOnlyOnce", stepIndex: 2 }]);
+    test("given: two caution refunds, should: flag the second", () => {
+      expect(validateWorkflowSteps([documentStep(), refund, refund])).toEqual([
+        { code: "cautionOnlyOnce", stepIndex: 2 },
+      ]);
     });
   });
 });

@@ -58,13 +58,7 @@ type GestureEvent = UIEvent & {
   clientY: number;
 };
 const DRAG_TYPE = "application/x-collectam-step";
-const KINDS = [
-  "document",
-  "payment",
-  "receipt",
-  "caution",
-  "cautionRefund",
-] as const;
+const KINDS = ["document", "payment", "receipt", "cautionRefund"] as const;
 
 type Row = { kind: "step" | "gate"; stepIndex: number; lane: StepLane };
 type Point = { lane: StepLane; bottom: number };
@@ -523,8 +517,9 @@ export function WorkflowCanvas({
                   event.preventDefault();
                   setDropTarget(null);
                   setDragging(false);
-                  if (KINDS.includes(kind as WorkflowStepKind)) {
-                    onInsert(kind as WorkflowStepKind, insertAt);
+                  const known = KINDS.find((candidate) => candidate === kind);
+                  if (known) {
+                    onInsert(known, insertAt);
                   }
                 }}
                 style={{

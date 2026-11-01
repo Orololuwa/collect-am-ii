@@ -122,7 +122,7 @@ export const STEP_ISSUE_KEYS = {
   nameTooLong: "issues.nameTooLong",
   paymentNeedsDocument: "issues.paymentNeedsDocument",
   cautionOnlyOnce: "issues.cautionOnlyOnce",
-  cautionRefundNeedsCaution: "issues.cautionRefundNeedsCaution",
+  cautionIsALineItem: "issues.cautionIsALineItem",
   receiptMustFollowPayment: "issues.receiptMustFollowPayment",
   templateNotFound: "issues.templateNotFound",
   tooFewSteps: "issues.tooFewSteps",

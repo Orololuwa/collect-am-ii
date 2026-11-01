@@ -5,7 +5,7 @@ export default {
   newPageTitle: "Neuer Deal",
   status: {
     open: "Offen",
-    won: "Gewonnen",
+    won: "Abgeschlossen",
     lost: "Verloren",
     cancelled: "Abgebrochen",
   },
@@ -64,11 +64,8 @@ export default {
     next: "Weiter",
   },
   new: {
-    cautionHint:
-      "Erstattbar. Wird über die Deal-Seite bezahlt und zählt nicht als Einnahme, bis du sie abrechnest.",
-    cautionLabel: "Kaution ({{currency}})",
     settleAfterHint:
-      "Das Veranstaltungs- oder Check-out-Datum. CollectAm erinnert dich danach an die Abrechnung.",
+      "Das Veranstaltungs- oder Check-out-Datum. Füge die Kaution als Position bei deinem Angebot hinzu; CollectAm erinnert dich nach diesem Datum an die Abrechnung.",
     settleAfterLabel: "Kaution abrechnen nach",
     cautionAmountInvalid: "Gib die Kaution als Betrag ein, z. B. 50000.",
     title: "Neuer Deal",
@@ -129,6 +126,11 @@ export default {
   },
   detail: {
     caution: {
+      heldFromInvoice:
+        "Aus der Kautionsposition auf den Dokumenten dieses Deals. Ändere sie, falls sie abweicht.",
+      heldHint:
+        "Meist die Kautionsposition auf deinem Angebot oder deiner Rechnung.",
+      heldLabel: "Einbehaltene Kaution ({{currency}})",
       addEvidence: "Fotos oder Videos hinzufügen",
       evidenceError:
         "Nutze JPG-, PNG-, WebP- oder HEIC-Fotos bis 10 MB oder MP4-, MOV- oder WebM-Videos bis 50 MB.",
@@ -322,7 +324,7 @@ export default {
       "{{actor}} hat ein Erstattungskonto bei {{bank}} angegeben",
     cautionRefunded:
       "{{actor}} hat die Kautionsrückzahlung von {{refund}} als gesendet markiert",
-    dealWon: "Alle Schritte erledigt, der Deal ist gewonnen",
+    dealWon: "Alle Schritte erledigt, der Deal ist abgeschlossen",
     dealLost: "{{actor}} hat den Deal als verloren markiert",
     dealCancelled: "{{actor}} hat den Deal abgebrochen",
     system: "CollectAm",
@@ -366,7 +368,7 @@ export default {
     noItems: "Behalte mindestens eine Position.",
     purchaseOrderRequired: "Gib die Bestellnummer der Kundschaft ein.",
     changesNotAllowed: "Dieser Schritt nimmt keine Änderungsvorschläge an.",
-    cautionAmountRequired: "Gib die Kaution für diesen Deal ein.",
+    cautionHeldRequired: "Gib die einbehaltene Kaution ein.",
     notCautionRefundStep:
       "Die Kaution ist nicht in diesem Schritt. Lade die Seite neu.",
     deductionsTooHigh:

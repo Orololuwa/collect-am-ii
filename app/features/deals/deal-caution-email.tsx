@@ -18,6 +18,8 @@ type CautionEmailProps = {
   deductions: Array<{ reason: string; amount: string }>;
   /** The business attached photos or videos to its deductions. */
   hasEvidence?: boolean;
+  /** The business kept the whole caution, so no money is coming back. */
+  nothingToRefund?: boolean;
   refund: string;
   /** The bank and masked account the refund went to, once sent. */
   refundedTo?: string;
@@ -35,6 +37,7 @@ export function CautionEmail({
   held,
   deductions,
   hasEvidence = false,
+  nothingToRefund = false,
   refund,
   refundedTo,
   reference,
@@ -49,12 +52,14 @@ export function CautionEmail({
       preview={
         settling
           ? `${organizationName} will refund ${refund} of your caution`
-          : `${organizationName} sent your caution refund of ${refund}`
+          : nothingToRefund
+            ? `${organizationName} settled your caution`
+            : `${organizationName} sent your caution refund of ${refund}`
       }
     >
       <EmailText>Hi {customerName},</EmailText>
       <EmailText>
-        {settling
+        {settling || nothingToRefund
           ? `${organizationName} has settled the caution you paid for ${dealTitle}.`
           : `${organizationName} has sent your caution refund for ${dealTitle}.`}
       </EmailText>
@@ -85,6 +90,11 @@ export function CautionEmail({
         <EmailText>
           Tell {organizationName} which account to send it to. It only takes a
           minute.
+        </EmailText>
+      ) : nothingToRefund ? (
+        <EmailText>
+          {organizationName} kept the whole caution, so nothing is coming back.
+          Each reason is listed above.
         </EmailText>
       ) : (
         <EmailText>

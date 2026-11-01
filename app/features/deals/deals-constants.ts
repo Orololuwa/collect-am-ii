@@ -125,7 +125,7 @@ export const ERROR_KEYS = {
   noItems: "errors.noItems",
   purchaseOrderRequired: "errors.purchaseOrderRequired",
   changesNotAllowed: "errors.changesNotAllowed",
-  cautionAmountRequired: "errors.cautionAmountRequired",
+  cautionHeldRequired: "errors.cautionHeldRequired",
   notCautionRefundStep: "errors.notCautionRefundStep",
   deductionsTooHigh: "errors.deductionsTooHigh",
   refundAccountMissing: "errors.refundAccountMissing",

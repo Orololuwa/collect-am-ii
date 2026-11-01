@@ -198,6 +198,7 @@ export async function emailCautionNotice({
       )}
       held={money(settlement.heldMinor)}
       kind={kind}
+      nothingToRefund={settlement.refundMinor === 0}
       organizationName={deal.organization.name}
       reference={settlement.refundReference || undefined}
       refund={money(settlement.refundMinor)}
@@ -225,7 +226,9 @@ export async function emailCautionNotice({
       subject:
         kind === "cautionSettlement"
           ? `Your caution for ${deal.title}: where should ${deal.organization.name} send it?`
-          : `${deal.organization.name} sent your caution refund`,
+          : settlement.refundMinor === 0
+            ? `${deal.organization.name} settled your caution for ${deal.title}`
+            : `${deal.organization.name} sent your caution refund`,
       text,
       to: deal.customer.email,
     });

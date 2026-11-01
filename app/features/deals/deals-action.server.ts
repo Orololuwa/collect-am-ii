@@ -64,7 +64,6 @@ import {
 } from "./deals-schemas";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
 import { organizationMembershipContext } from "~/features/organizations/organizations-middleware.server";
-import { majorToMinorUnits } from "~/features/products/products-format";
 import { combineHeaders } from "~/utils/combine-headers.server";
 import { prisma } from "~/utils/database.server";
 import { badRequest, conflict } from "~/utils/http-responses.server";
@@ -111,7 +110,8 @@ async function sendEmails(
   effects: DealEffects,
   replyTo: string,
 ) {
-  if (effects.emails.length === 0) {
+  // Caution notices go by email too, with no document attached.
+  if (effects.emails.length === 0 && effects.notices.length === 0) {
     return 0;
   }
   return await deliverDealEffects(effects, {
@@ -141,17 +141,9 @@ export async function startDealAction({
       actor: { party: "business", userId: user.id },
       currency: result.data.currency,
       customerId: result.data.customerId,
-      caution: result.data.cautionAmount
-        ? {
-            amountMinor: majorToMinorUnits(
-              result.data.cautionAmount,
-              result.data.currency,
-            ),
-            settleAfter: result.data.cautionSettleAfter
-              ? new Date(`${result.data.cautionSettleAfter}T12:00:00Z`)
-              : null,
-          }
-        : undefined,
+      cautionSettleAfter: result.data.cautionSettleAfter
+        ? new Date(`${result.data.cautionSettleAfter}T12:00:00Z`)
+        : null,
       items: await keepOwnProductIds(organization.id, result.data.items),
       organizationId: organization.id,
       title: result.data.title,
@@ -404,6 +396,7 @@ export async function dealDetailAction(
             ...target,
             actor,
             deductions: result.data.deductions,
+            heldMinor: result.data.heldMinor,
             stepId: result.data.stepId,
           })
         ).effects;

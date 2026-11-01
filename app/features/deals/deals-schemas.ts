@@ -47,11 +47,15 @@ const currencyCodes = COMMON_CURRENCIES.map((currency) => currency.code) as [
 const normalizeNewlines = (value: string) => value.replace(/\r\n?/g, "\n");
 
 export const dealItemSchema = z.object({
+  // Optional: the form's validation turns an empty description into
+  // undefined, which used to block custom lines without one.
   description: z
     .string()
     .trim()
     .max(MAX_ITEM_DESCRIPTION_LENGTH)
-    .transform(normalizeNewlines),
+    .transform(normalizeNewlines)
+    .optional()
+    .default(""),
   name: z.string().trim().min(1).max(MAX_ITEM_NAME_LENGTH),
   productId: z.string().min(1).nullable(),
   quantity: z
@@ -91,13 +95,6 @@ export const startDealFormSchema = z.object({
     .min(1, { message: "deals:new.customerRequired" }),
   intent: z.literal(START_DEAL_INTENT),
   items: itemsField,
-  /** In major units, for workflows that take a caution fee. */
-  cautionAmount: z
-    .string()
-    .trim()
-    .regex(/^\d*(\.\d{0,2})?$/, { message: "deals:new.cautionAmountInvalid" })
-    .optional()
-    .default(""),
   /** `YYYY-MM-DD`: the event or check-out date. */
   cautionSettleAfter: z
     .string()
@@ -294,6 +291,12 @@ export const cautionSettlementFormSchema = z.object({
         )
         .max(MAX_CAUTION_DEDUCTIONS),
     ),
+  /** In minor units, worked out by the settle card. */
+  heldMinor: z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .pipe(z.number().int().positive().max(100_000_000_000)),
   intent: z.literal(SEND_CAUTION_SETTLEMENT_INTENT),
   stepId: z.string().min(1),
 });

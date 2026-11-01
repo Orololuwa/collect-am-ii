@@ -172,6 +172,8 @@ export type DealView = {
   shareUrl: string;
   /** When the deal's caution can be settled, if it takes one. */
   cautionSettleAfter: Date | null;
+  /** The caution lines on the deal's latest documents, if any. */
+  cautionSuggestionMinor: number | null;
   /** The customer's purchase order, once they've given one. */
   purchaseOrder: {
     number: string;
@@ -1550,6 +1552,7 @@ export function DealDetail({
               settlement={activeStep.settlement}
               stepId={activeStep.id}
               stepName={activeStep.name}
+              suggestedHeldMinor={deal.cautionSuggestionMinor}
             />
           ) : activeStep?.document ? (
             <CurrentDocument

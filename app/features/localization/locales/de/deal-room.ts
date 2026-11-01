@@ -146,6 +146,7 @@ export default {
     dealWon: "Alle Schritte erledigt",
   },
   refund: {
+    heldTitleNoAmount: "Deine Kaution wird einbehalten",
     evidenceFor: "Fotos und Videos zu {{reason}}",
     accountGiven:
       "Danke. {{organization}} überweist deine Erstattung an {{account}}. Du bekommst eine E-Mail, sobald sie unterwegs ist.",

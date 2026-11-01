@@ -15,7 +15,7 @@ export default {
     cautionDescription:
       "Eine erstattbare Kaution, die die Kundschaft auf der Deal-Seite bezahlt. Du legst den Betrag bei jedem Deal fest, und sie zählt nicht als Einnahme.",
     cautionRefundDescription:
-      "Nach dem Abrechnungsdatum trägst du ein, was du einbehältst und warum. Die Kundschaft wird nach dem Konto für den Rest gefragt; dann überweist du ihn von deiner Bank und markierst ihn als gesendet.",
+      "Nach dem Abrechnungsdatum trägst du die einbehaltene Kaution und alle Abzüge ein, gern mit Fotos. Die Kundschaft wird nach dem Erstattungskonto gefragt; du überweist den Rest von deiner Bank und markierst ihn als gesendet.",
     cautionRefundGate: {
       description: "Dann überweist du sie von deiner Bank",
       title: "Kundschaft gibt ihr Erstattungskonto an",
@@ -28,7 +28,7 @@ export default {
       addStep: "Schritt hinzufügen",
       addStepHint:
         "Auf eine Linie ziehen zum Einfügen, oder klicken, um ihn ans Ende zu setzen.",
-      end: "Deal gewonnen",
+      end: "Deal abgeschlossen",
       fit: "Einpassen",
       insertBefore: "Schritt vor {{name}} hinzufügen",
       insertFirst: "Schritt am Anfang hinzufügen",
@@ -169,8 +169,8 @@ export default {
   issues: {
     cautionOnlyOnce:
       "Ein Workflow kann eine Kaution nehmen und sie einmal erstatten.",
-    cautionRefundNeedsCaution:
-      "Eine Kautionsrückzahlung braucht vorher eine Kaution.",
+    cautionIsALineItem:
+      "Füge die Kaution stattdessen als Position zu deinem Angebot oder deiner Rechnung hinzu. Entferne diesen Schritt.",
     depositNeedsEarlierDocument:
       "Anzahlungen und Restbeträge brauchen davor ein Dokument mit Positionen.",
     depositPercentOutOfRange: "Gib eine Anzahlung zwischen 1 % und 100 % ein.",
@@ -218,12 +218,12 @@ export default {
   samples: {
     eventCentreBooking: {
       description:
-        "Für Säle und Eventlocations: ein Angebot, die Buchungsrechnung, dann eine erstattbare Kaution, die du nach der Veranstaltung abrechnest und bei Schäden teilweise einbehältst.",
+        "Für Säle und Eventlocations: ein Angebot, dann die Buchungsrechnung mit der erstattbaren Kaution als Position. Nach der Veranstaltung rechnest du die Kaution ab und behältst bei Schäden etwas ein.",
       name: "Buchung einer Eventlocation",
     },
     shortLetStay: {
       description:
-        "Für Ferienwohnungen und Airbnb-Gastgeber: die Buchungsrechnung, eine erstattbare Kaution, dann die Rückzahlung nach dem Check-out.",
+        "Für Ferienwohnungen und Airbnb-Gastgeber: die Buchungsrechnung mit der Kaution als Position, dann die Rückzahlung nach dem Check-out.",
       name: "Aufenthalt in einer Ferienwohnung",
     },
     agencyProject: {

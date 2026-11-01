@@ -40,9 +40,13 @@ type Row = {
   unitPrice: string;
   taxRate: string;
   discount: string;
+  /** Edited since it was added; a fresh blank line isn't flagged yet. */
+  touched?: boolean;
 };
 
 let nextKey = 0;
+
+const untouched = (row: Row): Row => ({ ...row, touched: false });
 
 function toRow(item: DealLineItem, currency: string): Row {
   nextKey += 1;
@@ -139,7 +143,9 @@ export function DealItemsEditor({
 
   const updateRow = (key: number, changes: Partial<Row>) =>
     setRows((current) =>
-      current.map((row) => (row.key === key ? { ...row, ...changes } : row)),
+      current.map((row) =>
+        row.key === key ? { ...row, ...changes, touched: true } : row,
+      ),
     );
 
   const addProduct = (productId: string) => {
@@ -168,18 +174,20 @@ export function DealItemsEditor({
   const addCustomLine = () =>
     setRows((current) => [
       ...current,
-      toRow(
-        {
-          description: "",
-          name: "",
-          productId: null,
-          quantity: 1,
-          taxRateBps: 0,
-          discountBps: 0,
-          unit: "item",
-          unitPriceMinor: 0,
-        },
-        currency,
+      untouched(
+        toRow(
+          {
+            description: "",
+            name: "",
+            productId: null,
+            quantity: 1,
+            taxRateBps: 0,
+            discountBps: 0,
+            unit: "item",
+            unitPriceMinor: 0,
+          },
+          currency,
+        ),
       ),
     ]);
 
@@ -218,7 +226,7 @@ export function DealItemsEditor({
             <tbody>
               {rows.map((row, index) => {
                 const item = parsed[index];
-                const invalid = item === null;
+                const invalid = item === null && row.touched !== false;
                 return (
                   <tr
                     className={cn(
@@ -229,7 +237,10 @@ export function DealItemsEditor({
                   >
                     <td className="space-y-1.5 px-3 py-2">
                       <Input
-                        aria-invalid={!row.name.trim() || undefined}
+                        aria-invalid={
+                          (row.touched !== false && !row.name.trim()) ||
+                          undefined
+                        }
                         aria-label={t("namePlaceholder")}
                         className="h-9"
                         maxLength={200}
@@ -333,7 +344,9 @@ export function DealItemsEditor({
         </p>
       )}
 
-      {rows.length > 0 && !allValid ? (
+      {rows.some(
+        (row, index) => parsed[index] === null && row.touched !== false,
+      ) ? (
         <p className="text-destructive text-sm" role="alert">
           {t("invalidLines")}
         </p>

@@ -43,7 +43,7 @@ export type DealErrorCode =
   | "noItems"
   | "purchaseOrderRequired"
   | "changesNotAllowed"
-  | "cautionAmountRequired"
+  | "cautionHeldRequired"
   | "notCautionRefundStep"
   | "deductionsTooHigh"
   | "refundAccountMissing";
@@ -522,7 +522,7 @@ export async function startDeal({
   title,
   currency,
   items,
-  caution,
+  cautionSettleAfter,
   actor,
 }: {
   organizationId: string;
@@ -531,8 +531,8 @@ export async function startDeal({
   title: string;
   currency: string;
   items: DealLineItem[];
-  /** For workflows that take a caution fee: how much, and when to settle it. */
-  caution?: { amountMinor: number; settleAfter: Date | null };
+  /** For workflows that refund a caution: when it can be settled. */
+  cautionSettleAfter?: Date | null;
   actor: Actor;
 }) {
   return await runTransition(async (tx, effects) => {
@@ -551,16 +551,14 @@ export async function startDeal({
     if (!customer) {
       throw new DealTransitionError("customerNotFound");
     }
-    const takesCaution = workflow.steps.some((step) => step.kind === "caution");
-    if (takesCaution && !(caution && caution.amountMinor > 0)) {
-      throw new DealTransitionError("cautionAmountRequired");
-    }
+    const refundsCaution = workflow.steps.some(
+      (step) => step.kind === "cautionRefund",
+    );
 
     const deal = await tx.deal.create({
       data: {
-        cautionAmountMinor: takesCaution ? caution?.amountMinor : null,
-        cautionSettleAfter: takesCaution
-          ? (caution?.settleAfter ?? null)
+        cautionSettleAfter: refundsCaution
+          ? (cautionSettleAfter ?? null)
           : null,
         createdById: actor.userId,
         currency,
@@ -1340,12 +1338,15 @@ export async function sendCautionSettlement({
   organizationId,
   dealId,
   stepId,
+  heldMinor,
   deductions,
   actor,
 }: {
   organizationId: string;
   dealId: string;
   stepId: string;
+  /** The caution the business holds: usually a line on its invoice. */
+  heldMinor: number;
   deductions: CautionDeduction[];
   actor: Actor;
 }) {
@@ -1362,7 +1363,10 @@ export async function sendCautionSettlement({
       (sum, deduction) => sum + deduction.amountMinor,
       0,
     );
-    if (deductedMinor > settlement.heldMinor) {
+    if (heldMinor <= 0) {
+      throw new DealTransitionError("cautionHeldRequired");
+    }
+    if (deductedMinor > heldMinor) {
       throw new DealTransitionError("deductionsTooHigh");
     }
     // Only evidence uploaded for this deal can be attached.
@@ -1373,11 +1377,12 @@ export async function sendCautionSettlement({
         item.id.startsWith(folder),
       ),
     }));
-    const refundMinor = settlement.heldMinor - deductedMinor;
+    const refundMinor = heldMinor - deductedMinor;
     const now = new Date();
     await tx.dealCautionSettlement.update({
       data: {
         deductions: kept as unknown as Prisma.InputJsonValue,
+        heldMinor,
         refundMinor,
         sentAt: now,
         ...(refundMinor === 0 ? { refundedAt: now } : {}),
@@ -1388,6 +1393,7 @@ export async function sendCautionSettlement({
       payload: { deductedMinor, refundMinor },
     });
     if (refundMinor === 0) {
+      // Nothing to send back: the customer gets the statement straight away.
       effects.notices.push({ kind: "cautionRefunded", stepId: step.id });
       await completeStep(tx, deal, step.id, actor, effects);
       return;

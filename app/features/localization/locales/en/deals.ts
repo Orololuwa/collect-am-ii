@@ -5,7 +5,7 @@ export default {
   newPageTitle: "New deal",
   status: {
     open: "Open",
-    won: "Won",
+    won: "Closed",
     lost: "Lost",
     cancelled: "Cancelled",
   },
@@ -64,11 +64,8 @@ export default {
     next: "Next",
   },
   new: {
-    cautionHint:
-      "Refundable. Paid from the deal page and kept out of your income until you settle it.",
-    cautionLabel: "Caution fee ({{currency}})",
     settleAfterHint:
-      "The event or check-out date. CollectAm reminds you to settle the caution after it.",
+      "The event or check-out date. Add the caution as a line in what you're offering; CollectAm reminds you to settle it after this date.",
     settleAfterLabel: "Settle the caution after",
     cautionAmountInvalid: "Enter the caution as an amount, like 50000.",
     title: "New deal",
@@ -129,6 +126,10 @@ export default {
   },
   detail: {
     caution: {
+      heldFromInvoice:
+        "From the caution line on this deal's documents. Change it if it's different.",
+      heldHint: "Usually the caution line on your quote or invoice.",
+      heldLabel: "Caution you hold ({{currency}})",
       addEvidence: "Add photos or videos",
       evidenceError:
         "Use JPG, PNG, WebP or HEIC photos up to 10 MB, or MP4, MOV or WebM videos up to 50 MB.",
@@ -319,7 +320,7 @@ export default {
     refundAccountGiven: "{{actor}} gave a refund account at {{bank}}",
     cautionRefunded:
       "{{actor}} marked the caution refund of {{refund}} as sent",
-    dealWon: "All steps done, the deal is won",
+    dealWon: "All steps done, the deal is closed",
     dealLost: "{{actor}} marked the deal as lost",
     dealCancelled: "{{actor}} cancelled the deal",
     system: "CollectAm",
@@ -361,7 +362,7 @@ export default {
     noItems: "Keep at least one line.",
     purchaseOrderRequired: "Enter the customer's purchase order number.",
     changesNotAllowed: "This step doesn't take suggested changes.",
-    cautionAmountRequired: "Enter the caution fee for this deal.",
+    cautionHeldRequired: "Enter the caution you hold.",
     notCautionRefundStep: "The caution isn't at that stage. Refresh the page.",
     deductionsTooHigh: "Deductions can't be more than the caution held.",
     refundAccountMissing: "Wait for the customer's refund account first.",

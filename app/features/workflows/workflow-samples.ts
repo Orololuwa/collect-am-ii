@@ -83,12 +83,11 @@ const payment = (stepName: SampleStepName = "payment") =>
 const receipt = (stepName: SampleStepName = "receipt") =>
   step(stepName, { advanceMode: "automatic", kind: "receipt" });
 
-/** A refundable caution, its receipt, and its refund once the date passes. */
-const caution = () => [
-  step("caution", { kind: "caution" }),
-  receipt("cautionReceipt"),
-  step("cautionRefund", { kind: "cautionRefund" }),
-];
+/**
+ * Settling a refundable caution once the date passes. The caution itself is a
+ * line the organization adds to its quote or invoice.
+ */
+const cautionRefund = () => step("cautionRefund", { kind: "cautionRefund" });
 
 const document = (
   stepName: SampleStepName,
@@ -152,13 +151,13 @@ export const WORKFLOW_SAMPLES: Record<WorkflowSampleKey, SampleStep[]> = {
     }),
     payment("bookingPayment"),
     receipt(),
-    ...caution(),
+    cautionRefund(),
   ],
   shortLetStay: [
     document("bookingInvoice", "invoice", { paymentTermsDays: 1 }),
     payment("bookingPayment"),
     receipt(),
-    ...caution(),
+    cautionRefund(),
   ],
   eventCatering: [
     document("quote", "quote", { requiresAcceptance: true, validityDays: 7 }),

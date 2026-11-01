@@ -3,6 +3,7 @@ import { data, href } from "react-router";
 import type { Route } from "./+types/$dealId";
 import type { DealView } from "~/features/deals/components/deal-detail";
 import { DealDetail } from "~/features/deals/components/deal-detail";
+import { findCautionLinesMinor } from "~/features/deals/deal-caution";
 import { toCautionDeductionViews } from "~/features/deals/deal-caution.server";
 import { parseDealItems } from "~/features/deals/deal-items";
 import { createDealShareUrl } from "~/features/deals/deal-share-link.server";
@@ -171,6 +172,19 @@ export async function loader({ params, context }: Route.LoaderArgs) {
         }
       : null,
     cautionSettleAfter: deal.cautionSettleAfter,
+    cautionSuggestionMinor: findCautionLinesMinor(
+      deal.steps.flatMap((step) => {
+        const document = step.document;
+        const version =
+          document?.versions.find(
+            (candidate) => candidate.id === document.acceptedVersionId,
+          ) ??
+          document?.versions.find((candidate) => candidate.state === "current");
+        return version && step.kind === "document"
+          ? [parseDealItems(version.items)]
+          : [];
+      }),
+    ),
     shareUrl: createDealShareUrl(deal),
     title: deal.title,
     workflowName: deal.workflowName,

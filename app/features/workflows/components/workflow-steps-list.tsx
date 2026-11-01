@@ -51,10 +51,6 @@ export function AddStepButtons({
         <PlusIcon aria-hidden="true" />
         {t("editor.addReceipt")}
       </Button>
-      <Button onClick={() => onAdd("caution")} type="button" variant="outline">
-        <PlusIcon aria-hidden="true" />
-        {t("editor.addCaution")}
-      </Button>
       <Button
         onClick={() => onAdd("cautionRefund")}
         type="button"

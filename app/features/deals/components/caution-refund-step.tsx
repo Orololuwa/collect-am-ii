@@ -26,6 +26,7 @@ import { formatMoney } from "~/features/organizations/dashboard/dashboard-format
 import {
   getCurrencyExponent,
   majorToMinorUnits,
+  minorUnitsToMajorString,
 } from "~/features/products/products-format";
 import { cn } from "~/lib/utils";
 
@@ -93,6 +94,7 @@ export function CautionRefundStep({
   currency,
   customerName,
   settleAfter,
+  suggestedHeldMinor,
   stepId,
   stepName,
   settlement,
@@ -100,6 +102,8 @@ export function CautionRefundStep({
   currency: string;
   customerName: string;
   settleAfter: Date | null;
+  /** A caution line found on the deal's documents, to start from. */
+  suggestedHeldMinor: number | null;
   stepId: string;
   stepName: string;
   settlement: CautionSettlementView;
@@ -117,6 +121,12 @@ export function CautionRefundStep({
       new Date(date),
     );
   const [drafts, setDrafts] = useState<DraftDeduction[]>([]);
+  const startingHeld =
+    settlement.heldMinor > 0 ? settlement.heldMinor : suggestedHeldMinor;
+  const [heldText, setHeldText] = useState(
+    startingHeld ? minorUnitsToMajorString(startingHeld, currency) : "",
+  );
+  const heldMinor = toMinor(heldText, currency) ?? 0;
 
   const parsed = drafts.map((draft) => ({
     amountMinor: toMinor(draft.amount, currency),
@@ -127,12 +137,12 @@ export function CautionRefundStep({
     (sum, deduction) => sum + (deduction.amountMinor ?? 0),
     0,
   );
-  const tooMuch = keptMinor > settlement.heldMinor;
+  const tooMuch = keptMinor > heldMinor;
   const incomplete = parsed.some(
     (deduction) =>
       !deduction.reason || !deduction.amountMinor || deduction.amountMinor <= 0,
   );
-  const refundMinor = Math.max(0, settlement.heldMinor - keptMinor);
+  const refundMinor = Math.max(0, heldMinor - keptMinor);
   const early = settleAfter !== null && new Date(settleAfter) > new Date();
   const step = 1 / 10 ** getCurrencyExponent(currency);
 
@@ -164,6 +174,27 @@ export function CautionRefundStep({
         <CardContent>
           <fetcher.Form className="space-y-4" method="POST">
             <input name="stepId" type="hidden" value={stepId} />
+            <input name="heldMinor" type="hidden" value={String(heldMinor)} />
+            <div className="space-y-1.5 sm:max-w-xs">
+              <Label htmlFor={`${id}-held`}>
+                {t("heldLabel", { currency })}
+              </Label>
+              <Input
+                id={`${id}-held`}
+                inputMode="decimal"
+                min={0}
+                onChange={(event) => setHeldText(event.target.value)}
+                required
+                step={step}
+                type="number"
+                value={heldText}
+              />
+              <p className="text-muted-foreground text-xs">
+                {suggestedHeldMinor && settlement.heldMinor === 0
+                  ? t("heldFromInvoice")
+                  : t("heldHint")}
+              </p>
+            </div>
             <input
               name="deductions"
               type="hidden"
@@ -275,7 +306,7 @@ export function CautionRefundStep({
             </div>
             <Totals
               rows={[
-                { label: t("held"), value: money(settlement.heldMinor) },
+                { label: t("held"), value: money(heldMinor) },
                 { label: t("kept"), value: money(keptMinor) },
                 {
                   label: t("toRefund"),
@@ -295,7 +326,7 @@ export function CautionRefundStep({
                 : t("sendHintNothing", { name: customerName })}
             </p>
             <Button
-              disabled={busy || tooMuch || incomplete}
+              disabled={busy || tooMuch || incomplete || heldMinor <= 0}
               name="intent"
               type="submit"
               value={SEND_CAUTION_SETTLEMENT_INTENT}

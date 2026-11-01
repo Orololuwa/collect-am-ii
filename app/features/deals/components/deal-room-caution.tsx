@@ -201,7 +201,9 @@ export function CautionRefundRoom({
     return (
       <Card>
         {header(
-          t("heldTitle", { amount: money(settlement.heldMinor) }),
+          settlement.heldMinor > 0
+            ? t("heldTitle", { amount: money(settlement.heldMinor) })
+            : t("heldTitleNoAmount"),
           room.cautionSettleAfter
             ? t("heldUntil", {
                 date: formatDate(room.cautionSettleAfter),

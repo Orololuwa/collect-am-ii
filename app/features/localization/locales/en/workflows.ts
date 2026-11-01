@@ -15,7 +15,7 @@ export default {
     cautionDescription:
       "A refundable caution fee the customer pays from the deal page. You set the amount on each deal, and it isn't counted as income.",
     cautionRefundDescription:
-      "After the settle-after date, you record anything you're keeping and why. The customer is asked for the account to refund the rest to, then you send it from your bank and mark it sent.",
+      "After the settle-after date, you enter the caution you hold and anything you're keeping, with photos if you like. The customer is asked for the account to refund the rest to; you send it from your bank and mark it sent.",
     cautionRefundGate: {
       description: "Then you refund it from your bank",
       title: "Customer gives their refund account",
@@ -27,7 +27,7 @@ export default {
       addHere: "Add a step here",
       addStep: "Add a step",
       addStepHint: "Drag onto a line to insert, or click to add at the end.",
-      end: "Deal won",
+      end: "Deal closed",
       fit: "Fit",
       insertBefore: "Add a step before {{name}}",
       insertFirst: "Add a step at the start",
@@ -164,8 +164,8 @@ export default {
   },
   issues: {
     cautionOnlyOnce: "A workflow can take one caution fee and refund it once.",
-    cautionRefundNeedsCaution:
-      "A caution refund needs a caution fee before it.",
+    cautionIsALineItem:
+      "Add the caution as a line on your quote or invoice instead. Remove this step.",
     depositNeedsEarlierDocument:
       "Deposits and balances need an itemised document before them.",
     depositPercentOutOfRange: "Enter a deposit between 1% and 100%.",
@@ -211,12 +211,12 @@ export default {
   samples: {
     eventCentreBooking: {
       description:
-        "For halls and event spaces: a quote, the booking invoice, then a refundable caution you settle after the event, keeping anything for damage.",
+        "For halls and event spaces: a quote, then the booking invoice with the refundable caution as one of its lines. After the event you settle the caution, keeping anything for damage.",
       name: "Event centre booking",
     },
     shortLetStay: {
       description:
-        "For short-let apartments and Airbnb hosts: the booking invoice, a refundable caution, then the caution refund after check-out.",
+        "For short-let apartments and Airbnb hosts: the booking invoice with the caution as one of its lines, then the caution refund after check-out.",
       name: "Short-let apartment stay",
     },
     agencyProject: {

@@ -64,7 +64,7 @@ const ERROR_KEYS = {
   proposalNotFound: "errors.generic",
   purchaseOrderRequired: "errors.purchaseOrderRequired",
   changesNotAllowed: "errors.changesNotAllowed",
-  cautionAmountRequired: "errors.generic",
+  cautionHeldRequired: "errors.generic",
   deductionsTooHigh: "errors.generic",
   notCautionRefundStep: "errors.alreadyAnswered",
   refundAccountMissing: "errors.generic",
@@ -314,7 +314,8 @@ async function deliverEffects(
   context: Readonly<RouterContextProvider>,
   effects: DealEffects,
 ) {
-  if (effects.emails.length === 0) {
+  // Caution notices go by email too, with no document attached.
+  if (effects.emails.length === 0 && effects.notices.length === 0) {
     return 0;
   }
   return await deliverDealEffects(effects, {

@@ -15,6 +15,8 @@ import type { DealLineItem } from "~/features/deals/deal-items";
 import { createDealShareToken } from "~/features/deals/deal-share-link.server";
 import {
   GIVE_REFUND_ACCOUNT_INTENT,
+  MARK_CAUTION_REFUNDED_INTENT,
+  SEND_CAUTION_SETTLEMENT_INTENT,
   UPLOAD_CAUTION_EVIDENCE_INTENT,
 } from "~/features/deals/deals-constants";
 import { WORKFLOW_SAMPLES } from "~/features/workflows/workflow-samples";
@@ -23,6 +25,7 @@ import type { UserAccount } from "~/generated/client";
 import { auth0Handlers } from "~/test/mocks/handlers/auth0";
 import { cloudinaryHandlers } from "~/test/mocks/handlers/cloudinary";
 import { resendHandlers } from "~/test/mocks/handlers/resend";
+import { readEmail } from "~/test/mocks/utils";
 import { setupMockServerLifecycle } from "~/test/msw-test-utils";
 import { setupUserWithOrgAndAddAsMember } from "~/test/server-test-utils";
 import {
@@ -59,11 +62,23 @@ const items: DealLineItem[] = [
     unit: "night",
     unitPriceMinor: 8_000_000,
   },
+  // The organization adds the caution as a line of its own.
+  {
+    description: "Refundable after check-out",
+    discountBps: 0,
+    name: "Caution fee",
+    productId: null,
+    quantity: 1,
+    taxRateBps: 0,
+    unit: "item",
+    unitPriceMinor: 20_000_000,
+  },
 ];
 const CAUTION = 20_000_000;
+const REFUND_STEP = 3;
 
 /** A short-let deal paid up to its caution step. */
-async function setupStay({ payCaution = true } = {}) {
+async function setupStay() {
   const { user, organization } = await setupUserWithOrgAndAddAsMember();
   const customer = await prisma.customer.create({
     data: createPopulatedCustomer({ organizationId: organization.id }),
@@ -82,10 +97,7 @@ async function setupStay({ payCaution = true } = {}) {
   const business = { party: "business" as const, userId: user.id };
   const { result: started } = await startDeal({
     actor: business,
-    caution: {
-      amountMinor: CAUTION,
-      settleAfter: new Date("2026-11-20T12:00:00Z"),
-    },
+    cautionSettleAfter: new Date("2026-11-20T12:00:00Z"),
     currency: "NGN",
     customerId: customer.id,
     items,
@@ -119,9 +131,6 @@ async function setupStay({ payCaution = true } = {}) {
     });
   };
   await pay(1);
-  if (payCaution) {
-    await pay(3);
-  }
   const deal = await prisma.deal.findUniqueOrThrow({
     where: { id: started.id },
   });
@@ -162,42 +171,31 @@ async function giveAccount(token: string, stepId: string) {
 }
 
 describe("caution fees", () => {
-  test("given: a paid caution, should: keep it out of income, receipt it and open the refund", async () => {
+  test("given: a paid booking invoice with a caution line, should: open the refund for the business to fill in", async () => {
     const { deal, steps } = await setupStay();
 
-    const payments = await prisma.payment.findMany({
-      orderBy: { createdAt: "asc" },
+    const payment = await prisma.payment.findFirstOrThrow({
       where: { dealId: deal.id },
     });
-    expect(
-      payments.map((payment) => [payment.purpose, payment.amountMinor]),
-    ).toEqual([
-      ["sale", 16_000_000],
-      ["caution", CAUTION],
-    ]);
+    expect(payment).toMatchObject({ amountMinor: 36_000_000, purpose: "sale" });
+    expect(deal.cautionSettleAfter).toEqual(new Date("2026-11-20T12:00:00Z"));
 
-    const [, , , caution, cautionReceipt, refund] = await steps();
-    expect(caution).toMatchObject({ amountDueMinor: CAUTION, status: "done" });
-    expect(cautionReceipt?.document?.status).toEqual("sent");
-    const receiptLines = await prisma.dealDocumentVersion.findFirstOrThrow({
-      where: { dealDocumentId: cautionReceipt?.document?.id, state: "current" },
-    });
-    expect(receiptLines).toMatchObject({ totalMinor: CAUTION });
+    const refund = (await steps())[REFUND_STEP];
     expect(refund).toMatchObject({ kind: "cautionRefund", status: "active" });
     expect(refund?.cautionSettlement).toMatchObject({
-      heldMinor: CAUTION,
-      refundMinor: CAUTION,
+      heldMinor: 0,
       sentAt: null,
     });
   });
 
   test("given: a deduction, the customer's account and the refund sent, should: settle the caution and win the deal", async () => {
     const { business, deal, steps, target, token } = await setupStay();
-    const refund = (await steps())[5];
+    const refund = (await steps())[REFUND_STEP];
 
     await sendCautionSettlement({
       ...target,
       actor: business,
+      heldMinor: CAUTION,
       deductions: [{ amountMinor: 1_500_000, reason: "Broken lamp" }],
       stepId: refund?.id ?? "",
     });
@@ -256,11 +254,12 @@ describe("caution fees", () => {
 
   test("given: deductions that keep the whole caution, should: settle at once with nothing to refund", async () => {
     const { business, deal, steps, target } = await setupStay();
-    const refund = (await steps())[5];
+    const refund = (await steps())[REFUND_STEP];
 
     await sendCautionSettlement({
       ...target,
       actor: business,
+      heldMinor: CAUTION,
       deductions: [{ amountMinor: CAUTION, reason: "Smoke damage" }],
       stepId: refund?.id ?? "",
     });
@@ -272,53 +271,37 @@ describe("caution fees", () => {
 
   test("given: deductions above the caution, should: refuse them", async () => {
     const { business, steps, target } = await setupStay();
-    const refund = (await steps())[5];
+    const refund = (await steps())[REFUND_STEP];
 
     await expect(
       sendCautionSettlement({
         ...target,
         actor: business,
+        heldMinor: CAUTION,
         deductions: [{ amountMinor: CAUTION + 1, reason: "Too much" }],
         stepId: refund?.id ?? "",
       }),
     ).rejects.toThrow(new DealTransitionError("deductionsTooHigh"));
   });
 
-  test("given: a workflow with a caution but no amount, should: refuse to start the deal", async () => {
-    const { user, organization } = await setupUserWithOrgAndAddAsMember();
-    const customer = await prisma.customer.create({
-      data: createPopulatedCustomer({ organizationId: organization.id }),
-    });
-    const workflow = await saveWorkflowWithStepsToDatabase({
-      description: "",
-      name: "Event centre",
-      organizationId: organization.id,
-      sampleKey: "eventCentreBooking",
-      steps: WORKFLOW_SAMPLES.eventCentreBooking.map(
-        ({ stepName, ...settings }) => ({
-          ...settings,
-          name: stepName,
-          templateId: null,
-        }),
-      ),
-    });
+  test("given: no caution held, should: refuse to send the settlement", async () => {
+    const { business, steps, target } = await setupStay();
+    const refund = (await steps())[REFUND_STEP];
 
     await expect(
-      startDeal({
-        actor: { party: "business", userId: user.id },
-        currency: "NGN",
-        customerId: customer.id,
-        items,
-        organizationId: organization.id,
-        title: "Wedding reception",
-        workflowId: workflow.id,
+      sendCautionSettlement({
+        ...target,
+        actor: business,
+        deductions: [],
+        heldMinor: 0,
+        stepId: refund?.id ?? "",
       }),
-    ).rejects.toThrow(new DealTransitionError("cautionAmountRequired"));
+    ).rejects.toThrow(new DealTransitionError("cautionHeldRequired"));
   });
 
   test("given: an account before the settlement is sent, should: refuse it", async () => {
     const { steps, token } = await setupStay();
-    const refund = (await steps())[5];
+    const refund = (await steps())[REFUND_STEP];
 
     await giveAccount(token, refund?.id ?? "");
 
@@ -379,7 +362,7 @@ describe("caution fees", () => {
     test("given: a photo and a video, should: store them for the deal and attach them to the deduction", async () => {
       const { business, deal, organization, steps, target, token, user } =
         await setupStay();
-      const refund = (await steps())[5];
+      const refund = (await steps())[REFUND_STEP];
 
       const uploaded = await uploadEvidence({
         dealId: deal.id,
@@ -411,6 +394,7 @@ describe("caution fees", () => {
       await sendCautionSettlement({
         ...target,
         actor: business,
+        heldMinor: CAUTION,
         deductions: [
           {
             amountMinor: 1_500_000,
@@ -468,7 +452,7 @@ describe("caution fees", () => {
 
     test("given: a file that isn't a photo or video, should: refuse it", async () => {
       const { deal, organization, steps, user } = await setupStay();
-      const refund = (await steps())[5];
+      const refund = (await steps())[REFUND_STEP];
 
       const uploaded = await uploadEvidence({
         dealId: deal.id,
@@ -479,6 +463,79 @@ describe("caution fees", () => {
       });
 
       expect(uploaded.data).toEqual({ error: "evidenceFile", evidence: [] });
+    });
+  });
+
+  describe("caution emails", () => {
+    async function businessAct({
+      user,
+      organizationSlug,
+      dealId,
+      fields,
+    }: {
+      user: UserAccount;
+      organizationSlug: string;
+      dealId: string;
+      fields: Record<string, string>;
+    }) {
+      const params = { dealId, organizationSlug };
+      const pattern = "/organizations/:organizationSlug/deals/:dealId";
+      const request = await createAuthenticatedRequest({
+        formData: toFormData(fields),
+        method: "POST",
+        url: `http://localhost:3000/organizations/${organizationSlug}/deals/${dealId}`,
+        user,
+      });
+      return await dealAction({
+        context: await createOrganizationMembershipTestContextProvider({
+          params,
+          pattern,
+          request,
+        }),
+        params,
+        request,
+        unstable_pattern: pattern,
+      } as never);
+    }
+
+    test("given: a settlement and then the refund from the deal page, should: email the customer both times", async () => {
+      const { deal, organization, steps, token, user } = await setupStay();
+      const refund = (await steps())[REFUND_STEP];
+      const { email } = await prisma.customer.findUniqueOrThrow({
+        where: { id: deal.customerId },
+      });
+
+      await businessAct({
+        dealId: deal.id,
+        fields: {
+          deductions: JSON.stringify([
+            { amountMinor: 1_500_000, evidence: [], reason: "Broken lamp" },
+          ]),
+          heldMinor: String(CAUTION),
+          intent: SEND_CAUTION_SETTLEMENT_INTENT,
+          stepId: refund?.id ?? "",
+        },
+        organizationSlug: organization.slug,
+        user,
+      });
+      const settlementEmail = await readEmail(email);
+      expect(settlementEmail?.subject).toContain("where should");
+      expect(settlementEmail?.text).toContain("Broken lamp");
+
+      await giveAccount(token, refund?.id ?? "");
+      await businessAct({
+        dealId: deal.id,
+        fields: {
+          intent: MARK_CAUTION_REFUNDED_INTENT,
+          reference: "TRF-7781",
+          stepId: refund?.id ?? "",
+        },
+        organizationSlug: organization.slug,
+        user,
+      });
+      const refundEmail = await readEmail(email);
+      expect(refundEmail?.subject).toContain("sent your caution refund");
+      expect(refundEmail?.text).toContain("TRF-7781");
     });
   });
 });
