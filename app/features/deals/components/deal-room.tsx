@@ -29,9 +29,11 @@ import {
   MAX_MESSAGE_LENGTH,
   POST_MESSAGE_INTENT,
   PROPOSE_CHANGES_INTENT,
+  PURCHASE_ORDER_FILE_TYPES,
 } from "../deals-constants";
 import { DealStatusBadge, DocumentStatusBadge } from "./deal-badges";
 import { StepsProgress } from "./deal-detail";
+import { CautionRefundRoom } from "./deal-room-caution";
 import { DocumentTypeIcon } from "./document-type-icon";
 import { PaymentProviderLogo } from "./payment-provider-logo";
 import { Button } from "~/components/ui/button";
@@ -222,10 +224,15 @@ function AcceptForm({
   document,
   currency,
   defaultName,
+  organization,
+  requestsPurchaseOrder,
 }: {
   document: RoomDocument;
   currency: string;
   defaultName: string;
+  organization: string;
+  /** The step asks for the customer's purchase order with the acceptance. */
+  requestsPurchaseOrder: boolean;
 }) {
   const { t } = useTranslation("dealRoom", { keyPrefix: "accept" });
   const typeName = useTypeName();
@@ -237,10 +244,49 @@ function AcceptForm({
   const type = typeName(document.type).toLowerCase();
 
   return (
-    <fetcher.Form className="space-y-4" method="POST">
+    <fetcher.Form
+      className="space-y-4"
+      encType={requestsPurchaseOrder ? "multipart/form-data" : undefined}
+      method="POST"
+    >
       <HoneypotInputs />
       <input name="documentId" type="hidden" value={document.id} />
       <input name="versionId" type="hidden" value={document.current.id} />
+      {requestsPurchaseOrder ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor={`${id}-po`}>{t("poNumberLabel")}</Label>
+            <Input
+              aria-describedby={`${id}-po-hint`}
+              autoComplete="off"
+              id={`${id}-po`}
+              maxLength={80}
+              name="purchaseOrderNumber"
+              required
+            />
+            <p className="text-muted-foreground text-xs" id={`${id}-po-hint`}>
+              {t("poNumberHint", { organization })}
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`${id}-po-file`}>{t("poFileLabel")}</Label>
+            <Input
+              accept={PURCHASE_ORDER_FILE_TYPES.join(",")}
+              aria-describedby={`${id}-po-file-hint`}
+              className="file:mr-3 file:font-medium"
+              id={`${id}-po-file`}
+              name="purchaseOrderFile"
+              type="file"
+            />
+            <p
+              className="text-muted-foreground text-xs"
+              id={`${id}-po-file-hint`}
+            >
+              {t("poFileHint")}
+            </p>
+          </div>
+        </div>
+      ) : null}
       <div className="space-y-2">
         <Label htmlFor={`${id}-name`}>{t("nameLabel")}</Label>
         <Input
@@ -754,17 +800,24 @@ type AnswerTab = "accept" | "changes" | "decline";
 function AnswerPanel({
   document,
   room,
+  requestsPurchaseOrder,
+  negotiable,
 }: {
   document: RoomDocument;
   room: DealRoomView;
+  requestsPurchaseOrder: boolean;
+  /** The customer may suggest changes; otherwise they accept or decline. */
+  negotiable: boolean;
 }) {
   const { t } = useTranslation("dealRoom");
   const [tab, setTab] = useState<AnswerTab>("accept");
-  const tabs = [
-    ["accept", t("accept.tab")],
-    ["changes", t("changes.tab")],
-    ["decline", t("decline.tab")],
-  ] as const;
+  const tabs = (
+    [
+      ["accept", t("accept.tab")],
+      ["changes", t("changes.tab")],
+      ["decline", t("decline.tab")],
+    ] as const
+  ).filter(([value]) => negotiable || value !== "changes");
   return (
     <div className="space-y-4 rounded-xl border bg-muted/30 p-4">
       <div
@@ -794,6 +847,8 @@ function AnswerPanel({
           currency={room.currency}
           defaultName={room.customer.name}
           document={document}
+          organization={room.organization.name}
+          requestsPurchaseOrder={requestsPurchaseOrder}
         />
       ) : tab === "changes" ? (
         <ChangesForm
@@ -815,12 +870,15 @@ const PROVIDER_KEYS = {
 
 function PaymentStep({
   amountMinor,
+  caution = false,
   currency,
   organization,
   payment,
   token,
 }: {
   amountMinor: number;
+  /** A refundable caution rather than a payment for the deal. */
+  caution?: boolean;
   currency: string;
   organization: string;
   payment: RoomPayment;
@@ -849,12 +907,14 @@ function PaymentStep({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCardIcon aria-hidden="true" className="size-4" />
-          {t("current.paymentTitle")}
+          {caution ? t("refund.cautionTitle") : t("current.paymentTitle")}
         </CardTitle>
         <CardDescription>
-          {canPayOnline
-            ? t("payment.onlineDescription", { organization })
-            : t("current.paymentDescription", { organization })}
+          {caution
+            ? t("refund.cautionDescription", { organization })
+            : canPayOnline
+              ? t("payment.onlineDescription", { organization })
+              : t("current.paymentDescription", { organization })}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -949,14 +1009,25 @@ function CurrentStep({
       />
     );
   }
-  if (active.kind === "payment") {
+  if (active.kind === "payment" || active.kind === "caution") {
     return (
       <PaymentStep
         amountMinor={active.amountDueMinor ?? 0}
+        caution={active.kind === "caution"}
         currency={room.currency}
         organization={organization}
         payment={payment}
         token={token}
+      />
+    );
+  }
+  if (active.kind === "cautionRefund" && active.settlement) {
+    return (
+      <CautionRefundRoom
+        room={room}
+        settlement={active.settlement}
+        stepId={active.id}
+        stepName={active.name}
       />
     );
   }
@@ -1044,7 +1115,14 @@ function CurrentStep({
             </p>
           </div>
         ) : null}
-        {awaiting ? <AnswerPanel document={document} room={room} /> : null}
+        {awaiting ? (
+          <AnswerPanel
+            document={document}
+            negotiable={active.negotiable}
+            requestsPurchaseOrder={active.requestsPurchaseOrder}
+            room={room}
+          />
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -1232,6 +1310,10 @@ const TIMELINE_KEYS = {
   paymentRecorded: "timeline.paymentRecorded",
   proposalApproved: "timeline.proposalApproved",
   proposalRejected: "timeline.proposalRejected",
+  purchaseOrderReceived: "timeline.purchaseOrderReceived",
+  cautionSettlementSent: "timeline.cautionSettlementSent",
+  refundAccountGiven: "timeline.refundAccountGiven",
+  cautionRefunded: "timeline.cautionRefunded",
 } as const satisfies Record<DealRoomView["events"][number]["type"], string>;
 
 function Timeline({ room }: { room: DealRoomView }) {
@@ -1261,6 +1343,7 @@ function Timeline({ room }: { room: DealRoomView }) {
                   document: event.document
                     ? `${typeName(event.document.type)} ${event.document.number ?? ""}`.trim()
                     : "",
+                  number: String(event.payload.number ?? ""),
                   organization: room.organization.name,
                 })}
               </p>
@@ -1349,6 +1432,24 @@ export function DealRoom({
               room={room}
               token={token}
             />
+            {room.steps
+              .filter(
+                (step) =>
+                  step.kind === "cautionRefund" &&
+                  step.status === "done" &&
+                  step.settlement,
+              )
+              .map((step) =>
+                step.settlement ? (
+                  <CautionRefundRoom
+                    key={step.id}
+                    room={room}
+                    settlement={step.settlement}
+                    stepId={step.id}
+                    stepName={step.name}
+                  />
+                ) : null,
+              )}
             <Documents links={links} onPreview={setPreviewId} room={room} />
           </div>
           <div className="flex min-w-0 flex-col gap-6">

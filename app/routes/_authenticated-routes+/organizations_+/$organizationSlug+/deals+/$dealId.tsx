@@ -3,6 +3,8 @@ import { data, href } from "react-router";
 import type { Route } from "./+types/$dealId";
 import type { DealView } from "~/features/deals/components/deal-detail";
 import { DealDetail } from "~/features/deals/components/deal-detail";
+import { findCautionLinesMinor } from "~/features/deals/deal-caution";
+import { toCautionDeductionViews } from "~/features/deals/deal-caution.server";
 import { parseDealItems } from "~/features/deals/deal-items";
 import { createDealShareUrl } from "~/features/deals/deal-share-link.server";
 import { dealDetailAction } from "~/features/deals/deals-action.server";
@@ -92,6 +94,22 @@ export async function loader({ params, context }: Route.LoaderArgs) {
       return {
         amountDueMinor: step.amountDueMinor,
         amountPaidMinor: step.amountPaidMinor,
+        settlement: step.cautionSettlement
+          ? {
+              accountGivenAt: step.cautionSettlement.accountGivenAt,
+              accountName: step.cautionSettlement.accountName,
+              accountNumber: step.cautionSettlement.accountNumber,
+              bankName: step.cautionSettlement.bankName,
+              deductions: toCautionDeductionViews(
+                step.cautionSettlement.deductions,
+              ),
+              heldMinor: step.cautionSettlement.heldMinor,
+              refundMinor: step.cautionSettlement.refundMinor,
+              refundReference: step.cautionSettlement.refundReference,
+              refundedAt: step.cautionSettlement.refundedAt,
+              sentAt: step.cautionSettlement.sentAt,
+            }
+          : null,
         document:
           document && current
             ? {
@@ -136,11 +154,37 @@ export async function loader({ params, context }: Route.LoaderArgs) {
         paymentMethod: step.paymentMethod,
         paymentReference: step.paymentReference,
         payments: step.payments,
+        requestsPurchaseOrder: step.requestsPurchaseOrder,
         requiresAcceptance: step.requiresAcceptance,
         status: step.status,
         validityDays: step.validityDays,
       };
     }),
+    purchaseOrder: deal.purchaseOrderNumber
+      ? {
+          downloadUrl: href(
+            "/organizations/:organizationSlug/deals/:dealId/purchase-order",
+            { dealId: deal.id, organizationSlug: params.organizationSlug },
+          ),
+          fileName: deal.purchaseOrderFileId ? deal.purchaseOrderFileName : "",
+          number: deal.purchaseOrderNumber,
+          receivedAt: deal.purchaseOrderReceivedAt,
+        }
+      : null,
+    cautionSettleAfter: deal.cautionSettleAfter,
+    cautionSuggestionMinor: findCautionLinesMinor(
+      deal.steps.flatMap((step) => {
+        const document = step.document;
+        const version =
+          document?.versions.find(
+            (candidate) => candidate.id === document.acceptedVersionId,
+          ) ??
+          document?.versions.find((candidate) => candidate.state === "current");
+        return version && step.kind === "document"
+          ? [parseDealItems(version.items)]
+          : [];
+      }),
+    ),
     shareUrl: createDealShareUrl(deal),
     title: deal.title,
     workflowName: deal.workflowName,

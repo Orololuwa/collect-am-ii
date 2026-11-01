@@ -67,6 +67,7 @@ function renderInvoiceSectionToHTML(
               <h2 class="invoice-title">INVOICE</h2>
               <div class="invoice-details">
                 ${section.data.invoiceNumber ? `<div><span class="invoice-label">Invoice #:</span> ${escapeHtml(String(section.data.invoiceNumber))}</div>` : ""}
+                ${section.data.customerPoNumber ? `<div><span class="invoice-label">Your PO #:</span> ${escapeHtml(String(section.data.customerPoNumber))}</div>` : ""}
                 ${section.data.invoiceDate ? `<div><span class="invoice-label">Date:</span> ${escapeHtml(String(section.data.invoiceDate))}</div>` : ""}
                 ${section.data.dueDate ? `<div><span class="invoice-label">Due Date:</span> ${escapeHtml(String(section.data.dueDate))}</div>` : ""}
               </div>

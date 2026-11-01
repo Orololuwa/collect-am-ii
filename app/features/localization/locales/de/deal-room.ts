@@ -48,6 +48,13 @@ export default {
     },
   },
   accept: {
+    poFileHint: "PDF oder Bild, bis 5 MB. Optional.",
+    poFileLabel: "Deine Bestellung als Datei",
+    poFileTooLarge: "Die Datei darf höchstens 5 MB groß sein.",
+    poFileType: "Hänge eine PDF-, PNG- oder JPG-Datei an.",
+    poNumberHint: "{{organization}} setzt sie auf die folgenden Dokumente.",
+    poNumberLabel: "Deine Bestellnummer",
+    poNumberRequired: "Gib deine Bestellnummer ein.",
     tab: "Annehmen",
     nameLabel: "Dein vollständiger Name",
     nameRequired: "Gib deinen vollständigen Namen ein, um anzunehmen.",
@@ -121,6 +128,11 @@ export default {
     you: "Du",
   },
   timeline: {
+    cautionSettlementSent:
+      "{{organization}} hat deine Kautionsabrechnung gesendet",
+    refundAccountGiven: "Du hast dein Erstattungskonto angegeben",
+    cautionRefunded: "{{organization}} hat deine Kautionsrückzahlung gesendet",
+    purchaseOrderReceived: "Du hast die Bestellung {{number}} geschickt",
     title: "Verlauf",
     documentSent: "{{document}} an dich gesendet",
     documentAccepted: "Du hast {{document}} angenommen",
@@ -133,13 +145,52 @@ export default {
       "{{organization}} hat deine Zahlung über {{amount}} erhalten",
     dealWon: "Alle Schritte erledigt",
   },
+  refund: {
+    heldTitleNoAmount: "Deine Kaution wird einbehalten",
+    evidenceFor: "Fotos und Videos zu {{reason}}",
+    accountGiven:
+      "Danke. {{organization}} überweist deine Erstattung an {{account}}. Du bekommst eine E-Mail, sobald sie unterwegs ist.",
+    accountNameLabel: "Kontoinhaber",
+    accountNameRequired: "Gib den Namen auf dem Konto ein.",
+    accountNumberInvalid: "Gib die Kontonummer ein, nur Ziffern.",
+    accountNumberLabel: "Kontonummer",
+    accountPrivacy:
+      "Nur {{organization}} sieht diese Angaben, um dir die Erstattung zu senden. Diese Seite zeigt immer nur die letzten vier Ziffern.",
+    askAccount:
+      "{{organization}} erstattet {{amount}}. Sag ihnen, auf welches Konto.",
+    bankLabel: "Bank",
+    bankPlaceholder: "z. B. Sparkasse",
+    bankRequired: "Gib den Namen deiner Bank ein.",
+    cautionDescription:
+      "Erstattbar. {{organization}} behält sie ein und erstattet sie nach deiner Buchung, abzüglich begründeter Einbehalte.",
+    cautionTitle: "Kaution (erstattbar)",
+    changeAccount: "Anderes Konto verwenden",
+    held: "Gezahlte Kaution",
+    heldDescription:
+      "{{organization}} behält sie ein und rechnet sie nach deiner Buchung ab.",
+    heldTitle: "Deine Kaution von {{amount}} wird einbehalten",
+    heldUntil:
+      "{{organization}} behält sie ein und rechnet sie nach dem {{date}} ab. Du bekommst dann eine E-Mail.",
+    keptFor: "Einbehalten für {{reason}}",
+    reference: "Überweisungsreferenz: {{reference}}",
+    refunded: "Erstattet",
+    refundedDescription: "Am {{date}} an {{account}} gesendet.",
+    refundedTitle: "Deine Kautionsrückzahlung von {{amount}} wurde gesendet",
+    settledDescription: "Am {{date}} abgerechnet.",
+    submit: "Kontodaten senden",
+    toRefund: "Zu erstatten",
+  },
   toasts: {
+    accountSaved: "Danke. Dein Erstattungskonto wurde gesendet",
     accepted: "Angenommen. Vielen Dank!",
     declined: "Deine Antwort wurde gesendet",
     changesSent: "Dein Vorschlag wurde gesendet",
     messageSent: "Nachricht gesendet",
   },
   errors: {
+    changesNotAllowed:
+      "Dieses Dokument kann nicht geändert werden. Nimm es an oder lehne es ab.",
+    purchaseOrderRequired: "Gib deine Bestellnummer ein.",
     generic:
       "Etwas ist schiefgelaufen. Lade die Seite neu und versuche es erneut.",
     dealClosed: "Dieser Deal ist geschlossen.",

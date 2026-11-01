@@ -118,6 +118,8 @@ export async function retrieveUserAccountWithMembershipsFromDatabaseById(
                 take: 1,
               },
               trialEnd: true,
+              workflowView: true,
+              workflowViewSwitchable: true,
             },
           },
           role: true,

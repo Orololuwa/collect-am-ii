@@ -1,7 +1,15 @@
 import { report } from "@conform-to/react/future";
+import { createId } from "@paralleldrive/cuid2";
 import type { RouterContextProvider } from "react-router";
 import { data, href } from "react-router";
 
+import {
+  cautionEvidenceFolder,
+  EVIDENCE_IMAGE_TYPES,
+  EVIDENCE_VIDEO_TYPES,
+  MAX_EVIDENCE_IMAGE_SIZE,
+  MAX_EVIDENCE_VIDEO_SIZE,
+} from "./deal-caution";
 import { deliverDealEffects } from "./deal-emails.server";
 import type { Actor, DealEffects } from "./deal-engine.server";
 import {
@@ -10,12 +18,14 @@ import {
   closeDeal,
   DealTransitionError,
   declineDealDocument,
+  markCautionRefunded,
   postDealMessage,
   recordDealPayment,
   rejectDealProposal,
   resendDealDocument,
   resetDealShareLink,
   reviseDealDocument,
+  sendCautionSettlement,
   sendDealDocument,
   startDeal,
 } from "./deal-engine.server";
@@ -26,31 +36,38 @@ import {
   CLOSE_DEAL_INTENT,
   DECLINE_DOCUMENT_INTENT,
   ERROR_KEYS,
+  MARK_CAUTION_REFUNDED_INTENT,
   POST_MESSAGE_INTENT,
   RECORD_PAYMENT_INTENT,
   REJECT_PROPOSAL_INTENT,
   RESEND_DOCUMENT_INTENT,
   RESET_SHARE_LINK_INTENT,
   REVISE_DOCUMENT_INTENT,
+  SEND_CAUTION_SETTLEMENT_INTENT,
   SEND_DOCUMENT_INTENT,
+  UPLOAD_CAUTION_EVIDENCE_INTENT,
 } from "./deals-constants";
 import {
   acceptDocumentFormSchema,
+  cautionSettlementFormSchema,
   closeDealFormSchema,
   declineDocumentFormSchema,
   documentIdFormSchema,
+  markCautionRefundedFormSchema,
   postMessageFormSchema,
   proposalFormSchema,
   recordPaymentFormSchema,
   resetShareLinkFormSchema,
   reviseDocumentFormSchema,
   startDealFormSchema,
+  uploadCautionEvidenceFormSchema,
 } from "./deals-schemas";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
 import { organizationMembershipContext } from "~/features/organizations/organizations-middleware.server";
 import { combineHeaders } from "~/utils/combine-headers.server";
 import { prisma } from "~/utils/database.server";
 import { badRequest, conflict } from "~/utils/http-responses.server";
+import { getEvidenceUrl, uploadEvidenceFile } from "~/utils/storage.server";
 import { createToastHeaders, redirectWithToast } from "~/utils/toast.server";
 import { validateFormData } from "~/utils/validate-form-data.server";
 
@@ -93,7 +110,8 @@ async function sendEmails(
   effects: DealEffects,
   replyTo: string,
 ) {
-  if (effects.emails.length === 0) {
+  // Caution notices go by email too, with no document attached.
+  if (effects.emails.length === 0 && effects.notices.length === 0) {
     return 0;
   }
   return await deliverDealEffects(effects, {
@@ -123,6 +141,9 @@ export async function startDealAction({
       actor: { party: "business", userId: user.id },
       currency: result.data.currency,
       customerId: result.data.customerId,
+      cautionSettleAfter: result.data.cautionSettleAfter
+        ? new Date(`${result.data.cautionSettleAfter}T12:00:00Z`)
+        : null,
       items: await keepOwnProductIds(organization.id, result.data.items),
       organizationId: organization.id,
       title: result.data.title,
@@ -174,9 +195,85 @@ const SUCCESS_KEYS = {
   [RESEND_DOCUMENT_INTENT]: "toasts.resent",
   [REVISE_DOCUMENT_INTENT]: "toasts.revised",
   [SEND_DOCUMENT_INTENT]: "toasts.sent",
+  [SEND_CAUTION_SETTLEMENT_INTENT]: "toasts.settlementSent",
+  [MARK_CAUTION_REFUNDED_INTENT]: "toasts.refundMarked",
 } as const;
 
 type DetailIntent = keyof typeof SUCCESS_KEYS;
+
+/**
+ * Stores photos or videos backing up a caution deduction and hands back their
+ * ids and links. They're attached when the settlement is sent.
+ */
+async function uploadCautionEvidence({
+  request,
+  dealId,
+  target,
+  headers,
+}: {
+  request: Request;
+  dealId: string;
+  target: { organizationId: string };
+  headers: Headers;
+}) {
+  const result = await validateFormData(
+    request,
+    uploadCautionEvidenceFormSchema,
+    { maxFileSize: MAX_EVIDENCE_VIDEO_SIZE },
+  );
+  if (!result.success) return result.response;
+  const step = await prisma.dealStep.findFirst({
+    select: { cautionSettlement: { select: { sentAt: true } }, id: true },
+    where: {
+      deal: { id: dealId, organizationId: target.organizationId },
+      id: result.data.stepId,
+      kind: "cautionRefund",
+      status: "active",
+    },
+  });
+  if (!step || step.cautionSettlement?.sentAt) {
+    return data(
+      { error: "notCautionRefundStep", evidence: [] },
+      { headers, status: 400 },
+    );
+  }
+  const files = result.data.files.map((file) => {
+    const kind = (EVIDENCE_IMAGE_TYPES as readonly string[]).includes(file.type)
+      ? ("image" as const)
+      : (EVIDENCE_VIDEO_TYPES as readonly string[]).includes(file.type)
+        ? ("video" as const)
+        : null;
+    const tooBig =
+      kind === "image"
+        ? file.size > MAX_EVIDENCE_IMAGE_SIZE
+        : file.size > MAX_EVIDENCE_VIDEO_SIZE;
+    return { file, kind, ok: kind !== null && !tooBig };
+  });
+  if (files.some((entry) => !entry.ok)) {
+    return data(
+      { error: "evidenceFile", evidence: [] },
+      { headers, status: 400 },
+    );
+  }
+  const evidence = await Promise.all(
+    files.map(async ({ file, kind }) => {
+      const media = kind ?? "image";
+      const id = await uploadEvidenceFile({
+        file,
+        folder: cautionEvidenceFolder(target.organizationId, dealId),
+        kind: media,
+        publicId: `${step.id}-${createId()}`,
+      });
+      return {
+        id,
+        kind: media,
+        name: file.name.slice(0, 200),
+        url: getEvidenceUrl(id, media),
+      };
+    }),
+  );
+  return data({ error: null, evidence }, { headers });
+}
 
 /** Runs one of the deal page's actions and reports back with a toast. */
 export async function dealDetailAction(
@@ -192,6 +289,10 @@ export async function dealDetailAction(
   const intent = String(
     (await request.clone().formData()).get("intent"),
   ) as DetailIntent;
+
+  if (String(intent) === UPLOAD_CAUTION_EVIDENCE_INTENT) {
+    return await uploadCautionEvidence({ dealId, headers, request, target });
+  }
 
   async function run() {
     switch (intent) {
@@ -239,6 +340,13 @@ export async function dealDetailAction(
             acceptedByName: result.data.acceptedByName,
             actor,
             documentId: result.data.documentId,
+            purchaseOrder: result.data.purchaseOrderNumber
+              ? {
+                  fileId: null,
+                  fileName: "",
+                  number: result.data.purchaseOrderNumber,
+                }
+              : undefined,
           })
         ).effects;
       }
@@ -275,6 +383,37 @@ export async function dealDetailAction(
         if (!result.success) return { invalid: result.response };
         return (
           await postDealMessage({ ...target, actor, body: result.data.body })
+        ).effects;
+      }
+      case SEND_CAUTION_SETTLEMENT_INTENT: {
+        const result = await validateFormData(
+          request,
+          cautionSettlementFormSchema,
+        );
+        if (!result.success) return { invalid: result.response };
+        return (
+          await sendCautionSettlement({
+            ...target,
+            actor,
+            deductions: result.data.deductions,
+            heldMinor: result.data.heldMinor,
+            stepId: result.data.stepId,
+          })
+        ).effects;
+      }
+      case MARK_CAUTION_REFUNDED_INTENT: {
+        const result = await validateFormData(
+          request,
+          markCautionRefundedFormSchema,
+        );
+        if (!result.success) return { invalid: result.response };
+        return (
+          await markCautionRefunded({
+            ...target,
+            actor,
+            reference: result.data.reference,
+            stepId: result.data.stepId,
+          })
         ).effects;
       }
       case APPROVE_PROPOSAL_INTENT:

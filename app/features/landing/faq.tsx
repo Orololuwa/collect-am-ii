@@ -20,11 +20,9 @@ export function FAQ() {
   const items = t("items", { returnObjects: true }) as FAQItem[];
 
   return (
-    <section className="px-4 py-24">
-      <div className="mx-auto max-w-4xl">
-        <h2 className="text-primary mb-10 text-3xl font-semibold">
-          {t("title")}
-        </h2>
+    <section className="px-4 py-16 sm:py-24">
+      <div className="container mx-auto grid max-w-5xl gap-10 lg:grid-cols-[1fr_2fr]">
+        <h2 className="text-3xl font-semibold tracking-tight">{t("title")}</h2>
 
         <Accordion collapsible type="single">
           {items.map((item, index) => (

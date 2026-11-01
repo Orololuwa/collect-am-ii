@@ -1,22 +1,26 @@
 import { CTA } from "./cta";
-import { Description } from "./description";
+import { DealRoomSection } from "./deal-room-section";
 import { FAQ } from "./faq";
 import { Features } from "./features";
 import { Footer } from "./footer";
 import { Header } from "./header";
 import { Hero } from "./hero";
+import { HowItWorks } from "./how-it-works";
+import { Trades } from "./trades";
 
 export default function LandingPage() {
   return (
     <div className="overflow-hidden">
       <Header />
 
-      <main className="container mx-auto">
+      <main>
         <Hero />
-        <Description />
+        <Trades />
+        <HowItWorks />
+        <DealRoomSection />
         <Features />
-        <CTA />
         <FAQ />
+        <CTA />
       </main>
 
       <Footer />

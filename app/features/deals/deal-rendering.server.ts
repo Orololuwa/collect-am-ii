@@ -96,6 +96,7 @@ export async function renderDealDocument({
                   }
                 : undefined,
             paymentTermsDays: step.paymentTermsDays,
+            purchaseOrderNumber: deal.purchaseOrderNumber,
             totals: calculateDealTotals(items),
             type,
           },

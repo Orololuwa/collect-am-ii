@@ -63,7 +63,9 @@ export async function loader({ params, request, context }: Route.LoaderArgs) {
 
   const view = toDealRoomView(room);
   const paymentStep = view.steps.find(
-    (step) => step.status === "active" && step.kind === "payment",
+    (step) =>
+      step.status === "active" &&
+      (step.kind === "payment" || step.kind === "caution"),
   );
   return data(
     {

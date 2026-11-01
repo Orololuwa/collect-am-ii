@@ -1,175 +1,238 @@
 export default {
   cta: {
     buttons: {
-      primary: "Jetzt starten",
-      secondary: "Dokumentation",
+      primary: "Kostenlos starten",
+      secondary: "Preise ansehen",
     },
     description:
-      "Erstelle deinen ersten Lebenslauf oder deine erste Rechnung in Minuten. Keine Kreditkarte erforderlich.",
-    title: "Beginne noch heute mit dem Erstellen von Dokumenten",
+      "Richte deinen ersten Workflow in wenigen Minuten ein. Ohne Kreditkarte, und deine Kunden brauchen nie ein Konto.",
+    title: "Dein nächster Deal kann von selbst laufen",
   },
-  description: {
-    eyebrow: "Warum unseren Dokumenten-Builder wählen?",
-    features: [
-      {
-        description:
-          "Intuitive Benutzeroberfläche ermöglicht es dir, Dokumente ohne Programmierung zu erstellen. Ziehe Abschnitte, passe Stile an und sieh Änderungen in Echtzeit.",
-        title: "Visueller Drag-and-Drop-Builder",
+  dealRoom: {
+    description:
+      "Jeder Deal bekommt einen privaten Link. Dein Kunde öffnet ihn auf jedem Handy oder Laptop und erledigt seinen Teil, ohne sich zu registrieren.",
+    eyebrow: "Der Deal-Raum",
+    mock: {
+      accept: "Angebot annehmen",
+      business: "Eko Hall",
+      document: "Angebot QT-0042",
+      lines: {
+        caution: "Kaution (erstattbar)",
+        chairs: "Chiavari-Stühle × 200",
+        hall: "Großer Saal, ganzer Tag",
       },
-      {
-        description:
-          "Aktuell unterstützt: Lebensläufe und Rechnungen. Kommt bald: Angebote, Vorschläge, Verträge und weitere Geschäftsdokumenttypen.",
-        title: "Mehrere Dokumenttypen",
-      },
-      {
-        description:
-          "Generiere hochwertige PDFs mit serverseitigem Rendering. Perfekt zum Drucken, Teilen oder Einbetten in deine Anwendungen.",
-        title: "Professioneller PDF-Export",
-      },
-      {
-        description:
-          "Sende generierte Dokumente direkt per E-Mail mit PDF-Anhängen. Passe E-Mail-Betreff und -Text an und sende professionelle Dokumente sofort an Kunden, Kunden oder Teammitglieder.",
-        title: "E-Mail-Integration",
-      },
-    ],
-    image: {
-      dark: "Produkt-Screenshot (dunkel)",
-      light: "Produkt-Screenshot (hell)",
+      purchaseOrder: "Bestellnummer",
+      purchaseOrderPlaceholder: "PO-7781",
+      suggest: "Änderungen vorschlagen",
+      total: "Gesamt",
+      validUntil: "Gültig bis 30. November",
     },
-    subtitle:
-      "Erstelle Lebensläufe, Rechnungen und Geschäftsdokumente mit unserem intuitiven visuellen Builder. Keine Designkenntnisse erforderlich—ziehen, ablegen und exportieren.",
-    title: "Erstelle professionelle Dokumente in Minuten",
+    points: {
+      accept: {
+        description: "Ein Tipp genügt, mit seinem Namen im Verlauf.",
+        title: "Angebote annehmen",
+      },
+      negotiate: {
+        description:
+          "Bei Schritten, die du erlaubst, kann er andere Mengen oder Preise vorschlagen, die du bestätigst.",
+        title: "Verhandeln",
+      },
+      pay: {
+        description:
+          "Per Karte oder Überweisung über Paystack oder Stripe. Der Deal geht weiter, sobald das Geld da ist.",
+        title: "Online bezahlen",
+      },
+      purchaseOrder: {
+        description:
+          "Geschäftskunden geben beim Annehmen ihre Bestellnummer und Datei mit.",
+        title: "Bestellungen senden",
+      },
+    },
+    title: "Dein Kunde bekommt einen Link, kein Login",
   },
   faq: {
     items: [
       {
         answer:
-          "Aktuell unterstützen wir Lebensläufe und Rechnungen. Kommt bald: Zertifikate, Zeugnisse, Angebote, Vorschläge, Verträge, Bestellungen, Quittungen, Kostenvoranschläge, Kontoauszüge, Briefe, Formulare und Etiketten.",
-        question: "Welche Dokumenttypen werden unterstützt?",
+          "Nein. Jeder Deal hat einen eigenen privaten Link. Dein Kunde öffnet ihn, um Dokumente zu lesen, anzunehmen, zu verhandeln, zu bezahlen und Belege herunterzuladen, ganz ohne Konto oder Passwort.",
+        question: "Brauchen meine Kunden ein Konto?",
       },
       {
         answer:
-          "Aktuell unterstützen wir PDF-Export. Kommt bald: DOCX (Word-Dokumente), HTML (web-freundlich) und PNG/JPG (Bildformate) Export-Optionen.",
-        question: "Kann ich in andere Formate als PDF exportieren?",
+          "Verbinde Paystack oder Stripe, dann können Kunden im Deal-Raum per Karte oder Überweisung zahlen. Du kannst auch Bargeld oder Überweisungen erfassen, die du selbst erhalten hast, und der Deal geht genauso weiter.",
+        question: "Wie bezahlen Kunden?",
       },
       {
         answer:
-          "Ja! Du kannst generierte Dokumente direkt per E-Mail mit PDF-Anhängen senden. Passe einfach den E-Mail-Betreff und -Text an und sende professionelle Dokumente sofort an Empfänger. Das PDF wird automatisch generiert und an deine E-Mail angehängt.",
-        question: "Kann ich Dokumente per E-Mail senden?",
+          "Wähle einen fertigen Workflow für deine Branche und passe ihn an, oder baue deinen eigenen aus Dokumenten, Zahlungen, Belegen und Kautionserstattungen. Bearbeite ihn als Liste oder auf einer Arbeitsfläche.",
+        question: "Was ist ein Workflow?",
       },
       {
         answer:
-          "Die Plattform ist mit API-ready Architektur gebaut. REST-API-Endpunkte für Vorlagenverwaltung, Dokumentenerstellung und Bulk-Operationen kommen bald für Entwickler und B2B-Integrationen.",
-        question: "Gibt es eine API?",
+          "Füge die Kaution als Position zu deinem Angebot oder deiner Rechnung hinzu. Nach der Buchung listest du auf, was du einbehältst, mit Fotos oder Videos als Nachweis. Dein Kunde gibt das Konto für die Erstattung an, du überweist, und er bekommt in jedem Fall eine E-Mail.",
+        question: "Wie funktionieren Kautionen?",
+      },
+      {
+        answer:
+          "Ja. Lade Teammitglieder als Inhaber, Admins oder Mitglieder ein. Alle in der Organisation sehen dieselben Deals, Kunden und Produkte.",
+        question: "Kann mein Team gemeinsam an Deals arbeiten?",
+      },
+      {
+        answer:
+          "Deals lassen sich in 30 Währungen abrechnen, darunter Naira, Cedi, Schilling, Rand, Dollar, Pfund und Euro. Jedes Produkt hat einen eigenen Preis pro Währung.",
+        question: "In welchen Währungen kann ich abrechnen?",
       },
     ],
-    title: "Häufig gestellte Fragen",
+    title: "Fragen und Antworten",
   },
   features: {
-    cards: [
-      {
+    eyebrow: "Alles rund um den Deal",
+    items: {
+      caution: {
         description:
-          "Volle Kontrolle über Inhalt und Struktur deines Dokuments. Bearbeite Texte direkt auf der Live-Leinwand für schnelle Anpassungen oder nutze den dedizierten Content-Editor für detaillierte Änderungen – inklusive intuitivem Drag-and-Drop für die Abschnittsreihenfolge.",
-        eyebrow: "Nahtloses Bearbeiten",
-        image: {
-          dark: "Mobil-Screenshot (dunkel)",
-          light: "Mobil-Screenshot (hell)",
-        },
-        title: "Interaktive Leinwand & Strukturierter Editor",
+          "Halte eine erstattbare Kaution, ziehe Schäden mit Foto- und Videonachweis ab und erstatte auf das Konto, das dein Kunde angibt.",
+        title: "Kautionen und Erstattungen",
       },
-      {
+      currencies: {
         description:
-          "Sieh deine Änderungen in Echtzeit. Vorschau genau so, wie dein Dokument aussehen wird, bevor du exportierst.",
-        image: {
-          dark: "Echtzeit-Vorschau (dunkel)",
-          light: "Echtzeit-Vorschau (hell)",
-        },
-        title: "Echtzeit-Vorschau",
+          "Rechne in Naira, Dollar, Pfund und 27 weiteren Währungen ab, mit Preisen pro Währung.",
+        title: "30 Währungen",
       },
-      {
+      dashboard: {
         description:
-          "Sende generierte Dokumente direkt per E-Mail mit PDF-Anhang. Passe Betreff und Nachricht an und liefere professionelle Dokumente sofort an Empfänger.",
-        eyebrow: "E-Mail-Integration",
-        title: "Dokumente per E-Mail senden",
+          "Angebote, die auf Kunden warten, fällige Zahlungen und offene Kautionen, alles auf einen Blick.",
+        title: "Ein Dashboard, das dir sagt, was ansteht",
       },
-      {
+      emails: {
         description:
-          "Erzeuge professionelle PDFs mit serverseitigem Rendering. Hochwertige Ausgabe – ideal zum Drucken, Versenden per E-Mail oder Einbetten in deine Anwendungen.",
-        eyebrow: "Export",
-        image: {
-          dark: "Authentifizierung (dunkel)",
-          light: "Authentifizierung (hell)",
-        },
-        title: "Professioneller PDF-Export",
+          "Dokumente, Belege und Updates gehen in deinem Namen raus, und Antworten landen in deinem Postfach.",
+        title: "E-Mails, die sich selbst senden",
       },
-      {
+      products: {
         description:
-          "Erstelle heute Lebensläufe und Rechnungen. Kommt bald: Angebote, Vorschläge, Verträge, Bestellungen, Quittungen und weitere Geschäftsdokumenttypen.",
-        eyebrow: "Dokumenttypen",
-        image: {
-          dark: "Abrechnung (dunkel)",
-          light: "Abrechnung (hell)",
-        },
-        title: "Mehrere Dokumenttypen",
+          "Speichere einmal, was du verkaufst, und füge es mit einem Klick zu jedem Deal hinzu, oder tippe eine eigene Position.",
+        title: "Produktkatalog",
       },
-      {
+      team: {
         description:
-          "Gebaut mit API-ready Architektur für nahtlose Integrationen. REST-API kommt bald für Entwickler und B2B-Kunden.",
-        eyebrow: "API-Integration",
-        title: "Entwicklerfreundlich",
+          "Lade Teammitglieder als Inhaber, Admins oder Mitglieder ein, jeweils mit den passenden Rechten.",
+        title: "Für Teams gemacht",
       },
-      {
+      templates: {
         description:
-          "Von Anfang an für Multi-Tenant-Teams gebaut. Erstelle Organisationen, halte Daten pro Workspace getrennt und steuere Zugriffe per Rollen – damit jeder Kunde sauber isoliert bleibt.",
-        eyebrow: "Multi-Tenancy",
-        image: {
-          dark: "Multi-Tenancy (dunkel)",
-          light: "Multi-Tenancy (hell)",
-        },
-        title: "Organisations-Workspaces",
+          "Dein Logo, deine Farben und Bedingungen auf jedem Angebot, jeder Rechnung und jedem Beleg, mit PDF zum Herunterladen.",
+        title: "Dokumente im eigenen Look",
       },
-      {
+      timeline: {
         description:
-          "Lade Teammitglieder per Link oder E-Mail ein, weise Rollen zu (Owner, Admin, Member) und arbeite mit dem passenden Zugriffsniveau zusammen, während dein Team wächst.",
-        eyebrow: "Teamverwaltung",
-        image: {
-          dark: "Teamverwaltung (dunkel)",
-          light: "Teamverwaltung (hell)",
-        },
-        title: "Teammitglieder einladen & verwalten",
+          "Jeder Aufruf, jede Annahme, Zahlung und Änderung wird festgehalten, damit du immer weißt, wo ein Deal steht.",
+        title: "Der ganze Verlauf",
       },
-    ],
-    eyebrow: "Features",
-    title: "Alles, was du zum Erstellen von Dokumenten brauchst",
+    },
+    title: "Um den Rest ist schon gesorgt",
   },
   footer: {
-    madeWithLove: "Gemacht mit ❤️ von",
+    nav: "Fußzeile",
+    copyright: "© {{year}} CollectAm. Alle Rechte vorbehalten.",
+    links: {
+      documentation: "Dokumentation",
+      pricing: "Preise",
+      privacy: "Datenschutz",
+      terms: "AGB",
+    },
     social: {
       github: "Github",
       linkedin: "LinkedIn",
-      twitter: "X ehemals bekannt als Twitter",
+      twitter: "X, ehemals Twitter",
     },
+    tagline:
+      "Angebote, Rechnungen, Zahlungen und Belege, die von selbst laufen.",
   },
   header: {
+    mainNav: "Hauptnavigation",
     login: "Anmelden",
     navLinks: {
+      documentation: "Doku",
+      features: "Funktionen",
+      howItWorks: "So funktioniert's",
       pricing: "Preise",
-      documentation: "Dokumentation",
     },
-    register: "Registrieren",
+    openMenu: "Navigationsmenü öffnen",
+    register: "Loslegen",
   },
   hero: {
-    badge: "Visuelle Dokumentenerstellungsplattform",
+    badge: "Workflows, Deal-Räume und Online-Zahlungen",
     cta: {
-      primary: "Jetzt starten",
-      secondary: "Dokumentation",
+      primary: "Kostenlos starten",
+      secondary: "So funktioniert's",
     },
     description:
-      "Erstelle Lebensläufe, Rechnungen und mehr mit unserem visuellen Builder. Exportiere als PDF, sende per E-Mail, passe mit über 120 Styling-Optionen an und integriere über API.",
-    image: {
-      dark: "App-Screenshot (dunkel)",
-      light: "App-Screenshot (hell)",
+      "CollectAm führt jeden Verkauf durch deinen eigenen Workflow. Angebote, Rechnungen, Zahlungen und Belege gehen von selbst raus, und dein Kunde nimmt an, verhandelt und bezahlt über einen Link.",
+    mock: {
+      amountDue: "{{amount}} fällig",
+      customer: "Adaeze Okafor",
+      dealTitle: "Saalbuchung, 14. Dezember",
+      open: "Offen",
+      payNow: "{{amount}} bezahlen",
+      paymentMethods: "Karte oder Überweisung",
+      shareLink: "Deal-Link an Adaeze gesendet",
+      roomBusiness: "Eko Hall",
+      roomLabel: "Fälliger Betrag",
+      steps: {
+        invoice: "Buchungsrechnung",
+        payment: "Zahlung",
+        quote: "Angebot",
+        receipt: "Beleg",
+        refund: "Kautionserstattung",
+      },
+      states: {
+        accepted: "Angenommen",
+        afterEvent: "Nach der Veranstaltung",
+        automatic: "Wird automatisch gesendet",
+        sent: "Gesendet",
+      },
+      toast: "Adaeze hat das Angebot angenommen",
+      toastTime: "Gerade eben",
+      workflow: "Buchung Eventlocation",
     },
-    title: "Erstelle professionelle Dokumente per Drag & Drop",
+    note: "Kostenlos starten. Ohne Kreditkarte.",
+    title: "Vom Angebot zur Zahlung, <1>ohne Hinterherlaufen</1>",
   },
-} satisfies typeof import("../en/landing").default;
+  howItWorks: {
+    eyebrow: "So funktioniert's",
+    steps: {
+      deal: {
+        description:
+          "Wähle den Kunden, füge Produkte oder eigene Positionen hinzu, und das erste Dokument ist bereit zum Prüfen und Senden.",
+        title: "Deal starten",
+      },
+      run: {
+        description:
+          "Sobald dein Kunde annimmt und bezahlt, geht das nächste Dokument von selbst raus. Du greifst nur ein, wenn du gebraucht wirst.",
+        title: "Laufen lassen",
+      },
+      workflow: {
+        description:
+          "Wähle einen fertigen Workflow für deine Branche oder baue deinen eigenen, als Liste oder auf einer Arbeitsfläche.",
+        title: "Abbilden, wie du verkaufst",
+      },
+    },
+    title: "Einmal einrichten. Jeder Deal folgt.",
+  },
+  trades: {
+    items: {
+      agency: "Agenturen",
+      catering: "Catering",
+      construction: "Bau",
+      eventCentre: "Eventlocations",
+      freelance: "Freiberufler",
+      madeToOrder: "Auftragsfertigung",
+      photography: "Fotografie",
+      shop: "Shops",
+      shortLet: "Ferienwohnungen",
+      supply: "B2B-Lieferung",
+      wholesale: "Großhandel auf Rechnung",
+    },
+    title: "Fertige Workflows für",
+  },
+};

@@ -7,10 +7,12 @@ import {
   ExternalLinkIcon,
   EyeIcon,
   FileTextIcon,
+  HandCoinsIcon,
   Link2Icon,
   PencilIcon,
   ReceiptIcon,
   SendIcon,
+  ShieldCheckIcon,
   TrophyIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -42,6 +44,8 @@ import {
 } from "../deals-constants";
 import type { LineChange } from "../proposal-diff";
 import { diffDealItems } from "../proposal-diff";
+import type { CautionSettlementView } from "./caution-refund-step";
+import { CautionRefundStep } from "./caution-refund-step";
 import { DealStatusBadge, DocumentStatusBadge } from "./deal-badges";
 import type { DealProductOption } from "./deal-items-editor";
 import { DealItemsEditor } from "./deal-items-editor";
@@ -142,6 +146,9 @@ export type DealStepView = {
   name: string;
   status: DealStepStatus;
   requiresAcceptance: boolean;
+  requestsPurchaseOrder: boolean;
+  /** Caution refund steps: how the caution is being settled. */
+  settlement: CautionSettlementView | null;
   validityDays: number | null;
   amountDueMinor: number | null;
   amountPaidMinor: number | null;
@@ -163,6 +170,18 @@ export type DealView = {
   id: string;
   title: string;
   shareUrl: string;
+  /** When the deal's caution can be settled, if it takes one. */
+  cautionSettleAfter: Date | null;
+  /** The caution line on the deal's latest document that has one, if any. */
+  cautionSuggestionMinor: number | null;
+  /** The customer's purchase order, once they've given one. */
+  purchaseOrder: {
+    number: string;
+    /** Empty when no file was attached. */
+    fileName: string;
+    downloadUrl: string;
+    receivedAt: Date | null;
+  } | null;
   status: DealStatus;
   currency: string;
   workflowName: string;
@@ -201,6 +220,8 @@ const kindIcons = {
   document: FileTextIcon,
   payment: CreditCardIcon,
   receipt: ReceiptIcon,
+  caution: ShieldCheckIcon,
+  cautionRefund: HandCoinsIcon,
 } as const satisfies Record<WorkflowStepKind, unknown>;
 
 const selectClassName = cn(inputClassName, "read-only:opacity-100");
@@ -351,11 +372,14 @@ function IntentButton({
 function AcceptDialog({
   documentId,
   defaultName,
+  requestsPurchaseOrder,
   open,
   onOpenChange,
 }: {
   documentId: string;
   defaultName: string;
+  /** The step asks for the customer's PO, so offer to note it here. */
+  requestsPurchaseOrder: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -382,6 +406,20 @@ function AcceptDialog({
               required
             />
           </div>
+          {requestsPurchaseOrder ? (
+            <div className="space-y-2">
+              <Label htmlFor={`${id}-po`}>{t("poNumberLabel")}</Label>
+              <Input
+                aria-describedby={`${id}-po-hint`}
+                id={`${id}-po`}
+                maxLength={80}
+                name="purchaseOrderNumber"
+              />
+              <p className="text-muted-foreground text-xs" id={`${id}-po-hint`}>
+                {t("poNumberHint")}
+              </p>
+            </div>
+          ) : null}
           <DialogFooter>
             <Button
               onClick={() => onOpenChange(false)}
@@ -463,11 +501,13 @@ function DeclineDialog({
 }
 
 function ReviseForm({
+  allowCaution,
   document,
   currency,
   products,
   onDone,
 }: {
+  allowCaution: boolean;
   document: DealDocumentView;
   currency: string;
   products: DealProductOption[];
@@ -485,6 +525,7 @@ function ReviseForm({
     <fetcher.Form className="space-y-4" method="POST">
       <input name="documentId" type="hidden" value={document.id} />
       <DealItemsEditor
+        allowCaution={allowCaution}
         currency={currency}
         initialItems={document.current.items}
         onValidityChange={setValid}
@@ -623,6 +664,9 @@ function CurrentDocument({
 
         {editing ? (
           <ReviseForm
+            allowCaution={deal.steps.some(
+              (step) => step.kind === "cautionRefund",
+            )}
             currency={deal.currency}
             document={document}
             onDone={() => setEditing(false)}
@@ -692,6 +736,7 @@ function CurrentDocument({
         documentId={document.id}
         onOpenChange={setAccepting}
         open={accepting}
+        requestsPurchaseOrder={step.requestsPurchaseOrder}
       />
       <DeclineDialog
         documentId={document.id}
@@ -908,6 +953,45 @@ function ProposalReview({
   );
 }
 
+function PurchaseOrderCard({
+  purchaseOrder,
+}: {
+  purchaseOrder: NonNullable<DealView["purchaseOrder"]>;
+}) {
+  const { t } = useTranslation("deals", { keyPrefix: "detail.purchaseOrder" });
+  const formatDate = useFormatDate();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("title")}</CardTitle>
+        <CardDescription>
+          {purchaseOrder.receivedAt
+            ? t("received", { date: formatDate(purchaseOrder.receivedAt) })
+            : null}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="font-semibold text-base tabular-nums">
+          {purchaseOrder.number}
+        </p>
+        {purchaseOrder.fileName ? (
+          <Button asChild size="sm" variant="outline">
+            {/* A plain link: the route redirects to a short-lived download. */}
+            <a href={purchaseOrder.downloadUrl} rel="noopener" target="_blank">
+              <DownloadIcon aria-hidden="true" />
+              <span className="max-w-48 truncate">
+                {purchaseOrder.fileName}
+              </span>
+            </a>
+          </Button>
+        ) : (
+          <p className="text-muted-foreground">{t("noFile")}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function ShareLink({ deal }: { deal: DealView }) {
   const { t } = useTranslation("deals", { keyPrefix: "detail" });
   const fetcher = useFetcher();
@@ -1025,7 +1109,11 @@ function PaymentStep({ deal, step }: { deal: DealView; step: DealStepView }) {
           <CreditCardIcon aria-hidden="true" className="size-4" />
           {step.name}
         </CardTitle>
-        <CardDescription>{t("recordPaymentDescription")}</CardDescription>
+        <CardDescription>
+          {step.kind === "caution"
+            ? t("caution.paymentDescription")
+            : t("recordPaymentDescription")}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -1352,6 +1440,16 @@ function Activity({ deal }: { deal: DealView }) {
                         String(event.payload.method ?? ""),
                       ),
                       name: String(event.payload.acceptedByName ?? ""),
+                      bank: String(event.payload.bankName ?? ""),
+                      number: String(event.payload.number ?? ""),
+                      refund:
+                        typeof event.payload.refundMinor === "number"
+                          ? formatMoney({
+                              amountMinor: event.payload.refundMinor,
+                              currency: deal.currency,
+                              locale: i18n.language,
+                            })
+                          : "",
                       version: String(event.payload.version ?? ""),
                     },
                   )}
@@ -1448,8 +1546,20 @@ export function DealDetail({
                 <p className="font-medium">{t("dealClosed")}</p>
               </CardContent>
             </Card>
-          ) : activeStep?.kind === "payment" ? (
+          ) : activeStep?.kind === "payment" ||
+            activeStep?.kind === "caution" ? (
             <PaymentStep deal={deal} step={activeStep} />
+          ) : activeStep?.kind === "cautionRefund" && activeStep.settlement ? (
+            <CautionRefundStep
+              currency={deal.currency}
+              customerName={deal.customer.name}
+              key={activeStep.settlement.sentAt ? "sent" : "draft"}
+              settleAfter={deal.cautionSettleAfter}
+              settlement={activeStep.settlement}
+              stepId={activeStep.id}
+              stepName={activeStep.name}
+              suggestedHeldMinor={deal.cautionSuggestionMinor}
+            />
           ) : activeStep?.document ? (
             <CurrentDocument
               deal={deal}
@@ -1485,6 +1595,9 @@ export function DealDetail({
               ) : null}
             </CardContent>
           </Card>
+          {deal.purchaseOrder ? (
+            <PurchaseOrderCard purchaseOrder={deal.purchaseOrder} />
+          ) : null}
           <ShareLink deal={deal} />
           <Messages deal={deal} />
           <Activity deal={deal} />

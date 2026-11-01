@@ -1,5 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 
+import type { CautionDeduction } from "./deal-caution";
+import { cautionEvidenceFolder } from "./deal-caution";
 import type { DealDocumentType } from "./deal-documents";
 import { formatDocumentNumber, paymentMethodName } from "./deal-documents";
 import type { DealLineItem } from "./deal-items";
@@ -38,7 +40,13 @@ export type DealErrorCode =
   | "notPaymentStep"
   | "versionChanged"
   | "proposalNotFound"
-  | "noItems";
+  | "noItems"
+  | "purchaseOrderRequired"
+  | "changesNotAllowed"
+  | "cautionHeldRequired"
+  | "notCautionRefundStep"
+  | "deductionsTooHigh"
+  | "refundAccountMissing";
 
 /** A transition that isn't allowed in the deal's current state. */
 export class DealTransitionError extends Error {
@@ -59,6 +67,11 @@ export type Actor = {
 export type DealEffects = {
   /** Documents to email to the customer, with the email's idempotency key. */
   emails: Array<{ documentId: string; idempotencyKey?: string }>;
+  /** Caution settlement updates to email to the customer. */
+  notices: Array<{
+    kind: "cautionSettlement" | "cautionRefunded";
+    stepId: string;
+  }>;
 };
 
 type DocumentWithVersions = DealDocument & { versions: DealDocumentVersion[] };
@@ -193,6 +206,20 @@ function buildStepItems(
     const payment = deal.steps.find(
       (candidate) => candidate.position === step.position - 1,
     );
+    if (payment?.kind === "caution") {
+      return [
+        {
+          description: "Held until the booking is settled",
+          discountBps: 0,
+          name: "Caution fee (refundable)",
+          productId: null,
+          quantity: 1,
+          taxRateBps: 0,
+          unit: "item",
+          unitPriceMinor: payment.amountPaidMinor ?? 0,
+        },
+      ];
+    }
     return itemsOf(documentBefore(deal.steps, payment?.position ?? 0));
   }
   if (step.position === 0) {
@@ -357,6 +384,7 @@ async function sendDocumentInTransaction(
             }
           : undefined,
       paymentTermsDays: step.paymentTermsDays,
+      purchaseOrderNumber: fresh.purchaseOrderNumber,
       totals: calculateDealTotals(items),
       type,
     },
@@ -404,14 +432,34 @@ async function activateStep(
     throw new DealTransitionError("notCurrentStep");
   }
 
-  if (step.kind === "payment") {
+  if (step.kind === "payment" || step.kind === "caution") {
     await tx.dealStep.update({
       data: {
-        amountDueMinor: totalOf(documentBefore(fresh.steps, step.position)),
+        amountDueMinor:
+          step.kind === "caution"
+            ? (fresh.cautionAmountMinor ?? 0)
+            : totalOf(documentBefore(fresh.steps, step.position)),
         startedAt: new Date(),
         status: "active",
       },
       where: { id: step.id },
+    });
+    return;
+  }
+
+  if (step.kind === "cautionRefund") {
+    // Everything held so far starts out as the refund; deductions come later.
+    const heldMinor = fresh.steps
+      .filter((candidate) => candidate.kind === "caution")
+      .reduce((sum, candidate) => sum + (candidate.amountPaidMinor ?? 0), 0);
+    await tx.dealStep.update({
+      data: { startedAt: new Date(), status: "active" },
+      where: { id: step.id },
+    });
+    await tx.dealCautionSettlement.upsert({
+      create: { heldMinor, refundMinor: heldMinor, stepId: step.id },
+      update: {},
+      where: { stepId: step.id },
     });
     return;
   }
@@ -458,7 +506,7 @@ function runTransition<T>(
 ): Promise<{ result: T; effects: DealEffects }> {
   return prisma.$transaction(
     async (tx) => {
-      const effects: DealEffects = { emails: [] };
+      const effects: DealEffects = { emails: [], notices: [] };
       const result = await work(tx, effects);
       return { effects, result };
     },
@@ -474,6 +522,7 @@ export async function startDeal({
   title,
   currency,
   items,
+  cautionSettleAfter,
   actor,
 }: {
   organizationId: string;
@@ -482,6 +531,8 @@ export async function startDeal({
   title: string;
   currency: string;
   items: DealLineItem[];
+  /** For workflows that refund a caution: when it can be settled. */
+  cautionSettleAfter?: Date | null;
   actor: Actor;
 }) {
   return await runTransition(async (tx, effects) => {
@@ -500,9 +551,15 @@ export async function startDeal({
     if (!customer) {
       throw new DealTransitionError("customerNotFound");
     }
+    const refundsCaution = workflow.steps.some(
+      (step) => step.kind === "cautionRefund",
+    );
 
     const deal = await tx.deal.create({
       data: {
+        cautionSettleAfter: refundsCaution
+          ? (cautionSettleAfter ?? null)
+          : null,
         createdById: actor.userId,
         currency,
         customerId,
@@ -517,6 +574,8 @@ export async function startDeal({
             name: step.name,
             paymentTermsDays: step.paymentTermsDays,
             position: step.position,
+            negotiable: step.negotiable,
+            requestsPurchaseOrder: step.requestsPurchaseOrder,
             requiresAcceptance: step.requiresAcceptance,
             templateId: step.templateId,
             validityDays: step.validityDays,
@@ -533,7 +592,11 @@ export async function startDeal({
     const loaded = await loadDealForUpdate(tx, organizationId, deal.id);
     const [firstStep] = deal.steps;
     if (firstStep) {
-      await activateStep(tx, loaded, firstStep.id, actor, effects, items);
+      // Only a workflow that refunds a caution keeps track of one.
+      const firstItems = refundsCaution
+        ? items
+        : items.map(({ caution: _caution, ...item }) => item);
+      await activateStep(tx, loaded, firstStep.id, actor, effects, firstItems);
     }
     return deal;
   });
@@ -665,6 +728,7 @@ export async function acceptDealDocument({
   documentId,
   acceptedByName,
   expectedVersionId,
+  purchaseOrder,
   actor,
 }: {
   organizationId: string;
@@ -673,6 +737,15 @@ export async function acceptDealDocument({
   acceptedByName: string;
   /** The version the customer looked at; refused if it's no longer current. */
   expectedVersionId?: string;
+  /**
+   * The customer's purchase order. Required from customers when the step asks
+   * for it; the business may add one when recording an acceptance.
+   */
+  purchaseOrder?: {
+    number: string;
+    fileId: string | null;
+    fileName: string;
+  };
   actor: Actor;
 }) {
   return await runTransition(async (tx, effects) => {
@@ -686,6 +759,28 @@ export async function acceptDealDocument({
     }
     if (expectedVersionId && expectedVersionId !== current.id) {
       throw new DealTransitionError("versionChanged");
+    }
+    const poNumber = purchaseOrder?.number.trim() ?? "";
+    if (step.requestsPurchaseOrder && actor.party === "customer" && !poNumber) {
+      throw new DealTransitionError("purchaseOrderRequired");
+    }
+    if (poNumber) {
+      await tx.deal.update({
+        data: {
+          purchaseOrderFileId: purchaseOrder?.fileId ?? null,
+          purchaseOrderFileName: purchaseOrder?.fileName ?? "",
+          purchaseOrderNumber: poNumber,
+          purchaseOrderReceivedAt: new Date(),
+        },
+        where: { id: deal.id },
+      });
+      await recordEvent(tx, deal.id, "purchaseOrderReceived", actor, {
+        documentId: document.id,
+        payload: {
+          fileName: purchaseOrder?.fileName ?? "",
+          number: poNumber,
+        },
+      });
     }
 
     await tx.dealDocument.update({
@@ -763,7 +858,10 @@ export async function recordDealPayment({
   return await runTransition(async (tx, effects) => {
     const deal = await loadDealForUpdate(tx, organizationId, dealId);
     const step = activeStep(deal);
-    if (step.id !== stepId || step.kind !== "payment") {
+    if (
+      step.id !== stepId ||
+      (step.kind !== "payment" && step.kind !== "caution")
+    ) {
       throw new DealTransitionError("notPaymentStep");
     }
     const amountMinor = step.amountDueMinor ?? 0;
@@ -783,6 +881,8 @@ export async function recordDealPayment({
         organizationId,
         provider: "manual",
         providerPaymentId: `manual_${step.id}`,
+        // Cautions are held for the customer, so they don't count as income.
+        purpose: step.kind === "caution" ? "caution" : "sale",
         status: "succeeded",
       },
     });
@@ -826,7 +926,13 @@ async function settlePaymentStep(
     where: { id: step.id },
   });
   await recordEvent(tx, deal.id, "paymentRecorded", actor, {
-    payload: { amountMinor, method, online, reference },
+    payload: {
+      amountMinor,
+      caution: step.kind === "caution",
+      method,
+      online,
+      reference,
+    },
   });
   await completeStep(tx, deal, step.id, actor, effects);
 }
@@ -858,7 +964,10 @@ export async function applyOnlinePaymentToDeal({
     !payment.dealStepId ||
     payment.status !== "succeeded"
   ) {
-    return { applied: false as const, effects: { emails: [] } };
+    return {
+      applied: false as const,
+      effects: { emails: [], notices: [] } as DealEffects,
+    };
   }
   const { dealId, dealStepId } = payment;
 
@@ -869,7 +978,7 @@ export async function applyOnlinePaymentToDeal({
       if (
         deal.status !== "open" ||
         !step ||
-        step.kind !== "payment" ||
+        (step.kind !== "payment" && step.kind !== "caution") ||
         step.status !== "active" ||
         step.paidAt
       ) {
@@ -1007,10 +1116,15 @@ export async function proposeDealChanges({
     ) {
       throw new DealTransitionError("documentNotAwaitingAnswer");
     }
+    if (!step.negotiable) {
+      throw new DealTransitionError("changesNotAllowed");
+    }
 
     // The customer's figures are a request, not a price change: the business
     // sees exactly what they asked for and decides.
     const kept = parseDealItems(current.items).flatMap((item, index) => {
+      // The caution is the business's to set; suggestions leave it alone.
+      if (item.caution) return [item];
       const changed = withFigures(item, changes.lines[index] ?? {});
       return changed.quantity > 0 ? [changed] : [];
     });
@@ -1210,5 +1324,169 @@ export async function resetDealShareLink({
       where: { id: deal.id },
     });
     await recordEvent(tx, deal.id, "shareLinkReset", actor);
+  });
+}
+
+function activeCautionRefund(deal: LoadedDeal, stepId: string) {
+  const step = activeStep(deal);
+  if (step.id !== stepId || step.kind !== "cautionRefund") {
+    throw new DealTransitionError("notCautionRefundStep");
+  }
+  return step;
+}
+
+/**
+ * Sends the caution settlement to the customer: what's kept and why, and the
+ * rest to refund. With nothing left to refund, the step is done there and
+ * then; otherwise the customer is asked where to send it.
+ */
+export async function sendCautionSettlement({
+  organizationId,
+  dealId,
+  stepId,
+  heldMinor,
+  deductions,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  stepId: string;
+  /** The caution the business holds: usually a line on its invoice. */
+  heldMinor: number;
+  deductions: CautionDeduction[];
+  actor: Actor;
+}) {
+  return await runTransition(async (tx, effects) => {
+    const deal = await loadDealForUpdate(tx, organizationId, dealId);
+    const step = activeCautionRefund(deal, stepId);
+    const settlement = await tx.dealCautionSettlement.findUnique({
+      where: { stepId: step.id },
+    });
+    if (!settlement || settlement.sentAt) {
+      throw new DealTransitionError("notCautionRefundStep");
+    }
+    const deductedMinor = deductions.reduce(
+      (sum, deduction) => sum + deduction.amountMinor,
+      0,
+    );
+    if (heldMinor <= 0) {
+      throw new DealTransitionError("cautionHeldRequired");
+    }
+    if (deductedMinor > heldMinor) {
+      throw new DealTransitionError("deductionsTooHigh");
+    }
+    // Only evidence uploaded for this deal can be attached.
+    const folder = `${cautionEvidenceFolder(organizationId, deal.id)}/`;
+    const kept = deductions.map((deduction) => ({
+      ...deduction,
+      evidence: (deduction.evidence ?? []).filter((item) =>
+        item.id.startsWith(folder),
+      ),
+    }));
+    const refundMinor = heldMinor - deductedMinor;
+    const now = new Date();
+    await tx.dealCautionSettlement.update({
+      data: {
+        deductions: kept as unknown as Prisma.InputJsonValue,
+        heldMinor,
+        refundMinor,
+        sentAt: now,
+        ...(refundMinor === 0 ? { refundedAt: now } : {}),
+      },
+      where: { id: settlement.id },
+    });
+    await recordEvent(tx, deal.id, "cautionSettlementSent", actor, {
+      payload: { deductedMinor, refundMinor },
+    });
+    if (refundMinor === 0) {
+      // Nothing to send back: the customer gets the statement straight away.
+      effects.notices.push({ kind: "cautionRefunded", stepId: step.id });
+      await completeStep(tx, deal, step.id, actor, effects);
+      return;
+    }
+    effects.notices.push({ kind: "cautionSettlement", stepId: step.id });
+  });
+}
+
+/** The customer telling the business where to send their caution refund. */
+export async function giveCautionRefundAccount({
+  organizationId,
+  dealId,
+  stepId,
+  bankName,
+  accountNumber,
+  accountName,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  stepId: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  actor: Actor;
+}) {
+  return await runTransition(async (tx) => {
+    const deal = await loadDealForUpdate(tx, organizationId, dealId);
+    const step = activeCautionRefund(deal, stepId);
+    const settlement = await tx.dealCautionSettlement.findUnique({
+      where: { stepId: step.id },
+    });
+    if (!settlement?.sentAt || settlement.refundedAt) {
+      throw new DealTransitionError("notCautionRefundStep");
+    }
+    await tx.dealCautionSettlement.update({
+      data: {
+        accountGivenAt: new Date(),
+        accountName,
+        accountNumber,
+        bankName,
+      },
+      where: { id: settlement.id },
+    });
+    await recordEvent(tx, deal.id, "refundAccountGiven", actor, {
+      payload: { bankName },
+    });
+  });
+}
+
+/**
+ * The business saying it has sent the caution refund from its bank. Finishes
+ * the step, and the deal moves on.
+ */
+export async function markCautionRefunded({
+  organizationId,
+  dealId,
+  stepId,
+  reference,
+  actor,
+}: {
+  organizationId: string;
+  dealId: string;
+  stepId: string;
+  reference: string;
+  actor: Actor;
+}) {
+  return await runTransition(async (tx, effects) => {
+    const deal = await loadDealForUpdate(tx, organizationId, dealId);
+    const step = activeCautionRefund(deal, stepId);
+    const settlement = await tx.dealCautionSettlement.findUnique({
+      where: { stepId: step.id },
+    });
+    if (!settlement?.sentAt || settlement.refundedAt) {
+      throw new DealTransitionError("notCautionRefundStep");
+    }
+    if (!settlement.accountGivenAt) {
+      throw new DealTransitionError("refundAccountMissing");
+    }
+    await tx.dealCautionSettlement.update({
+      data: { refundReference: reference, refundedAt: new Date() },
+      where: { id: settlement.id },
+    });
+    await recordEvent(tx, deal.id, "cautionRefunded", actor, {
+      payload: { reference, refundMinor: settlement.refundMinor },
+    });
+    effects.notices.push({ kind: "cautionRefunded", stepId: step.id });
+    await completeStep(tx, deal, step.id, actor, effects);
   });
 }

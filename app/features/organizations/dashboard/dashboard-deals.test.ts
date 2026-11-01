@@ -162,3 +162,53 @@ describe("sortByAttention()", () => {
     ]);
   });
 });
+
+describe("summarizeDeal() cautions", () => {
+  const refundStep = (
+    settlement: DashboardDealStep["settlement"],
+  ): DashboardDealStep =>
+    step({
+      kind: "cautionRefund",
+      name: "Caution refund",
+      settlement,
+      status: "active",
+    });
+  const unsent = { accountGivenAt: null, refundedAt: null, sentAt: null };
+
+  test("given: a caution refund after its settle-after date, should: ask to settle it", () => {
+    const summary = summarizeDeal(
+      deal([refundStep(unsent)], { cautionSettleAfter: daysFromNow(-1) }),
+      now,
+    );
+    expect(summary.attention?.reason).toEqual("cautionToSettle");
+    expect(summary.stage).toEqual("toSend");
+  });
+
+  test("given: a caution refund before its date, should: wait quietly", () => {
+    const summary = summarizeDeal(
+      deal([refundStep(unsent)], { cautionSettleAfter: daysFromNow(3) }),
+      now,
+    );
+    expect(summary.attention).toBeNull();
+  });
+
+  test("given: the customer's refund account, should: ask to send the refund", () => {
+    const summary = summarizeDeal(
+      deal([
+        refundStep({ accountGivenAt: now, refundedAt: null, sentAt: now }),
+      ]),
+      now,
+    );
+    expect(summary.attention?.reason).toEqual("refundToSend");
+  });
+
+  test("given: a settlement waiting on the customer, should: sit with them", () => {
+    const summary = summarizeDeal(
+      deal([
+        refundStep({ accountGivenAt: null, refundedAt: null, sentAt: now }),
+      ]),
+      now,
+    );
+    expect(summary).toMatchObject({ attention: null, stage: "withCustomer" });
+  });
+});

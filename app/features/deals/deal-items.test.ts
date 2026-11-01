@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import type { DealLineItem } from "./deal-items";
 import {
   calculateDealTotals,
+  cautionLinesMinor,
   parseDealItems,
   percentOfMinor,
   roundQuantity,
@@ -106,5 +107,24 @@ describe("parseDealItems()", () => {
 
   test("given: something that isn't a list, should: return no lines", () => {
     expect(parseDealItems({ items: [] })).toEqual([]);
+  });
+});
+
+describe("cautionLinesMinor()", () => {
+  test("given: a flagged caution line, should: add up only that line", () => {
+    expect(
+      cautionLinesMinor([
+        item({ unitPriceMinor: 50_000 }),
+        item({ caution: true, name: "Caution", unitPriceMinor: 20_000 }),
+      ]),
+    ).toEqual(20_000);
+  });
+
+  test("given: stored items, should: keep the caution flag through parsing", () => {
+    expect(
+      parseDealItems([item({ caution: true }), item()]).map(
+        (line) => line.caution,
+      ),
+    ).toEqual([true, undefined]);
   });
 });

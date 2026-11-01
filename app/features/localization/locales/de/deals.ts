@@ -5,7 +5,7 @@ export default {
   newPageTitle: "Neuer Deal",
   status: {
     open: "Offen",
-    won: "Gewonnen",
+    won: "Abgeschlossen",
     lost: "Verloren",
     cancelled: "Abgebrochen",
   },
@@ -57,11 +57,17 @@ export default {
     },
     allDone: "Alle Schritte erledigt",
     paymentDue: "Zahlung fällig",
+    cautionDue: "Kaution fällig",
+    cautionToSettle: "Kaution abzurechnen",
     pagination: "Seite {{page}} von {{totalPages}}",
     previous: "Zurück",
     next: "Weiter",
   },
   new: {
+    settleAfterHint:
+      'Das Veranstaltungs- oder Check-out-Datum. Nutze unten "Kaution hinzufügen", damit die Kaution erfasst wird; CollectAm erinnert dich nach diesem Datum an die Abrechnung.',
+    settleAfterLabel: "Kaution abrechnen nach",
+    cautionAmountInvalid: "Gib die Kaution als Betrag ein, z. B. 50000.",
     title: "Neuer Deal",
     description:
       "Wähle einen Kunden und einen Workflow und füge hinzu, was du anbietest. Das erste Dokument wird als Entwurf gespeichert, damit du es vor dem Senden prüfen kannst.",
@@ -93,6 +99,12 @@ export default {
     needCustomerDescription: "Ein Deal gehört immer zu einem Kunden.",
   },
   items: {
+    addCaution: "Kaution hinzufügen",
+    cautionBadge: "Erstattbare Kaution",
+    cautionDescription:
+      "Wird nach der Buchung erstattet, abzüglich Einbehalten",
+    cautionName: "Kaution (erstattbar)",
+    oneCaution: "Ein Dokument kann eine Kautionsposition haben.",
     product: "Position",
     quantity: "Menge",
     unitPrice: "Einzelpreis",
@@ -119,6 +131,62 @@ export default {
     perUnit: "pro {{unit}}",
   },
   detail: {
+    caution: {
+      heldFromInvoice:
+        "Aus der Kautionsposition auf den Dokumenten dieses Deals. Ändere sie, falls sie abweicht.",
+      heldHint:
+        "Meist die Kautionsposition auf deinem Angebot oder deiner Rechnung.",
+      heldLabel: "Einbehaltene Kaution ({{currency}})",
+      addEvidence: "Fotos oder Videos hinzufügen",
+      evidenceError:
+        "Nutze JPG-, PNG-, WebP- oder HEIC-Fotos bis 10 MB oder MP4-, MOV- oder WebM-Videos bis 50 MB.",
+      evidenceFor: "Nachweise für {{reason}}",
+      evidenceHint: "Optional. Die Kundschaft sieht sie neben diesem Abzug.",
+      removeEvidence: "{{name}} entfernen",
+      uploading: "Wird hochgeladen …",
+      accountName: "Kontoinhaber",
+      accountNumber: "Kontonummer",
+      addDeduction: "Abzug hinzufügen",
+      amountLabel: "Betrag ({{currency}})",
+      bank: "Bank",
+      deductionsTitle: "Was du einbehältst",
+      held: "Einbehaltene Kaution",
+      kept: "Einbehalten",
+      keptFor: "Einbehalten für {{reason}}",
+      markRefunded: "Rückzahlung als gesendet markieren",
+      noDeductions: "Noch nichts. Die ganze Kaution geht zurück.",
+      paymentDescription:
+        "Erstattbar. Die Kundschaft bezahlt sie über die Deal-Seite; sie zählt nicht als Einnahme. Trage sie hier ein, wenn anders bezahlt wurde.",
+      reasonLabel: "Wofür",
+      reasonPlaceholder: "z. B. Kaputter Stuhl",
+      referenceLabel: "Überweisungsreferenz (optional)",
+      referencePlaceholder: "Aus deiner Banking-App",
+      removeDeduction: "Diesen Abzug entfernen",
+      send: "Abrechnung an die Kundschaft senden",
+      sendHint:
+        "{{name}} bekommt eine E-Mail mit der Frage nach dem Erstattungskonto. Das Geld überweist du selbst von deiner Bank.",
+      sendHintNothing:
+        "Es bleibt nichts zu erstatten, damit ist die Kaution abgerechnet. {{name}} bekommt die Abrechnung per E-Mail.",
+      sendNothing: "Ohne Erstattung abrechnen",
+      sendRefund:
+        "Überweise {{amount}} von deiner Bank auf dieses Konto und markiere die Rückzahlung dann als gesendet.",
+      settleEarly:
+        "Die Kaution wird nach dem {{date}} abgerechnet. Du kannst sie jetzt abrechnen, wenn die Buchung vorbei ist.",
+      settleNow:
+        "Die Buchung ist vorbei. Trage ein, was du einbehältst, und sende die Abrechnung.",
+      tooMuch: "Du kannst nicht mehr einbehalten als die Kaution.",
+      toRefund: "Zu erstatten",
+      waitingForAccount:
+        "Abrechnung gesendet. Warte darauf, dass {{name}} das Erstattungskonto angibt.",
+    },
+    poNumberHint:
+      "Wenn die Kundschaft dir eine Bestellung geschickt hat, trage ihre Nummer ein. Spätere Dokumente zeigen sie.",
+    poNumberLabel: "Ihre Bestellnummer (optional)",
+    purchaseOrder: {
+      noFile: "Keine Datei angehängt.",
+      received: "Erhalten am {{date}}",
+      title: "Bestellung der Kundschaft",
+    },
     customer: "Kunde",
     workflow: "Workflow",
     startedBy: "Gestartet am {{date}} von {{name}}",
@@ -255,7 +323,14 @@ export default {
     proposalRejected:
       "{{actor}} hat die vorgeschlagenen Änderungen an {{document}} abgelehnt",
     shareLinkReset: "{{actor}} hat den Freigabelink zurückgesetzt",
-    dealWon: "Alle Schritte erledigt, der Deal ist gewonnen",
+    purchaseOrderReceived: "{{actor}} hat die Bestellung {{number}} geschickt",
+    cautionSettlementSent:
+      "{{actor}} hat die Kautionsabrechnung gesendet: {{refund}} zu erstatten",
+    refundAccountGiven:
+      "{{actor}} hat ein Erstattungskonto bei {{bank}} angegeben",
+    cautionRefunded:
+      "{{actor}} hat die Kautionsrückzahlung von {{refund}} als gesendet markiert",
+    dealWon: "Alle Schritte erledigt, der Deal ist abgeschlossen",
     dealLost: "{{actor}} hat den Deal als verloren markiert",
     dealCancelled: "{{actor}} hat den Deal abgebrochen",
     system: "CollectAm",
@@ -263,6 +338,8 @@ export default {
     someone: "Jemand",
   },
   toasts: {
+    settlementSent: "Abrechnung an die Kundschaft gesendet",
+    refundMarked: "Rückzahlung als gesendet markiert",
     started: "{{title}} gestartet",
     sent: "Dokument gesendet",
     resent: "Dokument erneut gesendet",
@@ -295,5 +372,14 @@ export default {
       "Dieses Dokument hat sich geändert, während du es angesehen hast. Prüfe die neueste Version.",
     proposalNotFound: "Diese Änderungen wurden bereits bearbeitet.",
     noItems: "Behalte mindestens eine Position.",
+    purchaseOrderRequired: "Gib die Bestellnummer der Kundschaft ein.",
+    changesNotAllowed: "Dieser Schritt nimmt keine Änderungsvorschläge an.",
+    cautionHeldRequired: "Gib die einbehaltene Kaution ein.",
+    notCautionRefundStep:
+      "Die Kaution ist nicht in diesem Schritt. Lade die Seite neu.",
+    deductionsTooHigh:
+      "Abzüge können nicht höher sein als die einbehaltene Kaution.",
+    refundAccountMissing:
+      "Warte zuerst auf das Erstattungskonto der Kundschaft.",
   },
 } satisfies typeof import("../en/deals").default;

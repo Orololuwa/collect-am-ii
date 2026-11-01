@@ -34,6 +34,8 @@ export const createPopulatedOrganization: Factory<Organization> = ({
   stripeCustomerId = `cus_${createId()}`,
   trialEnd = addDays(createdAt, 14),
   setupGuideDismissedAt = null,
+  workflowView = "steps",
+  workflowViewSwitchable = true,
 } = {}) => ({
   billingEmail,
   createdAt,
@@ -45,6 +47,8 @@ export const createPopulatedOrganization: Factory<Organization> = ({
   stripeCustomerId,
   trialEnd,
   updatedAt,
+  workflowView,
+  workflowViewSwitchable,
 });
 
 /**

@@ -64,6 +64,12 @@ export default {
       title: "Recent activity",
     },
     attention: {
+      dealCautionToSettle: "Settle the caution for {{deal}}",
+      dealCautionToSettleDetail:
+        "Record anything you're keeping, then send {{customer}} the settlement",
+      dealRefundToSend: "Send {{customer}}'s caution refund for {{deal}}",
+      dealRefundToSendDetail:
+        "They gave their account. Pay it from your bank, then mark it as sent",
       allClear: "Nothing needs your attention.",
       dealDeclined: "{{customer}} declined {{document}} in {{deal}}",
       dealDeclinedDetail: "Revise it and send it again, or close the deal",
@@ -420,6 +426,23 @@ export default {
       toast: {
         organizationDeleted: "Organization has been deleted",
         organizationProfileUpdated: "Organization has been updated",
+        workflowViewUpdated: "Workflow editor updated",
+      },
+      workflowView: {
+        allowSwitch: "Let members switch views in the editor",
+        allowSwitchDescription:
+          "Shows the Steps and Canvas switch at the top of each workflow. CollectAm remembers each person's choice.",
+        canvas: "Canvas",
+        canvasDescription:
+          "A map of the deal from start to finish, showing who acts at each step: you or the customer.",
+        description:
+          "Choose how workflows open for everyone in {{organizationName}}. Both views edit the same steps.",
+        legend: "Default view",
+        save: "Save changes",
+        steps: "Steps",
+        stepsDescription:
+          "A list of steps with their settings beside it. Quick for short workflows and small screens.",
+        title: "Workflow editor",
       },
     },
     layout: {

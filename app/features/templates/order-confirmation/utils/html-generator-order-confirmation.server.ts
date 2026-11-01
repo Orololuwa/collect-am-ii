@@ -65,6 +65,7 @@ function renderOrderConfirmationSectionToHTML(
               <h2 class="oc-title">ORDER CONFIRMATION</h2>
               <div class="oc-details">
                 ${section.data.confirmationNumber ? `<div><span class="oc-label">Confirmation #:</span> ${escapeHtml(String(section.data.confirmationNumber))}</div>` : ""}
+                ${section.data.customerPoNumber ? `<div><span class="oc-label">Your PO #:</span> ${escapeHtml(String(section.data.customerPoNumber))}</div>` : ""}
                 ${section.data.orderReference ? `<div><span class="oc-label">Order Ref:</span> ${escapeHtml(String(section.data.orderReference))}</div>` : ""}
                 ${section.data.orderDate ? `<div><span class="oc-label">Order Date:</span> ${escapeHtml(String(section.data.orderDate))}</div>` : ""}
                 ${section.data.expectedShipDate ? `<div><span class="oc-label">Expected Ship Date:</span> ${escapeHtml(String(section.data.expectedShipDate))}</div>` : ""}

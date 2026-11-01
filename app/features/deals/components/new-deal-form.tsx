@@ -62,6 +62,8 @@ export function NewDealForm({
   const [workflowId, setWorkflowId] = useState(workflows[0]?.id ?? "");
   const [itemsValid, setItemsValid] = useState(false);
   const workflow = workflows.find((candidate) => candidate.id === workflowId);
+  const refundsCaution =
+    workflow?.steps.some((step) => step.kind === "cautionRefund") ?? false;
 
   return (
     <Card>
@@ -173,12 +175,27 @@ export function NewDealForm({
               />
             </Field>
 
+            {refundsCaution ? (
+              <Field className="rounded-lg border bg-muted/30 p-4">
+                <FieldLabel htmlFor={fields.cautionSettleAfter.id}>
+                  {t("settleAfterLabel")}
+                </FieldLabel>
+                <Input
+                  {...fields.cautionSettleAfter.inputProps}
+                  className="sm:max-w-xs"
+                  type="date"
+                />
+                <FieldDescription>{t("settleAfterHint")}</FieldDescription>
+              </Field>
+            ) : null}
+
             <Field data-invalid={fields.items.ariaInvalid}>
               <div className="space-y-1">
                 <FieldLabel>{t("itemsTitle")}</FieldLabel>
                 <FieldDescription>{t("itemsDescription")}</FieldDescription>
               </div>
               <DealItemsEditor
+                allowCaution={refundsCaution}
                 currency={currency}
                 key={currency}
                 onValidityChange={setItemsValid}

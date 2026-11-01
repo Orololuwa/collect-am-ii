@@ -2,9 +2,9 @@ export default {
   layout: {
     backgroundPathsTitle: "Animated background paths",
     home: "Home",
-    quote:
-      "This authentication system has transformed how we handle user logins. The email code flow is seamless and our users love it.",
-    quoteAuthor: "Alex Chen, Lead Developer",
+    panelDescription:
+      "Quotes, invoices, payments and receipts that move on their own, and one link where your customers accept, negotiate and pay.",
+    panelTitle: "Every deal, from quote to paid.",
   },
   login: {
     emailLabel: "Email",
@@ -44,9 +44,10 @@ export default {
     pageTitle: "Login",
     separator: "Or",
     signupCta: "Don't have an account? <signup>Sign up</signup>",
-    submitButton: "Sign in with Email",
-    submitButtonSubmitting: "Signing in...",
-    subtitle: "Enter your email below to sign in to your account",
+    submitButton: "Email me a code",
+    submitButtonSubmitting: "Sending code...",
+    subtitle:
+      "Enter your email and we'll send you a 6‑digit code. No password needed.",
     title: "Welcome back",
   },
   register: {
@@ -91,9 +92,10 @@ export default {
     },
     pageTitle: "Register",
     separator: "Or",
-    submitButton: "Create Account",
+    submitButton: "Create account",
     submitButtonSubmitting: "Creating account...",
-    subtitle: "Enter your email below to create your account",
-    title: "Create an account",
+    subtitle:
+      "Start with your email. We'll send a code to confirm it, no password needed.",
+    title: "Create your account",
   },
 };

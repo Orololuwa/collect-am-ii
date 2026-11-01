@@ -1,5 +1,7 @@
 import { render } from "@react-email/components";
 
+import { maskAccountNumber, parseCautionDeductions } from "./deal-caution";
+import { CautionEmail } from "./deal-caution-email";
 import { DealDocumentEmail } from "./deal-document-email";
 import type { DealDocumentType } from "./deal-documents";
 import type { DealEffects } from "./deal-engine.server";
@@ -12,6 +14,7 @@ import {
 } from "~/features/templates/shared/utils/email-sender.server";
 import { generatePDF } from "~/features/templates/shared/utils/pdf-generator.server";
 import { prisma } from "~/utils/database.server";
+import { sendEmail } from "~/utils/email.server";
 
 /** Customer-facing names, used in the email and the PDF's file name. */
 export const DOCUMENT_TYPE_NAMES = {
@@ -136,5 +139,102 @@ export async function deliverDealEffects(
     const sent = await emailDealDocument({ ...email, ...options });
     if (!sent) failed += 1;
   }
+  for (const notice of effects.notices) {
+    const sent = await emailCautionNotice({ ...notice, ...options });
+    if (!sent) failed += 1;
+  }
   return failed;
+}
+
+/**
+ * Emails the customer a caution settlement: asking where to send the refund,
+ * or saying it was sent. Returns false if it couldn't be sent.
+ */
+export async function emailCautionNotice({
+  kind,
+  stepId,
+  appName,
+  replyTo,
+}: {
+  kind: "cautionSettlement" | "cautionRefunded";
+  stepId: string;
+  appName: string;
+  replyTo?: string;
+}) {
+  const settlement = await prisma.dealCautionSettlement.findUnique({
+    include: {
+      step: {
+        include: {
+          deal: {
+            include: {
+              customer: true,
+              organization: { select: { billingEmail: true, name: true } },
+            },
+          },
+        },
+      },
+    },
+    where: { stepId },
+  });
+  if (!settlement) {
+    return false;
+  }
+  const { deal } = settlement.step;
+  const money = (amountMinor: number) =>
+    formatMoney({ amountMinor, currency: deal.currency, locale: "en" });
+  const email = (
+    <CautionEmail
+      appName={appName}
+      customerName={deal.customer.name}
+      dealTitle={deal.title}
+      deductions={parseCautionDeductions(settlement.deductions).map(
+        (deduction) => ({
+          amount: money(deduction.amountMinor),
+          reason: deduction.reason,
+        }),
+      )}
+      hasEvidence={parseCautionDeductions(settlement.deductions).some(
+        (deduction) => (deduction.evidence ?? []).length > 0,
+      )}
+      held={money(settlement.heldMinor)}
+      kind={kind}
+      nothingToRefund={settlement.refundMinor === 0}
+      organizationName={deal.organization.name}
+      reference={settlement.refundReference || undefined}
+      refund={money(settlement.refundMinor)}
+      refundedTo={
+        settlement.bankName
+          ? `${settlement.bankName} ${maskAccountNumber(settlement.accountNumber)}`
+          : undefined
+      }
+      shareUrl={createDealShareUrl(deal)}
+    />
+  );
+  const [html, text] = await Promise.all([
+    render(email),
+    render(email, { plainText: true }),
+  ]);
+  try {
+    const result = await sendEmail({
+      from: getDocumentSender({
+        appName,
+        organizationName: deal.organization.name,
+      }),
+      html,
+      idempotencyKey: `${kind}-${stepId}`,
+      replyTo: replyTo ?? (deal.organization.billingEmail || undefined),
+      subject:
+        kind === "cautionSettlement"
+          ? `Your caution for ${deal.title}: where should ${deal.organization.name} send it?`
+          : settlement.refundMinor === 0
+            ? `${deal.organization.name} settled your caution for ${deal.title}`
+            : `${deal.organization.name} sent your caution refund`,
+      text,
+      to: deal.customer.email,
+    });
+    return result.status === "success";
+  } catch (error) {
+    console.error("Failed to email caution notice", stepId, error);
+    return false;
+  }
 }

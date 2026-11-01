@@ -81,6 +81,8 @@ async function setupSentDeal({ send = true } = {}) {
     sampleKey: "agencyProject",
     steps: WORKFLOW_SAMPLES.agencyProject.map(({ stepName, ...settings }) => ({
       ...settings,
+      // Samples don't negotiate by default; these tests suggest changes.
+      negotiable: settings.requiresAcceptance,
       name: stepName,
       templateId: null,
     })),

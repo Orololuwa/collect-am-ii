@@ -69,6 +69,8 @@ const step = (overrides: Partial<WorkflowStepInput>): WorkflowStepInput => ({
   kind: "document",
   name: "Step",
   paymentTermsDays: null,
+  negotiable: true,
+  requestsPurchaseOrder: false,
   requiresAcceptance: false,
   templateId: null,
   validityDays: null,

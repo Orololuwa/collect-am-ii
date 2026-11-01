@@ -10,6 +10,83 @@ export default {
     salesOrder: "Sales order",
   },
   editor: {
+    addCaution: "Add caution fee",
+    addCautionRefund: "Add caution refund",
+    cautionDescription:
+      "A refundable caution fee the customer pays from the deal page. You set the amount on each deal, and it isn't counted as income.",
+    cautionRefundDescription:
+      "After the settle-after date, you enter the caution you hold and anything you're keeping, with photos if you like. The customer is asked for the account to refund the rest to; you send it from your bank and mark it sent.",
+    cautionRefundGate: {
+      description: "Then you refund it from your bank",
+      title: "Customer gives their refund account",
+    },
+    advanceReceipt: "When the payment lands",
+    auto: "Auto",
+    back: "Workflows",
+    canvas: {
+      addHere: "Add a step here",
+      addStep: "Add a step",
+      addStepHint: "Drag onto a line to insert, or click to add at the end.",
+      end: "Deal closed",
+      fit: "Fit",
+      insertBefore: "Add a step before {{name}}",
+      insertFirst: "Add a step at the start",
+      insertLast: "Add a step at the end",
+      start: "Deal starts",
+      zoomIn: "Zoom in",
+      zoomHint: "Reset to 100%. Hold Ctrl or ⌘ and scroll, or pinch, to zoom.",
+      zoomOut: "Zoom out",
+    },
+    carryBalanceHint: "One line: the total less payments so far",
+    carryDepositHint: "One line: a share of the agreed total",
+    carryItemsHint: "Copied from the latest accepted document",
+    gate: {
+      description: "Or declines, or asks for changes",
+      descriptionWithPo: "With their PO number. Can ask for changes",
+      title: "Customer accepts",
+      titleWithPo: "Customer accepts and sends their PO",
+      descriptionFixed: "Or declines",
+      descriptionWithPoFixed: "With their PO number",
+    },
+    hasProblem: "Has a problem to fix",
+    lanes: {
+      customer: "Customer",
+      customerHint: "On the deal's share link",
+      you: "You",
+      youHint: "Your team",
+    },
+    moveDownShort: "Move down",
+    moveUpShort: "Move up",
+    noOpenDeals: "No open deals use it",
+    openDeals_one: "Used by {{count}} open deal",
+    openDeals_other: "Used by {{count}} open deals",
+    problems_one: "{{count}} problem to fix",
+    problems_other: "{{count}} problems to fix",
+    ready: "Ready to use",
+    removeShort: "Remove step",
+    selectStep: "Pick a step to edit it.",
+    stepCount_one: "{{count}} step",
+    stepCount_other: "{{count}} steps",
+    stepOf: "Step {{number}} of {{total}}",
+    stepSettings: "Step settings",
+    summary: {
+      caution: "Refundable, paid from the share link",
+      cautionRefund: "Deductions, then refund to their account",
+      balance: "The balance",
+      deposit: "{{percent}}% deposit",
+      payment: "Paid online from the share link",
+      receipt: "Emailed when the payment lands",
+      terms_one: "Due in {{count}} day",
+      terms_other: "Due in {{count}} days",
+      validity_one: "Valid {{count}} day",
+      validity_other: "Valid {{count}} days",
+    },
+    untitledStep: "Untitled step",
+    view: "View",
+    views: {
+      canvas: "Canvas",
+      steps: "Steps",
+    },
     addDocument: "Add document",
     addPayment: "Add payment",
     addReceipt: "Add receipt",
@@ -39,6 +116,12 @@ export default {
     receiptDescription:
       "A receipt for the payment above, emailed to the customer.",
     remove: "Remove {{name}}",
+    negotiable: "Let them negotiate",
+    negotiableHint:
+      "They can suggest their own quantities, prices, tax and discounts. You approve or turn down what they suggest.",
+    requestsPurchaseOrder: "Ask for their purchase order",
+    requestsPurchaseOrderHint:
+      "When they accept, they give their PO number and can attach their PO file. Later documents show the number.",
     requiresAcceptance: "The customer must accept it",
     requiresAcceptanceHint:
       "They can accept, decline or ask for changes from the deal page.",
@@ -57,13 +140,16 @@ export default {
   },
   gallery: {
     categories: {
+      bookings: "Bookings and rentals",
       goods: "Selling goods",
       projects: "Projects and custom work",
       services: "Services",
     },
     highlights: {
+      caution: "Refundable caution",
       deposit: "{{percent}}% upfront",
       paidUpfront: "Paid before delivery",
+      purchaseOrder: "Asks for their PO",
       terms_one: "Invoice due in {{count}} day",
       terms_other: "Invoice due in {{count}} days",
       validity_one: "{{type}} valid {{count}} day",
@@ -77,6 +163,9 @@ export default {
     use: "Use this",
   },
   issues: {
+    cautionOnlyOnce: "A workflow can take one caution fee and refund it once.",
+    cautionIsALineItem:
+      "Add the caution as a line on your quote or invoice instead. Remove this step.",
     depositNeedsEarlierDocument:
       "Deposits and balances need an itemised document before them.",
     depositPercentOutOfRange: "Enter a deposit between 1% and 100%.",
@@ -92,6 +181,8 @@ export default {
     tooManySteps: "A workflow can have at most 15 steps.",
   },
   kinds: {
+    caution: "Caution fee",
+    cautionRefund: "Caution refund",
     document: "Document",
     payment: "Payment",
     receipt: "Receipt",
@@ -118,6 +209,16 @@ export default {
   newPageTitle: "New workflow",
   pageTitle: "Workflows",
   samples: {
+    eventCentreBooking: {
+      description:
+        "For halls and event spaces: a quote, then the booking invoice with the refundable caution as one of its lines. After the event you settle the caution, keeping anything for damage.",
+      name: "Event centre booking",
+    },
+    shortLetStay: {
+      description:
+        "For short-let apartments and Airbnb hosts: the booking invoice with the caution as one of its lines, then the caution refund after check-out.",
+      name: "Short-let apartment stay",
+    },
     agencyProject: {
       description:
         "An estimate the client signs off, half upfront to kick off, and the rest when you deliver. For websites, branding and campaigns.",
@@ -148,6 +249,11 @@ export default {
         "A quote to hold the date, a 30% booking deposit, and the balance just before the shoot or event.",
       name: "Photography or event booking",
     },
+    purchaseOrderSupply: {
+      description:
+        "For suppliers to companies: they accept your quote with their purchase order number, you confirm the order, then invoice on 30-day terms quoting their PO.",
+      name: "Supplying businesses with purchase orders",
+    },
     retailOrder: {
       description:
         "The customer confirms what they're buying, pays upfront and gets a receipt. For orders taken in store, on WhatsApp or on Instagram.",
@@ -160,6 +266,11 @@ export default {
     },
   },
   stepNames: {
+    bookingInvoice: "Booking invoice",
+    bookingPayment: "Booking payment",
+    caution: "Caution fee",
+    cautionReceipt: "Caution receipt",
+    cautionRefund: "Caution refund",
     balanceInvoice: "Balance invoice",
     balancePayment: "Balance payment",
     bookingDeposit: "Booking deposit",

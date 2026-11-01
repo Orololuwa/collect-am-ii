@@ -3,6 +3,7 @@ import {
   ClockIcon,
   CreditCardIcon,
   FileTextIcon,
+  HandCoinsIcon,
   HandshakeIcon,
   MessageCircleIcon,
   SendIcon,
@@ -184,6 +185,14 @@ const attentionKeys = {
   message: { detail: "dealMessageDetail", title: "dealMessage" },
   overdue: { detail: "dealOverdueDetail", title: "dealOverdue" },
   proposal: { detail: "dealProposalDetail", title: "dealProposal" },
+  cautionToSettle: {
+    detail: "dealCautionToSettleDetail",
+    title: "dealCautionToSettle",
+  },
+  refundToSend: {
+    detail: "dealRefundToSendDetail",
+    title: "dealRefundToSend",
+  },
 } as const satisfies Record<
   DealAttentionReason,
   { title: string; detail: string }
@@ -197,6 +206,8 @@ const attentionLooks = {
   message: { icon: MessageCircleIcon, tone: info },
   overdue: { icon: CircleAlertIcon, tone: bad },
   proposal: { icon: HandshakeIcon, tone: warn },
+  cautionToSettle: { icon: HandCoinsIcon, tone: warn },
+  refundToSend: { icon: HandCoinsIcon, tone: bad },
 } as const satisfies Record<
   DealAttentionReason,
   { icon: ComponentType<SVGProps<SVGSVGElement>>; tone: string }

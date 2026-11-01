@@ -23,6 +23,11 @@ export const SAMPLE_STEP_NAMES = [
   "completionPayment",
   "payment",
   "receipt",
+  "bookingInvoice",
+  "bookingPayment",
+  "caution",
+  "cautionReceipt",
+  "cautionRefund",
 ] as const;
 export type SampleStepName = (typeof SAMPLE_STEP_NAMES)[number];
 
@@ -32,7 +37,8 @@ export type SampleStep = Omit<WorkflowStepInput, "name" | "templateId"> & {
 
 /** The gallery's sections, each listing the kinds of business it suits. */
 export const WORKFLOW_SAMPLE_CATEGORIES = {
-  goods: ["retailOrder", "wholesaleOnCredit"],
+  bookings: ["eventCentreBooking", "shortLetStay"],
+  goods: ["retailOrder", "wholesaleOnCredit", "purchaseOrderSupply"],
   projects: ["constructionProject", "madeToOrder"],
   services: [
     "freelanceJob",
@@ -46,6 +52,7 @@ export const WORKFLOW_SAMPLE_CATEGORY_ORDER = [
   "services",
   "projects",
   "goods",
+  "bookings",
 ] as const satisfies readonly WorkflowSampleCategory[];
 
 export const WORKFLOW_SAMPLE_KEYS = WORKFLOW_SAMPLE_CATEGORY_ORDER.flatMap(
@@ -63,6 +70,8 @@ const step = (
   depositPercentBps: null,
   documentType: null,
   paymentTermsDays: null,
+  negotiable: false,
+  requestsPurchaseOrder: false,
   requiresAcceptance: false,
   stepName,
   validityDays: null,
@@ -71,8 +80,14 @@ const step = (
 
 const payment = (stepName: SampleStepName = "payment") =>
   step(stepName, { kind: "payment" });
-const receipt = () =>
-  step("receipt", { advanceMode: "automatic", kind: "receipt" });
+const receipt = (stepName: SampleStepName = "receipt") =>
+  step(stepName, { advanceMode: "automatic", kind: "receipt" });
+
+/**
+ * Settling a refundable caution once the date passes. The caution itself is a
+ * line the organization adds to its quote or invoice.
+ */
+const cautionRefund = () => step("cautionRefund", { kind: "cautionRefund" });
 
 const document = (
   stepName: SampleStepName,
@@ -128,6 +143,22 @@ export const WORKFLOW_SAMPLES: Record<WorkflowSampleKey, SampleStep[]> = {
     payment("completionPayment"),
     receipt(),
   ],
+  eventCentreBooking: [
+    document("quote", "quote", { requiresAcceptance: true, validityDays: 7 }),
+    document("bookingInvoice", "invoice", {
+      advanceMode: "automatic",
+      paymentTermsDays: 3,
+    }),
+    payment("bookingPayment"),
+    receipt(),
+    cautionRefund(),
+  ],
+  shortLetStay: [
+    document("bookingInvoice", "invoice", { paymentTermsDays: 1 }),
+    payment("bookingPayment"),
+    receipt(),
+    cautionRefund(),
+  ],
   eventCatering: [
     document("quote", "quote", { requiresAcceptance: true, validityDays: 7 }),
     document("orderConfirmation", "orderConfirmation", {
@@ -175,6 +206,20 @@ export const WORKFLOW_SAMPLES: Record<WorkflowSampleKey, SampleStep[]> = {
     document("orderConfirmation", "orderConfirmation", {
       requiresAcceptance: true,
     }),
+    payment(),
+    receipt(),
+  ],
+  // For buyers whose accounts team only pays invoices that quote their PO.
+  purchaseOrderSupply: [
+    document("quote", "quote", {
+      requestsPurchaseOrder: true,
+      requiresAcceptance: true,
+      validityDays: 14,
+    }),
+    document("orderConfirmation", "orderConfirmation", {
+      advanceMode: "automatic",
+    }),
+    document("invoice", "invoice", { paymentTermsDays: 30 }),
     payment(),
     receipt(),
   ],

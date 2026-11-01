@@ -10,7 +10,6 @@ export const WORKFLOW_DOCUMENT_TYPES = [
   "estimate",
   "orderConfirmation",
   "salesOrder",
-  "purchaseOrder",
   "invoice",
 ] as const;
 export type WorkflowDocumentType = (typeof WORKFLOW_DOCUMENT_TYPES)[number];
@@ -26,6 +25,10 @@ export type WorkflowStepInput = {
   /** Document and receipt steps; null means the organization's default. */
   templateId: string | null;
   requiresAcceptance: boolean;
+  /** Accepting also asks the customer for their purchase order. */
+  requestsPurchaseOrder: boolean;
+  /** The customer may suggest their own figures before accepting. */
+  negotiable: boolean;
   advanceMode: StepAdvanceMode;
   carryForward: StepCarryForward;
   depositPercentBps: number | null;
@@ -43,7 +46,9 @@ export type WorkflowStepIssueCode =
   | "depositNeedsEarlierDocument"
   | "depositPercentOutOfRange"
   | "paymentNeedsDocument"
-  | "receiptMustFollowPayment";
+  | "receiptMustFollowPayment"
+  | "cautionIsALineItem"
+  | "cautionOnlyOnce";
 
 export type WorkflowStepIssue = {
   /** The step the issue is about, or null for the workflow as a whole. */
@@ -81,6 +86,7 @@ export function validateWorkflowSteps(
 
   let hasItemisedDocument = false;
   let hasDocumentSincePayment = false;
+  let cautionRefunds = 0;
 
   steps.forEach((step, stepIndex) => {
     const name = step.name.trim();
@@ -128,6 +134,18 @@ export function validateWorkflowSteps(
         }
         break;
       }
+      case "caution": {
+        // Cautions are now a line on a quote or invoice, not a step.
+        issues.push({ code: "cautionIsALineItem", stepIndex });
+        break;
+      }
+      case "cautionRefund": {
+        cautionRefunds += 1;
+        if (cautionRefunds > 1) {
+          issues.push({ code: "cautionOnlyOnce", stepIndex });
+        }
+        break;
+      }
     }
   });
 
@@ -146,9 +164,11 @@ export function normalizeWorkflowStep(
   return {
     ...step,
     advanceMode:
-      // The first document is always prepared by hand; payments always wait
-      // for the customer.
-      stepIndex === 0 || step.kind === "payment" ? "manual" : step.advanceMode,
+      // The first document is always prepared by hand; payments and cautions
+      // wait for the customer, and a caution refund for the business.
+      stepIndex === 0 || (step.kind !== "document" && step.kind !== "receipt")
+        ? "manual"
+        : step.advanceMode,
     carryForward: isDocument ? step.carryForward : "items",
     depositPercentBps:
       isDocument && step.carryForward === "deposit"
@@ -161,7 +181,13 @@ export function normalizeWorkflowStep(
         ? step.paymentTermsDays
         : null,
     requiresAcceptance: isDocument && step.requiresAcceptance,
-    templateId: step.kind === "payment" ? null : step.templateId,
+    negotiable: isDocument && step.requiresAcceptance && step.negotiable,
+    requestsPurchaseOrder:
+      isDocument && step.requiresAcceptance && step.requestsPurchaseOrder,
+    templateId:
+      step.kind === "document" || step.kind === "receipt"
+        ? step.templateId
+        : null,
     validityDays:
       isDocument &&
       (step.documentType === "quote" || step.documentType === "estimate")

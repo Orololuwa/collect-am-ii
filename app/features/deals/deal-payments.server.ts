@@ -77,7 +77,7 @@ export async function startDealOnlinePayment({
     !deal ||
     deal.status !== "open" ||
     !step ||
-    step.kind !== "payment" ||
+    (step.kind !== "payment" && step.kind !== "caution") ||
     step.paidAt ||
     amountMinor <= 0
   ) {
@@ -160,6 +160,7 @@ export async function startDealOnlinePayment({
       organizationId: deal.organizationId,
       provider: "paystack",
       providerPaymentId: reference,
+      purpose: step.kind === "caution" ? "caution" : "sale",
       status: "pending",
     },
   });
@@ -200,6 +201,7 @@ export async function upsertDealPaymentFromStripePaymentIntent(
       provider: "stripe",
       providerCustomerId: typeof pi.customer === "string" ? pi.customer : null,
       providerPaymentId: pi.id,
+      purpose: step.kind === "caution" ? "caution" : "sale",
       status: "pending",
     },
     update: {},

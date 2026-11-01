@@ -11,10 +11,12 @@ import { updateOrganizationInDatabaseBySlug } from "../../organizations-model.se
 import {
   DELETE_ORGANIZATION_INTENT,
   UPDATE_ORGANIZATION_INTENT,
+  UPDATE_WORKFLOW_VIEW_INTENT,
 } from "./general-settings-constants";
 import {
   deleteOrganizationFormSchema,
   updateOrganizationFormSchema,
+  updateWorkflowViewFormSchema,
 } from "./general-settings-schemas";
 import type { Route } from ".react-router/types/app/routes/_authenticated-routes+/organizations_+/$organizationSlug+/settings+/+types/general";
 import { updateStripeCustomer } from "~/features/billing/stripe-helpers.server";
@@ -31,6 +33,7 @@ const generalOrganizationSettingsActionSchema = coerceFormValue(
   z.discriminatedUnion("intent", [
     deleteOrganizationFormSchema,
     updateOrganizationFormSchema,
+    updateWorkflowViewFormSchema,
   ]),
 );
 
@@ -115,6 +118,26 @@ export async function generalOrganizationSettingsAction({
       const toastHeaders = await createToastHeaders({
         title: i18n.t(
           "organizations:settings.general.toast.organizationProfileUpdated",
+        ),
+        type: "success",
+      });
+      return data(
+        { result: undefined },
+        { headers: combineHeaders(headers, toastHeaders) },
+      );
+    }
+
+    case UPDATE_WORKFLOW_VIEW_INTENT: {
+      await updateOrganizationInDatabaseBySlug({
+        organization: {
+          workflowView: result.data.workflowView,
+          workflowViewSwitchable: result.data.allowViewSwitch ?? false,
+        },
+        slug: params.organizationSlug,
+      });
+      const toastHeaders = await createToastHeaders({
+        title: i18n.t(
+          "organizations:settings.general.toast.workflowViewUpdated",
         ),
         type: "success",
       });

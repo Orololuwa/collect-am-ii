@@ -10,6 +10,86 @@ export default {
     salesOrder: "Kundenauftrag",
   },
   editor: {
+    addCaution: "Kaution hinzufügen",
+    addCautionRefund: "Kautionsrückzahlung hinzufügen",
+    cautionDescription:
+      "Eine erstattbare Kaution, die die Kundschaft auf der Deal-Seite bezahlt. Du legst den Betrag bei jedem Deal fest, und sie zählt nicht als Einnahme.",
+    cautionRefundDescription:
+      "Nach dem Abrechnungsdatum trägst du die einbehaltene Kaution und alle Abzüge ein, gern mit Fotos. Die Kundschaft wird nach dem Erstattungskonto gefragt; du überweist den Rest von deiner Bank und markierst ihn als gesendet.",
+    cautionRefundGate: {
+      description: "Dann überweist du sie von deiner Bank",
+      title: "Kundschaft gibt ihr Erstattungskonto an",
+    },
+    advanceReceipt: "Wenn die Zahlung eingeht",
+    auto: "Auto",
+    back: "Workflows",
+    canvas: {
+      addHere: "Hier einen Schritt hinzufügen",
+      addStep: "Schritt hinzufügen",
+      addStepHint:
+        "Auf eine Linie ziehen zum Einfügen, oder klicken, um ihn ans Ende zu setzen.",
+      end: "Deal abgeschlossen",
+      fit: "Einpassen",
+      insertBefore: "Schritt vor {{name}} hinzufügen",
+      insertFirst: "Schritt am Anfang hinzufügen",
+      insertLast: "Schritt am Ende hinzufügen",
+      start: "Deal startet",
+      zoomIn: "Vergrößern",
+      zoomHint:
+        "Auf 100 % zurücksetzen. Zum Zoomen Strg oder ⌘ halten und scrollen, oder mit zwei Fingern ziehen.",
+      zoomOut: "Verkleinern",
+    },
+    carryBalanceHint:
+      "Eine Zeile: der Gesamtbetrag abzüglich bisheriger Zahlungen",
+    carryDepositHint: "Eine Zeile: ein Anteil am vereinbarten Gesamtbetrag",
+    carryItemsHint: "Aus dem zuletzt angenommenen Dokument übernommen",
+    gate: {
+      description: "Oder lehnt ab oder bittet um Änderungen",
+      descriptionWithPo: "Mit ihrer Bestellnummer. Kann Änderungen vorschlagen",
+      title: "Kundschaft nimmt an",
+      titleWithPo: "Kundschaft nimmt an und schickt ihre Bestellung",
+      descriptionFixed: "Oder lehnt ab",
+      descriptionWithPoFixed: "Mit ihrer Bestellnummer",
+    },
+    hasProblem: "Hat ein Problem, das behoben werden muss",
+    lanes: {
+      customer: "Kundschaft",
+      customerHint: "Über den Freigabelink des Deals",
+      you: "Du",
+      youHint: "Dein Team",
+    },
+    moveDownShort: "Nach unten",
+    moveUpShort: "Nach oben",
+    noOpenDeals: "Kein offener Deal nutzt ihn",
+    openDeals_one: "Von {{count}} offenen Deal genutzt",
+    openDeals_other: "Von {{count}} offenen Deals genutzt",
+    problems_one: "{{count}} Problem zu beheben",
+    problems_other: "{{count}} Probleme zu beheben",
+    ready: "Einsatzbereit",
+    removeShort: "Schritt entfernen",
+    selectStep: "Wähle einen Schritt aus, um ihn zu bearbeiten.",
+    stepCount_one: "{{count}} Schritt",
+    stepCount_other: "{{count}} Schritte",
+    stepOf: "Schritt {{number}} von {{total}}",
+    stepSettings: "Schritteinstellungen",
+    summary: {
+      caution: "Erstattbar, über den Freigabelink bezahlt",
+      cautionRefund: "Abzüge, dann Erstattung auf ihr Konto",
+      balance: "Der Restbetrag",
+      deposit: "{{percent}} % Anzahlung",
+      payment: "Online über den Freigabelink bezahlt",
+      receipt: "Per E-Mail, sobald die Zahlung eingeht",
+      terms_one: "Fällig in {{count}} Tag",
+      terms_other: "Fällig in {{count}} Tagen",
+      validity_one: "{{count}} Tag gültig",
+      validity_other: "{{count}} Tage gültig",
+    },
+    untitledStep: "Unbenannter Schritt",
+    view: "Ansicht",
+    views: {
+      canvas: "Canvas",
+      steps: "Schritte",
+    },
     addDocument: "Dokument hinzufügen",
     addPayment: "Zahlung hinzufügen",
     addReceipt: "Quittung hinzufügen",
@@ -39,6 +119,12 @@ export default {
     receiptDescription:
       "Eine Quittung für die Zahlung darüber, per E-Mail an den Kunden.",
     remove: "{{name}} entfernen",
+    negotiable: "Verhandeln erlauben",
+    negotiableHint:
+      "Die Kundschaft kann eigene Mengen, Preise, Steuern und Rabatte vorschlagen. Du nimmst die Vorschläge an oder lehnst sie ab.",
+    requestsPurchaseOrder: "Nach ihrer Bestellung fragen",
+    requestsPurchaseOrderHint:
+      "Beim Annehmen gibt die Kundschaft ihre Bestellnummer an und kann ihre Bestellung als Datei anhängen. Spätere Dokumente zeigen die Nummer.",
     requiresAcceptance: "Der Kunde muss es annehmen",
     requiresAcceptanceHint:
       "Er kann es auf der Deal-Seite annehmen, ablehnen oder Änderungen anfragen.",
@@ -57,13 +143,16 @@ export default {
   },
   gallery: {
     categories: {
+      bookings: "Buchungen und Vermietung",
       goods: "Warenverkauf",
       projects: "Projekte und Einzelanfertigungen",
       services: "Dienstleistungen",
     },
     highlights: {
+      caution: "Erstattbare Kaution",
       deposit: "{{percent}} % im Voraus",
       paidUpfront: "Bezahlt vor Lieferung",
+      purchaseOrder: "Fragt nach ihrer Bestellung",
       terms_one: "Rechnung fällig in {{count}} Tag",
       terms_other: "Rechnung fällig in {{count}} Tagen",
       validity_one: "{{type}} {{count}} Tag gültig",
@@ -78,6 +167,10 @@ export default {
     use: "Verwenden",
   },
   issues: {
+    cautionOnlyOnce:
+      "Ein Workflow kann eine Kaution nehmen und sie einmal erstatten.",
+    cautionIsALineItem:
+      "Füge die Kaution stattdessen als Position zu deinem Angebot oder deiner Rechnung hinzu. Entferne diesen Schritt.",
     depositNeedsEarlierDocument:
       "Anzahlungen und Restbeträge brauchen davor ein Dokument mit Positionen.",
     depositPercentOutOfRange: "Gib eine Anzahlung zwischen 1 % und 100 % ein.",
@@ -95,6 +188,8 @@ export default {
     tooManySteps: "Ein Workflow kann höchstens 15 Schritte haben.",
   },
   kinds: {
+    caution: "Kaution",
+    cautionRefund: "Kautionsrückzahlung",
     document: "Dokument",
     payment: "Zahlung",
     receipt: "Quittung",
@@ -121,6 +216,16 @@ export default {
   newPageTitle: "Neuer Workflow",
   pageTitle: "Workflows",
   samples: {
+    eventCentreBooking: {
+      description:
+        "Für Säle und Eventlocations: ein Angebot, dann die Buchungsrechnung mit der erstattbaren Kaution als Position. Nach der Veranstaltung rechnest du die Kaution ab und behältst bei Schäden etwas ein.",
+      name: "Buchung einer Eventlocation",
+    },
+    shortLetStay: {
+      description:
+        "Für Ferienwohnungen und Airbnb-Gastgeber: die Buchungsrechnung mit der Kaution als Position, dann die Rückzahlung nach dem Check-out.",
+      name: "Aufenthalt in einer Ferienwohnung",
+    },
     agencyProject: {
       description:
         "Ein Kostenvoranschlag, den der Kunde freigibt, die Hälfte zum Start und der Rest bei Lieferung. Für Websites, Branding und Kampagnen.",
@@ -151,6 +256,11 @@ export default {
         "Ein Angebot, um den Termin zu reservieren, 30 % Buchungsanzahlung und der Rest kurz vor dem Shooting oder Event.",
       name: "Fotografie- oder Eventbuchung",
     },
+    purchaseOrderSupply: {
+      description:
+        "Für Lieferanten von Unternehmen: Sie nehmen dein Angebot mit ihrer Bestellnummer an, du bestätigst den Auftrag und stellst eine Rechnung mit 30 Tagen Zahlungsziel, die ihre Bestellnummer nennt.",
+      name: "Unternehmen mit Bestellungen beliefern",
+    },
     retailOrder: {
       description:
         "Der Kunde bestätigt seinen Einkauf, zahlt im Voraus und bekommt eine Quittung. Für Bestellungen im Laden, über WhatsApp oder Instagram.",
@@ -163,6 +273,11 @@ export default {
     },
   },
   stepNames: {
+    bookingInvoice: "Buchungsrechnung",
+    bookingPayment: "Buchungszahlung",
+    caution: "Kaution",
+    cautionReceipt: "Kautionsquittung",
+    cautionRefund: "Kautionsrückzahlung",
     balanceInvoice: "Restrechnung",
     balancePayment: "Restzahlung",
     bookingDeposit: "Buchungsanzahlung",

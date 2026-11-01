@@ -1,3 +1,4 @@
+import { createId } from "@paralleldrive/cuid2";
 import type { RouterContextProvider } from "react-router";
 import { data } from "react-router";
 
@@ -7,6 +8,7 @@ import {
   acceptDealDocument,
   DealTransitionError,
   declineDealDocument,
+  giveCautionRefundAccount,
   postDealMessage,
   proposeDealChanges,
 } from "./deal-engine.server";
@@ -18,14 +20,17 @@ import {
 import {
   ACCEPT_DOCUMENT_INTENT,
   DECLINE_DOCUMENT_INTENT,
+  GIVE_REFUND_ACCOUNT_INTENT,
   POST_MESSAGE_INTENT,
   PROPOSE_CHANGES_INTENT,
+  PURCHASE_ORDER_MAX_FILE_SIZE,
 } from "./deals-constants";
 import {
   customerAcceptFormSchema,
   declineDocumentFormSchema,
   postMessageFormSchema,
   proposeChangesFormSchema,
+  refundAccountFormSchema,
 } from "./deals-schemas";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
 import { combineHeaders } from "~/utils/combine-headers.server";
@@ -38,6 +43,7 @@ import {
   tooManyRequests,
 } from "~/utils/http-responses.server";
 import { consumeRateLimit, getClientIp } from "~/utils/rate-limit.server";
+import { uploadPrivateFile } from "~/utils/storage.server";
 import { createToastHeaders } from "~/utils/toast.server";
 import { validateFormData } from "~/utils/validate-form-data.server";
 
@@ -56,6 +62,12 @@ const ERROR_KEYS = {
   notCurrentStep: "errors.alreadyAnswered",
   notPaymentStep: "errors.generic",
   proposalNotFound: "errors.generic",
+  purchaseOrderRequired: "errors.purchaseOrderRequired",
+  changesNotAllowed: "errors.changesNotAllowed",
+  cautionHeldRequired: "errors.generic",
+  deductionsTooHigh: "errors.generic",
+  notCautionRefundStep: "errors.alreadyAnswered",
+  refundAccountMissing: "errors.generic",
   versionChanged: "errors.versionChanged",
   workflowNotFound: "errors.generic",
 } as const;
@@ -65,6 +77,7 @@ const SUCCESS_KEYS = {
   [DECLINE_DOCUMENT_INTENT]: "toasts.declined",
   [POST_MESSAGE_INTENT]: "toasts.messageSent",
   [PROPOSE_CHANGES_INTENT]: "toasts.changesSent",
+  [GIVE_REFUND_ACCOUNT_INTENT]: "toasts.accountSaved",
 } as const;
 
 type RoomIntent = keyof typeof SUCCESS_KEYS;
@@ -144,14 +157,33 @@ export async function dealRoomAction({
         const result = await validateFormData(
           request,
           customerAcceptFormSchema,
+          { maxFileSize: PURCHASE_ORDER_MAX_FILE_SIZE },
         );
         if (!result.success) return { invalid: result.response };
+        const { purchaseOrderFile, purchaseOrderNumber } = result.data;
+        // Stored privately: only the organization can download it, by a
+        // short-lived link.
+        const fileId =
+          purchaseOrderFile && purchaseOrderNumber
+            ? await uploadPrivateFile({
+                file: purchaseOrderFile,
+                folder: `CollectAm/purchase-orders/${target.organizationId}`,
+                publicId: `${target.dealId}-${createId()}`,
+              })
+            : null;
         const { effects } = await acceptDealDocument({
           ...target,
           acceptedByName: result.data.acceptedByName,
           actor,
           documentId: result.data.documentId,
           expectedVersionId: result.data.versionId,
+          purchaseOrder: purchaseOrderNumber
+            ? {
+                fileId,
+                fileName: fileId ? (purchaseOrderFile?.name ?? "") : "",
+                number: purchaseOrderNumber,
+              }
+            : undefined,
         });
         return {
           effects,
@@ -173,6 +205,22 @@ export async function dealRoomAction({
         return {
           effects,
           notification: `${customerName} declined ${nameOf(result.data.documentId)}`,
+        };
+      }
+      case GIVE_REFUND_ACCOUNT_INTENT: {
+        const result = await validateFormData(request, refundAccountFormSchema);
+        if (!result.success) return { invalid: result.response };
+        const { effects } = await giveCautionRefundAccount({
+          ...target,
+          accountName: result.data.accountName,
+          accountNumber: result.data.accountNumber,
+          actor,
+          bankName: result.data.bankName,
+          stepId: result.data.stepId,
+        });
+        return {
+          effects,
+          notification: `${customerName} gave the account for their caution refund`,
         };
       }
       case PROPOSE_CHANGES_INTENT: {
@@ -266,7 +314,8 @@ async function deliverEffects(
   context: Readonly<RouterContextProvider>,
   effects: DealEffects,
 ) {
-  if (effects.emails.length === 0) {
+  // Caution notices go by email too, with no document attached.
+  if (effects.emails.length === 0 && effects.notices.length === 0) {
     return 0;
   }
   return await deliverDealEffects(effects, {

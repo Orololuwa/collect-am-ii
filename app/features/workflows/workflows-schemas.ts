@@ -24,10 +24,12 @@ export const workflowStepSchema = z.object({
   carryForward: z.enum(["items", "deposit", "balance"]),
   depositPercentBps: z.number().int().min(0).max(10_000).nullable(),
   documentType: z.enum(WORKFLOW_DOCUMENT_TYPES).nullable(),
-  kind: z.enum(["document", "payment", "receipt"]),
+  kind: z.enum(["document", "payment", "receipt", "caution", "cautionRefund"]),
   name: z.string().max(200),
   paymentTermsDays: optionalDays,
   requiresAcceptance: z.boolean(),
+  negotiable: z.boolean().optional().default(false),
+  requestsPurchaseOrder: z.boolean().optional().default(false),
   templateId: z.string().min(1).nullable(),
   validityDays: optionalDays,
 });

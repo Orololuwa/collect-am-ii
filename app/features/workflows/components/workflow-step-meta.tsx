@@ -1,0 +1,138 @@
+import type { TFunction } from "i18next";
+import {
+  CreditCardIcon,
+  FileTextIcon,
+  HandCoinsIcon,
+  ReceiptIcon,
+  ShieldCheckIcon,
+} from "lucide-react";
+
+import type { WorkflowStepInput } from "../workflow-steps";
+import { DOCUMENT_TYPE_KEYS } from "../workflows-constants";
+import type { WorkflowStepKind } from "~/generated/browser";
+
+export type EditorStep = WorkflowStepInput & { key: string };
+
+/** Who acts at a step: the business sends documents, the customer pays. */
+export type StepLane = "you" | "customer";
+
+export const KIND_ICONS = {
+  document: FileTextIcon,
+  payment: CreditCardIcon,
+  receipt: ReceiptIcon,
+  caution: ShieldCheckIcon,
+  cautionRefund: HandCoinsIcon,
+} as const satisfies Record<WorkflowStepKind, unknown>;
+
+/** The tinted tile behind a step's icon, one colour per kind. */
+export const KIND_TILE_CLASSES = {
+  document: "bg-primary/10 text-primary",
+  payment: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  receipt: "bg-lime-100 text-lime-800 dark:bg-lime-950 dark:text-lime-300",
+  caution: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
+  cautionRefund:
+    "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200",
+} as const satisfies Record<WorkflowStepKind, string>;
+
+export const KIND_KEYS = {
+  document: "kinds.document",
+  payment: "kinds.payment",
+  receipt: "kinds.receipt",
+  caution: "kinds.caution",
+  cautionRefund: "kinds.cautionRefund",
+} as const satisfies Record<WorkflowStepKind, string>;
+
+export function stepLane(step: WorkflowStepInput): StepLane {
+  return step.kind === "payment" || step.kind === "caution"
+    ? "customer"
+    : "you";
+}
+
+/** True when the step goes out on its own once the one before it is done. */
+export function isAutomaticStep(step: WorkflowStepInput, index: number) {
+  return (
+    index > 0 &&
+    (step.kind === "document" || step.kind === "receipt") &&
+    step.advanceMode === "automatic"
+  );
+}
+
+/** One line describing a step, e.g. "Invoice · 40% deposit · Due in 7 days". */
+export function stepSummary(
+  t: TFunction<"workflows">,
+  step: WorkflowStepInput,
+) {
+  if (step.kind === "payment") {
+    return t("editor.summary.payment");
+  }
+  if (step.kind === "receipt") {
+    return t("editor.summary.receipt");
+  }
+  if (step.kind === "caution") {
+    return t("editor.summary.caution");
+  }
+  if (step.kind === "cautionRefund") {
+    return t("editor.summary.cautionRefund");
+  }
+  const parts: string[] = [];
+  if (step.documentType) {
+    parts.push(t(DOCUMENT_TYPE_KEYS[step.documentType]));
+  }
+  if (step.carryForward === "deposit" && step.depositPercentBps !== null) {
+    parts.push(
+      t("editor.summary.deposit", { percent: step.depositPercentBps / 100 }),
+    );
+  } else if (step.carryForward === "balance") {
+    parts.push(t("editor.summary.balance"));
+  }
+  if (step.documentType === "invoice" && step.paymentTermsDays !== null) {
+    parts.push(t("editor.summary.terms", { count: step.paymentTermsDays }));
+  }
+  if (
+    (step.documentType === "quote" || step.documentType === "estimate") &&
+    step.validityDays !== null
+  ) {
+    parts.push(t("editor.summary.validity", { count: step.validityDays }));
+  }
+  return parts.join(" · ");
+}
+
+/** What the customer can do at an accept step, as the canvas and list say it. */
+export function gateDescription(step: WorkflowStepInput) {
+  if (step.requestsPurchaseOrder) {
+    return step.negotiable ? "withPo" : "withPoFixed";
+  }
+  return step.negotiable ? "negotiable" : "fixed";
+}
+
+export const GATE_DESCRIPTION_KEYS = {
+  fixed: "editor.gate.descriptionFixed",
+  negotiable: "editor.gate.description",
+  withPo: "editor.gate.descriptionWithPo",
+  withPoFixed: "editor.gate.descriptionWithPoFixed",
+} as const satisfies Record<ReturnType<typeof gateDescription>, string>;
+
+/** The customer's part after a step: accepting a document, or giving the
+ * account a caution is refunded to. */
+export function hasCustomerGate(step: WorkflowStepInput) {
+  return (
+    (step.kind === "document" && step.requiresAcceptance) ||
+    step.kind === "cautionRefund"
+  );
+}
+
+/** The gate's title and description keys. */
+export function gateText(step: WorkflowStepInput) {
+  if (step.kind === "cautionRefund") {
+    return {
+      description: "editor.cautionRefundGate.description",
+      title: "editor.cautionRefundGate.title",
+    } as const;
+  }
+  return {
+    description: GATE_DESCRIPTION_KEYS[gateDescription(step)],
+    title: step.requestsPurchaseOrder
+      ? "editor.gate.titleWithPo"
+      : "editor.gate.title",
+  } as const;
+}

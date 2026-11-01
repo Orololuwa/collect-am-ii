@@ -18,6 +18,8 @@ const documentStep = (
   kind: "document",
   name: "Quote",
   paymentTermsDays: null,
+  negotiable: true,
+  requestsPurchaseOrder: false,
   requiresAcceptance: true,
   templateId: null,
   validityDays: 30,
@@ -145,6 +147,7 @@ describe("normalizeWorkflowStep()", () => {
       carryForward: "items",
       depositPercentBps: null,
       documentType: null,
+      negotiable: false,
       requiresAcceptance: false,
       templateId: null,
       validityDays: null,
@@ -169,5 +172,61 @@ describe("normalizeWorkflowStep()", () => {
         1,
       ),
     ).toMatchObject({ paymentTermsDays: 14, validityDays: null });
+  });
+
+  describe("normalizeWorkflowStep() purchase orders", () => {
+    test("given: a step that doesn't need acceptance, should: drop the PO request", () => {
+      expect(
+        normalizeWorkflowStep(
+          documentStep({
+            requestsPurchaseOrder: true,
+            requiresAcceptance: false,
+          }),
+          0,
+        ).requestsPurchaseOrder,
+      ).toBe(false);
+      expect(
+        normalizeWorkflowStep(documentStep({ requestsPurchaseOrder: true }), 0)
+          .requestsPurchaseOrder,
+      ).toBe(true);
+    });
+  });
+
+  describe("sample workflows", () => {
+    test("given: any sample, should: start with negotiation off", () => {
+      const negotiable = WORKFLOW_SAMPLE_KEYS.flatMap((key) =>
+        WORKFLOW_SAMPLES[key].filter((step) => step.negotiable),
+      );
+      expect(negotiable).toEqual([]);
+    });
+  });
+
+  describe("validateWorkflowSteps() cautions", () => {
+    const caution = documentStep({
+      documentType: null,
+      kind: "caution",
+      name: "Caution",
+    });
+    const refund = documentStep({
+      documentType: null,
+      kind: "cautionRefund",
+      name: "Refund",
+    });
+
+    test("given: a caution refund after the documents, should: pass", () => {
+      expect(validateWorkflowSteps([documentStep(), refund])).toEqual([]);
+    });
+
+    test("given: a separate caution step, should: ask for a line item instead", () => {
+      expect(validateWorkflowSteps([documentStep(), caution, refund])).toEqual([
+        { code: "cautionIsALineItem", stepIndex: 1 },
+      ]);
+    });
+
+    test("given: two caution refunds, should: flag the second", () => {
+      expect(validateWorkflowSteps([documentStep(), refund, refund])).toEqual([
+        { code: "cautionOnlyOnce", stepIndex: 2 },
+      ]);
+    });
   });
 });
