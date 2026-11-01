@@ -3,7 +3,12 @@ import { describe, expect, test } from "vitest";
 import { findCautionLinesMinor, maskAccountNumber } from "./deal-caution";
 import type { DealLineItem } from "./deal-items";
 
-const line = (name: string, unitPriceMinor: number): DealLineItem => ({
+const line = (
+  name: string,
+  unitPriceMinor: number,
+  caution = false,
+): DealLineItem => ({
+  ...(caution ? { caution: true } : {}),
   description: "",
   discountBps: 0,
   name,
@@ -18,14 +23,17 @@ describe("findCautionLinesMinor()", () => {
   test("given: documents with a caution line, should: use the latest one", () => {
     expect(
       findCautionLinesMinor([
-        [line("Hall hire", 50_000_000), line("Caution fee", 10_000_000)],
-        [line("Hall hire", 50_000_000), line("Refundable caution", 20_000_000)],
+        [line("Hall hire", 50_000_000), line("Caution", 10_000_000, true)],
+        [line("Hall hire", 50_000_000), line("Caution", 20_000_000, true)],
+        [line("Extra chairs", 1_000_000)],
       ]),
     ).toEqual(20_000_000);
   });
 
-  test("given: no caution line, should: suggest nothing", () => {
-    expect(findCautionLinesMinor([[line("Hall hire", 50_000_000)]])).toBeNull();
+  test("given: a line only named like a caution, should: not count it", () => {
+    expect(
+      findCautionLinesMinor([[line("Caution fee", 10_000_000)]]),
+    ).toBeNull();
   });
 });
 

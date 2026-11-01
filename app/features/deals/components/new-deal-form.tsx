@@ -195,6 +195,7 @@ export function NewDealForm({
                 <FieldDescription>{t("itemsDescription")}</FieldDescription>
               </div>
               <DealItemsEditor
+                allowCaution={refundsCaution}
                 currency={currency}
                 key={currency}
                 onValidityChange={setItemsValid}

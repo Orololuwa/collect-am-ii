@@ -172,7 +172,7 @@ export type DealView = {
   shareUrl: string;
   /** When the deal's caution can be settled, if it takes one. */
   cautionSettleAfter: Date | null;
-  /** The caution lines on the deal's latest documents, if any. */
+  /** The caution line on the deal's latest document that has one, if any. */
   cautionSuggestionMinor: number | null;
   /** The customer's purchase order, once they've given one. */
   purchaseOrder: {
@@ -501,11 +501,13 @@ function DeclineDialog({
 }
 
 function ReviseForm({
+  allowCaution,
   document,
   currency,
   products,
   onDone,
 }: {
+  allowCaution: boolean;
   document: DealDocumentView;
   currency: string;
   products: DealProductOption[];
@@ -523,6 +525,7 @@ function ReviseForm({
     <fetcher.Form className="space-y-4" method="POST">
       <input name="documentId" type="hidden" value={document.id} />
       <DealItemsEditor
+        allowCaution={allowCaution}
         currency={currency}
         initialItems={document.current.items}
         onValidityChange={setValid}
@@ -661,6 +664,9 @@ function CurrentDocument({
 
         {editing ? (
           <ReviseForm
+            allowCaution={deal.steps.some(
+              (step) => step.kind === "cautionRefund",
+            )}
             currency={deal.currency}
             document={document}
             onDone={() => setEditing(false)}

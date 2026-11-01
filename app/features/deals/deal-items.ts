@@ -20,6 +20,11 @@ export type DealLineItem = {
   taxRateBps: number;
   /** Discount on this line in basis points (1000 = 10%), taken off before tax. */
   discountBps: number;
+  /**
+   * The deal's refundable caution. Its amount is what the caution refund step
+   * settles, so it's tracked by this mark rather than by its name.
+   */
+  caution?: boolean;
 };
 
 export type DealTotals = {
@@ -114,7 +119,15 @@ export function parseDealItems(value: unknown): DealLineItem[] {
         taxRateBps,
         unit: typeof item.unit === "string" ? item.unit : "item",
         unitPriceMinor,
+        ...(item.caution === true ? { caution: true } : {}),
       },
     ];
   });
+}
+
+/** What the caution lines on a set of items add up to, after any tax. */
+export function cautionLinesMinor(items: DealLineItem[]) {
+  return items
+    .filter((item) => item.caution)
+    .reduce((sum, item) => sum + lineNetMinor(item) + lineTaxMinor(item), 0);
 }

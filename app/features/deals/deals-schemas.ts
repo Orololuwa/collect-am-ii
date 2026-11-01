@@ -68,6 +68,7 @@ export const dealItemSchema = z.object({
   discountBps: z.number().int().min(0).max(10_000).optional().default(0),
   unit: z.string().trim().min(1).max(30),
   unitPriceMinor: z.number().int().min(0).max(100_000_000_000),
+  caution: z.boolean().optional(),
 });
 
 // The line items are sent as one JSON field from the items editor.
@@ -85,7 +86,10 @@ const itemsField = z
     z
       .array(dealItemSchema, { message: "deals:items.itemsInvalid" })
       .min(1, { message: "deals:items.itemsRequired" })
-      .max(MAX_DEAL_ITEMS, { message: "deals:items.tooManyItems" }),
+      .max(MAX_DEAL_ITEMS, { message: "deals:items.tooManyItems" })
+      .refine((items) => items.filter((item) => item.caution).length <= 1, {
+        message: "deals:items.oneCaution",
+      }),
   );
 
 export const startDealFormSchema = z.object({

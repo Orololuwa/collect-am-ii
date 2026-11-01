@@ -592,7 +592,11 @@ export async function startDeal({
     const loaded = await loadDealForUpdate(tx, organizationId, deal.id);
     const [firstStep] = deal.steps;
     if (firstStep) {
-      await activateStep(tx, loaded, firstStep.id, actor, effects, items);
+      // Only a workflow that refunds a caution keeps track of one.
+      const firstItems = refundsCaution
+        ? items
+        : items.map(({ caution: _caution, ...item }) => item);
+      await activateStep(tx, loaded, firstStep.id, actor, effects, firstItems);
     }
     return deal;
   });
@@ -1119,6 +1123,8 @@ export async function proposeDealChanges({
     // The customer's figures are a request, not a price change: the business
     // sees exactly what they asked for and decides.
     const kept = parseDealItems(current.items).flatMap((item, index) => {
+      // The caution is the business's to set; suggestions leave it alone.
+      if (item.caution) return [item];
       const changed = withFigures(item, changes.lines[index] ?? {});
       return changed.quantity > 0 ? [changed] : [];
     });

@@ -1,5 +1,5 @@
 import type { DealLineItem } from "./deal-items";
-import { lineNetMinor, lineTaxMinor } from "./deal-items";
+import { cautionLinesMinor } from "./deal-items";
 
 /** A photo or video the business attaches to show why it kept something. */
 export type CautionEvidence = {
@@ -38,24 +38,15 @@ export function cautionEvidenceFolder(organizationId: string, dealId: string) {
   return `CollectAm/caution-evidence/${organizationId}/${dealId}`;
 }
 
-const CAUTION_LINE =
-  /\b(caution|security deposit|refundable deposit|damage deposit)\b/i;
-
 /**
- * What the caution lines on a deal's documents add up to, from the latest
- * document that has any. A starting point for the settlement, never final.
+ * The caution line on the latest document that has one, from its "Add
+ * caution fee" flag. A starting point for the settlement, never final.
  */
 export function findCautionLinesMinor(documents: DealLineItem[][]) {
-  for (const items of [...documents].reverse()) {
-    const lines = items.filter((item) => CAUTION_LINE.test(item.name));
-    if (lines.length > 0) {
-      return lines.reduce(
-        (sum, item) => sum + lineNetMinor(item) + lineTaxMinor(item),
-        0,
-      );
-    }
-  }
-  return null;
+  const items = [...documents]
+    .reverse()
+    .find((candidate) => candidate.some((item) => item.caution));
+  return items ? cautionLinesMinor(items) : null;
 }
 
 /** "0123456789" → "•••• 6789", so a share link never shows it whole. */

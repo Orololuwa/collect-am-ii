@@ -65,7 +65,7 @@ export default {
   },
   new: {
     settleAfterHint:
-      "Das Veranstaltungs- oder Check-out-Datum. Füge die Kaution als Position bei deinem Angebot hinzu; CollectAm erinnert dich nach diesem Datum an die Abrechnung.",
+      'Das Veranstaltungs- oder Check-out-Datum. Nutze unten "Kaution hinzufügen", damit die Kaution erfasst wird; CollectAm erinnert dich nach diesem Datum an die Abrechnung.',
     settleAfterLabel: "Kaution abrechnen nach",
     cautionAmountInvalid: "Gib die Kaution als Betrag ein, z. B. 50000.",
     title: "Neuer Deal",
@@ -99,6 +99,12 @@ export default {
     needCustomerDescription: "Ein Deal gehört immer zu einem Kunden.",
   },
   items: {
+    addCaution: "Kaution hinzufügen",
+    cautionBadge: "Erstattbare Kaution",
+    cautionDescription:
+      "Wird nach der Buchung erstattet, abzüglich Einbehalten",
+    cautionName: "Kaution (erstattbar)",
+    oneCaution: "Ein Dokument kann eine Kautionsposition haben.",
     product: "Position",
     quantity: "Menge",
     unitPrice: "Einzelpreis",

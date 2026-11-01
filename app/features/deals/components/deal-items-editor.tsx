@@ -1,4 +1,4 @@
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, ShieldCheckIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -42,6 +42,8 @@ type Row = {
   discount: string;
   /** Edited since it was added; a fresh blank line isn't flagged yet. */
   touched?: boolean;
+  /** The deal's refundable caution: one line, quantity 1, no tax or discount. */
+  caution?: boolean;
 };
 
 let nextKey = 0;
@@ -60,6 +62,7 @@ function toRow(item: DealLineItem, currency: string): Row {
     discount: basisPointsToPercent(item.discountBps),
     unit: item.unit,
     unitPrice: minorUnitsToMajorString(item.unitPriceMinor, currency),
+    ...(item.caution ? { caution: true } : {}),
   };
 }
 
@@ -97,6 +100,7 @@ function toItem(row: Row, currency: string): DealLineItem | null {
     discountBps: Math.round(discount * 100),
     unit: row.unit,
     unitPriceMinor: Math.round(Number(price) * 10 ** exponent),
+    ...(row.caution ? { caution: true } : {}),
   };
 }
 
@@ -111,12 +115,15 @@ export function DealItemsEditor({
   initialItems = [],
   onValidityChange,
   name = "items",
+  allowCaution = false,
 }: {
   currency: string;
   products: DealProductOption[];
   initialItems?: DealLineItem[];
   onValidityChange?: (valid: boolean) => void;
   name?: string;
+  /** The deal's workflow refunds a caution, so it can have a caution line. */
+  allowCaution?: boolean;
 }) {
   const { t, i18n } = useTranslation("deals", { keyPrefix: "items" });
   const id = useId();
@@ -128,8 +135,12 @@ export function DealItemsEditor({
   );
 
   const parsed = useMemo(
-    () => rows.map((row) => toItem(row, currency)),
-    [rows, currency],
+    // A caution line only counts as one while the workflow refunds a caution.
+    () =>
+      rows.map((row) =>
+        toItem(allowCaution ? row : { ...row, caution: false }, currency),
+      ),
+    [rows, currency, allowCaution],
   );
   const items = parsed.filter((item): item is DealLineItem => item !== null);
   const allValid = rows.length > 0 && items.length === rows.length;
@@ -183,6 +194,29 @@ export function DealItemsEditor({
             quantity: 1,
             taxRateBps: 0,
             discountBps: 0,
+            unit: "item",
+            unitPriceMinor: 0,
+          },
+          currency,
+        ),
+      ),
+    ]);
+
+  const hasCaution = rows.some((row) => row.caution);
+  const isCaution = (row: Row) => allowCaution && row.caution === true;
+  const addCaution = () =>
+    setRows((current) => [
+      ...current,
+      untouched(
+        toRow(
+          {
+            caution: true,
+            description: t("cautionDescription"),
+            discountBps: 0,
+            name: t("cautionName"),
+            productId: null,
+            quantity: 1,
+            taxRateBps: 0,
             unit: "item",
             unitPriceMinor: 0,
           },
@@ -262,11 +296,21 @@ export function DealItemsEditor({
                         placeholder={t("descriptionPlaceholder")}
                         value={row.description}
                       />
+                      {isCaution(row) ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-900 text-xs dark:bg-amber-950 dark:text-amber-200">
+                          <ShieldCheckIcon
+                            aria-hidden="true"
+                            className="size-3"
+                          />
+                          {t("cautionBadge")}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-2 py-2">
                       <Input
                         aria-label={t("quantity")}
                         className="h-9 text-right tabular-nums"
+                        disabled={isCaution(row)}
                         inputMode="decimal"
                         onChange={(event) =>
                           updateRow(row.key, { quantity: event.target.value })
@@ -292,6 +336,7 @@ export function DealItemsEditor({
                       <Input
                         aria-label={t("tax")}
                         className="h-9 text-right tabular-nums"
+                        disabled={isCaution(row)}
                         inputMode="decimal"
                         onChange={(event) =>
                           updateRow(row.key, { taxRate: event.target.value })
@@ -303,6 +348,7 @@ export function DealItemsEditor({
                       <Input
                         aria-label={t("discount")}
                         className="h-9 text-right tabular-nums"
+                        disabled={isCaution(row)}
                         inputMode="decimal"
                         onChange={(event) =>
                           updateRow(row.key, { discount: event.target.value })
@@ -389,6 +435,18 @@ export function DealItemsEditor({
             <PlusIcon aria-hidden="true" />
             {t("addCustomLine")}
           </Button>
+          {allowCaution && !hasCaution ? (
+            <Button
+              disabled={!canAdd}
+              onClick={addCaution}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <ShieldCheckIcon aria-hidden="true" />
+              {t("addCaution")}
+            </Button>
+          ) : null}
         </div>
 
         <dl className="ml-auto grid min-w-56 grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-sm tabular-nums">

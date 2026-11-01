@@ -62,10 +62,11 @@ const items: DealLineItem[] = [
     unit: "night",
     unitPriceMinor: 8_000_000,
   },
-  // The organization adds the caution as a line of its own.
+  // The organization adds the caution with "Add caution fee".
   {
     description: "Refundable after check-out",
     discountBps: 0,
+    caution: true,
     name: "Caution fee",
     productId: null,
     quantity: 1,

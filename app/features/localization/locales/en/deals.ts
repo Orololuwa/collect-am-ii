@@ -65,7 +65,7 @@ export default {
   },
   new: {
     settleAfterHint:
-      "The event or check-out date. Add the caution as a line in what you're offering; CollectAm reminds you to settle it after this date.",
+      'The event or check-out date. Use "Add caution fee" below so the caution is tracked; CollectAm reminds you to settle it after this date.',
     settleAfterLabel: "Settle the caution after",
     cautionAmountInvalid: "Enter the caution as an amount, like 50000.",
     title: "New deal",
@@ -99,6 +99,11 @@ export default {
     needCustomerDescription: "Deals are always for a customer.",
   },
   items: {
+    addCaution: "Add caution fee",
+    cautionBadge: "Refundable caution",
+    cautionDescription: "Refunded after the booking, less anything kept",
+    cautionName: "Caution fee (refundable)",
+    oneCaution: "A document can have one caution line.",
     product: "Item",
     quantity: "Qty",
     unitPrice: "Unit price",
