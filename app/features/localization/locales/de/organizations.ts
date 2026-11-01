@@ -432,6 +432,23 @@ export default {
       toast: {
         organizationDeleted: "Organisation wurde gelöscht",
         organizationProfileUpdated: "Organisation wurde aktualisiert",
+        workflowViewUpdated: "Workflow-Editor aktualisiert",
+      },
+      workflowView: {
+        allowSwitch: "Mitglieder dürfen die Ansicht im Editor wechseln",
+        allowSwitchDescription:
+          "Zeigt oben in jedem Workflow den Umschalter zwischen Schritten und Canvas. CollectAm merkt sich die Wahl jeder Person.",
+        canvas: "Canvas",
+        canvasDescription:
+          "Eine Karte des Deals von Anfang bis Ende, die bei jedem Schritt zeigt, wer handelt: du oder die Kundschaft.",
+        description:
+          "Lege fest, wie Workflows für alle in {{organizationName}} geöffnet werden. Beide Ansichten bearbeiten dieselben Schritte.",
+        legend: "Standardansicht",
+        save: "Änderungen speichern",
+        steps: "Schritte",
+        stepsDescription:
+          "Eine Liste der Schritte mit ihren Einstellungen daneben. Schnell bei kurzen Workflows und auf kleinen Bildschirmen.",
+        title: "Workflow-Editor",
       },
     },
     layout: {

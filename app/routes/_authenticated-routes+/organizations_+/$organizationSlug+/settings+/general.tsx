@@ -10,6 +10,7 @@ import { DangerZone } from "~/features/organizations/settings/general/danger-zon
 import { GeneralOrganizationSettings } from "~/features/organizations/settings/general/general-organization-settings";
 import { generalOrganizationSettingsAction } from "~/features/organizations/settings/general/general-organization-settings-action.server";
 import { OrganizationInfo } from "~/features/organizations/settings/general/organization-info";
+import { WorkflowViewSettings } from "~/features/organizations/settings/general/workflow-view-settings";
 import { OrganizationMembershipRole } from "~/generated/browser";
 import { getPageTitle } from "~/utils/get-page-title.server";
 
@@ -63,6 +64,14 @@ export default function GeneralOrganizationSettingsRoute({
             <GeneralOrganizationSettings
               lastResult={actionData?.result}
               organization={loaderData?.organization}
+            />
+
+            <Separator />
+
+            <WorkflowViewSettings
+              organizationName={organization.name}
+              workflowView={organization.workflowView}
+              workflowViewSwitchable={organization.workflowViewSwitchable}
             />
 
             <Separator />

@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   DELETE_ORGANIZATION_INTENT,
   UPDATE_ORGANIZATION_INTENT,
+  UPDATE_WORKFLOW_VIEW_INTENT,
 } from "./general-settings-constants";
 
 const ONE_MB = 1_000_000;
@@ -35,4 +36,10 @@ export const updateOrganizationFormSchema = z.object({
     .max(MAX_NAME_LENGTH, {
       message: "organizations:settings.general.errors.nameMax",
     }),
+});
+
+export const updateWorkflowViewFormSchema = z.object({
+  allowViewSwitch: z.boolean().optional(),
+  intent: z.literal(UPDATE_WORKFLOW_VIEW_INTENT),
+  workflowView: z.enum(["steps", "canvas"]),
 });

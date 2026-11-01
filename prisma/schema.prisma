@@ -44,6 +44,10 @@ model Organization {
   /// When a member chose to skip the dashboard's setup guide. Until then, an
   /// organization without checkout pages or payments sees the guide.
   setupGuideDismissedAt       DateTime?
+  /// How the workflow editor opens for everyone in the organization.
+  workflowView                WorkflowView                  @default(steps)
+  /// Whether members can switch the workflow editor between its views.
+  workflowViewSwitchable      Boolean                       @default(true)
   notifications               Notification[]
   notificationPanels          NotificationPanel[]
   organizationEmailInviteLink OrganizationEmailInviteLink[]
@@ -59,6 +63,12 @@ model Organization {
   deals                       Deal[]
   documentSequences           DocumentSequence[]
   payments                    Payment[]
+}
+
+/// The workflow editor's views: a list of steps, or a canvas of who acts when.
+enum WorkflowView {
+  steps
+  canvas
 }
 
 model OrganizationMembership {

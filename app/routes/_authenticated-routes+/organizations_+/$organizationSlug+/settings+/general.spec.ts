@@ -6,6 +6,7 @@ import { retrieveOrganizationFromDatabaseById } from "~/features/organizations/o
 import {
   DELETE_ORGANIZATION_INTENT,
   UPDATE_ORGANIZATION_INTENT,
+  UPDATE_WORKFLOW_VIEW_INTENT,
 } from "~/features/organizations/settings/general/general-settings-constants";
 import type { Organization, UserAccount } from "~/generated/client";
 import { OrganizationMembershipRole } from "~/generated/client";
@@ -326,6 +327,62 @@ describe("/organizations/:organizationSlug/settings/general route action", () =>
         organization.id,
       );
       expect(deletedOrganization).toBeNull();
+    });
+  });
+  describe(`${UPDATE_WORKFLOW_VIEW_INTENT} intent`, () => {
+    const intent = UPDATE_WORKFLOW_VIEW_INTENT;
+
+    test("given: an owner picking the canvas without switching, should: save both", async () => {
+      const { user, organization } = await setupUserWithOrgAndAddAsMember({
+        role: OrganizationMembershipRole.owner,
+      });
+
+      await sendAuthenticatedRequest({
+        formData: toFormData({ intent, workflowView: "canvas" }),
+        organizationSlug: organization.slug,
+        user,
+      });
+
+      expect(
+        await retrieveOrganizationFromDatabaseById(organization.id),
+      ).toMatchObject({
+        workflowView: "canvas",
+        workflowViewSwitchable: false,
+      });
+    });
+
+    test("given: an owner allowing switching, should: keep switching on", async () => {
+      const { user, organization } = await setupUserWithOrgAndAddAsMember({
+        role: OrganizationMembershipRole.owner,
+      });
+
+      await sendAuthenticatedRequest({
+        formData: toFormData({
+          allowViewSwitch: "on",
+          intent,
+          workflowView: "steps",
+        }),
+        organizationSlug: organization.slug,
+        user,
+      });
+
+      expect(
+        await retrieveOrganizationFromDatabaseById(organization.id),
+      ).toMatchObject({ workflowView: "steps", workflowViewSwitchable: true });
+    });
+
+    test("given: a member, should: return a 403", async () => {
+      const { user, organization } = await setupUserWithOrgAndAddAsMember({
+        role: OrganizationMembershipRole.member,
+      });
+
+      const actual = await sendAuthenticatedRequest({
+        formData: toFormData({ intent, workflowView: "canvas" }),
+        organizationSlug: organization.slug,
+        user,
+      });
+
+      expect(actual).toEqual(forbidden());
     });
   });
 });

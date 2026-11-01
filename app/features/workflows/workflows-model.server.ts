@@ -132,3 +132,16 @@ export async function hasActiveWorkflowInDatabase(organizationId: string) {
   });
   return workflow !== null;
 }
+
+/** How many open deals are running on a workflow. */
+export async function countOpenDealsForWorkflowInDatabase({
+  organizationId,
+  workflowId,
+}: {
+  organizationId: string;
+  workflowId: string;
+}) {
+  return await prisma.deal.count({
+    where: { organizationId, status: "open", workflowId },
+  });
+}
