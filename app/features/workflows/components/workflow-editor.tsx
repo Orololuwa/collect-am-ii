@@ -132,7 +132,11 @@ export function WorkflowEditor({
           ? t("stepNames.invoice")
           : kind === "payment"
             ? t("stepNames.payment")
-            : t("stepNames.receipt"),
+            : kind === "caution"
+              ? t("stepNames.caution")
+              : kind === "cautionRefund"
+                ? t("stepNames.cautionRefund")
+                : t("stepNames.receipt"),
       paymentTermsDays: kind === "document" ? 14 : null,
       negotiable: false,
       requestsPurchaseOrder: false,

@@ -57,11 +57,20 @@ export default {
     },
     allDone: "All steps done",
     paymentDue: "Payment due",
+    cautionDue: "Caution due",
+    cautionToSettle: "Caution to settle",
     pagination: "Page {{page}} of {{totalPages}}",
     previous: "Previous",
     next: "Next",
   },
   new: {
+    cautionHint:
+      "Refundable. Paid from the deal page and kept out of your income until you settle it.",
+    cautionLabel: "Caution fee ({{currency}})",
+    settleAfterHint:
+      "The event or check-out date. CollectAm reminds you to settle the caution after it.",
+    settleAfterLabel: "Settle the caution after",
+    cautionAmountInvalid: "Enter the caution as an amount, like 50000.",
     title: "New deal",
     description:
       "Pick a customer and a workflow, then add what you're offering. The first document is saved as a draft so you can check it before sending.",
@@ -119,6 +128,49 @@ export default {
     perUnit: "per {{unit}}",
   },
   detail: {
+    caution: {
+      addEvidence: "Add photos or videos",
+      evidenceError:
+        "Use JPG, PNG, WebP or HEIC photos up to 10 MB, or MP4, MOV or WebM videos up to 50 MB.",
+      evidenceFor: "Evidence for {{reason}}",
+      evidenceHint: "Optional. The customer sees them next to this deduction.",
+      removeEvidence: "Remove {{name}}",
+      uploading: "Uploading…",
+      accountName: "Account name",
+      accountNumber: "Account number",
+      addDeduction: "Add a deduction",
+      amountLabel: "Amount ({{currency}})",
+      bank: "Bank",
+      deductionsTitle: "Anything you're keeping",
+      held: "Caution held",
+      kept: "Kept",
+      keptFor: "Kept for {{reason}}",
+      markRefunded: "Mark refund as sent",
+      noDeductions: "Nothing yet. The whole caution goes back.",
+      paymentDescription:
+        "Refundable. The customer pays it from the deal page; it isn't counted as income. Record it here if they paid another way.",
+      reasonLabel: "What for",
+      reasonPlaceholder: "e.g. Broken chair",
+      referenceLabel: "Transfer reference (optional)",
+      referencePlaceholder: "From your bank app",
+      removeDeduction: "Remove this deduction",
+      send: "Send settlement to customer",
+      sendHint:
+        "{{name}} gets an email asking which account to refund to. You send the money from your bank yourself.",
+      sendHintNothing:
+        "Nothing is left to refund, so this settles the caution. {{name}} gets the statement by email.",
+      sendNothing: "Settle without a refund",
+      sendRefund:
+        "Send {{amount}} to this account from your bank, then mark it as sent.",
+      settleEarly:
+        "The caution is due to be settled after {{date}}. You can settle it now if the booking is over.",
+      settleNow:
+        "The booking is over. Record anything you're keeping, then send the settlement.",
+      tooMuch: "You can't keep more than the caution held.",
+      toRefund: "To refund",
+      waitingForAccount:
+        "Settlement sent. Waiting for {{name}} to say which account to refund to.",
+    },
     poNumberHint:
       "If they sent you a purchase order, add its number. Later documents show it.",
     poNumberLabel: "Their purchase order number (optional)",
@@ -262,6 +314,11 @@ export default {
       "{{actor}} turned down the suggested changes to {{document}}",
     shareLinkReset: "{{actor}} reset the share link",
     purchaseOrderReceived: "{{actor}} sent purchase order {{number}}",
+    cautionSettlementSent:
+      "{{actor}} sent the caution settlement: {{refund}} to refund",
+    refundAccountGiven: "{{actor}} gave a refund account at {{bank}}",
+    cautionRefunded:
+      "{{actor}} marked the caution refund of {{refund}} as sent",
     dealWon: "All steps done, the deal is won",
     dealLost: "{{actor}} marked the deal as lost",
     dealCancelled: "{{actor}} cancelled the deal",
@@ -270,6 +327,8 @@ export default {
     someone: "Someone",
   },
   toasts: {
+    settlementSent: "Settlement sent to the customer",
+    refundMarked: "Refund marked as sent",
     started: "Started {{title}}",
     sent: "Document sent",
     resent: "Document sent again",
@@ -302,5 +361,9 @@ export default {
     noItems: "Keep at least one line.",
     purchaseOrderRequired: "Enter the customer's purchase order number.",
     changesNotAllowed: "This step doesn't take suggested changes.",
+    cautionAmountRequired: "Enter the caution fee for this deal.",
+    notCautionRefundStep: "The caution isn't at that stage. Refresh the page.",
+    deductionsTooHigh: "Deductions can't be more than the caution held.",
+    refundAccountMissing: "Wait for the customer's refund account first.",
   },
 };

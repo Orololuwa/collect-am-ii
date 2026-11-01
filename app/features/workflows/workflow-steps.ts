@@ -46,7 +46,9 @@ export type WorkflowStepIssueCode =
   | "depositNeedsEarlierDocument"
   | "depositPercentOutOfRange"
   | "paymentNeedsDocument"
-  | "receiptMustFollowPayment";
+  | "receiptMustFollowPayment"
+  | "cautionRefundNeedsCaution"
+  | "cautionOnlyOnce";
 
 export type WorkflowStepIssue = {
   /** The step the issue is about, or null for the workflow as a whole. */
@@ -84,6 +86,8 @@ export function validateWorkflowSteps(
 
   let hasItemisedDocument = false;
   let hasDocumentSincePayment = false;
+  let cautions = 0;
+  let cautionRefunds = 0;
 
   steps.forEach((step, stepIndex) => {
     const name = step.name.trim();
@@ -126,8 +130,25 @@ export function validateWorkflowSteps(
         break;
       }
       case "receipt": {
-        if (steps[stepIndex - 1]?.kind !== "payment") {
+        const before = steps[stepIndex - 1]?.kind;
+        if (before !== "payment" && before !== "caution") {
           issues.push({ code: "receiptMustFollowPayment", stepIndex });
+        }
+        break;
+      }
+      case "caution": {
+        cautions += 1;
+        if (cautions > 1) {
+          issues.push({ code: "cautionOnlyOnce", stepIndex });
+        }
+        break;
+      }
+      case "cautionRefund": {
+        cautionRefunds += 1;
+        if (cautions === 0) {
+          issues.push({ code: "cautionRefundNeedsCaution", stepIndex });
+        } else if (cautionRefunds > 1) {
+          issues.push({ code: "cautionOnlyOnce", stepIndex });
         }
         break;
       }
@@ -149,9 +170,11 @@ export function normalizeWorkflowStep(
   return {
     ...step,
     advanceMode:
-      // The first document is always prepared by hand; payments always wait
-      // for the customer.
-      stepIndex === 0 || step.kind === "payment" ? "manual" : step.advanceMode,
+      // The first document is always prepared by hand; payments and cautions
+      // wait for the customer, and a caution refund for the business.
+      stepIndex === 0 || (step.kind !== "document" && step.kind !== "receipt")
+        ? "manual"
+        : step.advanceMode,
     carryForward: isDocument ? step.carryForward : "items",
     depositPercentBps:
       isDocument && step.carryForward === "deposit"
@@ -167,7 +190,10 @@ export function normalizeWorkflowStep(
     negotiable: isDocument && step.requiresAcceptance && step.negotiable,
     requestsPurchaseOrder:
       isDocument && step.requiresAcceptance && step.requestsPurchaseOrder,
-    templateId: step.kind === "payment" ? null : step.templateId,
+    templateId:
+      step.kind === "document" || step.kind === "receipt"
+        ? step.templateId
+        : null,
     validityDays:
       isDocument &&
       (step.documentType === "quote" || step.documentType === "estimate")

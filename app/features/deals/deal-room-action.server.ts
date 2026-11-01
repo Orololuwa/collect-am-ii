@@ -8,6 +8,7 @@ import {
   acceptDealDocument,
   DealTransitionError,
   declineDealDocument,
+  giveCautionRefundAccount,
   postDealMessage,
   proposeDealChanges,
 } from "./deal-engine.server";
@@ -19,6 +20,7 @@ import {
 import {
   ACCEPT_DOCUMENT_INTENT,
   DECLINE_DOCUMENT_INTENT,
+  GIVE_REFUND_ACCOUNT_INTENT,
   POST_MESSAGE_INTENT,
   PROPOSE_CHANGES_INTENT,
   PURCHASE_ORDER_MAX_FILE_SIZE,
@@ -28,6 +30,7 @@ import {
   declineDocumentFormSchema,
   postMessageFormSchema,
   proposeChangesFormSchema,
+  refundAccountFormSchema,
 } from "./deals-schemas";
 import { getInstance } from "~/features/localization/i18next-middleware.server";
 import { combineHeaders } from "~/utils/combine-headers.server";
@@ -61,6 +64,10 @@ const ERROR_KEYS = {
   proposalNotFound: "errors.generic",
   purchaseOrderRequired: "errors.purchaseOrderRequired",
   changesNotAllowed: "errors.changesNotAllowed",
+  cautionAmountRequired: "errors.generic",
+  deductionsTooHigh: "errors.generic",
+  notCautionRefundStep: "errors.alreadyAnswered",
+  refundAccountMissing: "errors.generic",
   versionChanged: "errors.versionChanged",
   workflowNotFound: "errors.generic",
 } as const;
@@ -70,6 +77,7 @@ const SUCCESS_KEYS = {
   [DECLINE_DOCUMENT_INTENT]: "toasts.declined",
   [POST_MESSAGE_INTENT]: "toasts.messageSent",
   [PROPOSE_CHANGES_INTENT]: "toasts.changesSent",
+  [GIVE_REFUND_ACCOUNT_INTENT]: "toasts.accountSaved",
 } as const;
 
 type RoomIntent = keyof typeof SUCCESS_KEYS;
@@ -197,6 +205,22 @@ export async function dealRoomAction({
         return {
           effects,
           notification: `${customerName} declined ${nameOf(result.data.documentId)}`,
+        };
+      }
+      case GIVE_REFUND_ACCOUNT_INTENT: {
+        const result = await validateFormData(request, refundAccountFormSchema);
+        if (!result.success) return { invalid: result.response };
+        const { effects } = await giveCautionRefundAccount({
+          ...target,
+          accountName: result.data.accountName,
+          accountNumber: result.data.accountNumber,
+          actor,
+          bankName: result.data.bankName,
+          stepId: result.data.stepId,
+        });
+        return {
+          effects,
+          notification: `${customerName} gave the account for their caution refund`,
         };
       }
       case PROPOSE_CHANGES_INTENT: {

@@ -10,6 +10,16 @@ export default {
     salesOrder: "Kundenauftrag",
   },
   editor: {
+    addCaution: "Kaution hinzufügen",
+    addCautionRefund: "Kautionsrückzahlung hinzufügen",
+    cautionDescription:
+      "Eine erstattbare Kaution, die die Kundschaft auf der Deal-Seite bezahlt. Du legst den Betrag bei jedem Deal fest, und sie zählt nicht als Einnahme.",
+    cautionRefundDescription:
+      "Nach dem Abrechnungsdatum trägst du ein, was du einbehältst und warum. Die Kundschaft wird nach dem Konto für den Rest gefragt; dann überweist du ihn von deiner Bank und markierst ihn als gesendet.",
+    cautionRefundGate: {
+      description: "Dann überweist du sie von deiner Bank",
+      title: "Kundschaft gibt ihr Erstattungskonto an",
+    },
     advanceReceipt: "Wenn die Zahlung eingeht",
     auto: "Auto",
     back: "Workflows",
@@ -63,6 +73,8 @@ export default {
     stepOf: "Schritt {{number}} von {{total}}",
     stepSettings: "Schritteinstellungen",
     summary: {
+      caution: "Erstattbar, über den Freigabelink bezahlt",
+      cautionRefund: "Abzüge, dann Erstattung auf ihr Konto",
       balance: "Der Restbetrag",
       deposit: "{{percent}} % Anzahlung",
       payment: "Online über den Freigabelink bezahlt",
@@ -131,11 +143,13 @@ export default {
   },
   gallery: {
     categories: {
+      bookings: "Buchungen und Vermietung",
       goods: "Warenverkauf",
       projects: "Projekte und Einzelanfertigungen",
       services: "Dienstleistungen",
     },
     highlights: {
+      caution: "Erstattbare Kaution",
       deposit: "{{percent}} % im Voraus",
       paidUpfront: "Bezahlt vor Lieferung",
       purchaseOrder: "Fragt nach ihrer Bestellung",
@@ -153,6 +167,10 @@ export default {
     use: "Verwenden",
   },
   issues: {
+    cautionOnlyOnce:
+      "Ein Workflow kann eine Kaution nehmen und sie einmal erstatten.",
+    cautionRefundNeedsCaution:
+      "Eine Kautionsrückzahlung braucht vorher eine Kaution.",
     depositNeedsEarlierDocument:
       "Anzahlungen und Restbeträge brauchen davor ein Dokument mit Positionen.",
     depositPercentOutOfRange: "Gib eine Anzahlung zwischen 1 % und 100 % ein.",
@@ -170,6 +188,8 @@ export default {
     tooManySteps: "Ein Workflow kann höchstens 15 Schritte haben.",
   },
   kinds: {
+    caution: "Kaution",
+    cautionRefund: "Kautionsrückzahlung",
     document: "Dokument",
     payment: "Zahlung",
     receipt: "Quittung",
@@ -196,6 +216,16 @@ export default {
   newPageTitle: "Neuer Workflow",
   pageTitle: "Workflows",
   samples: {
+    eventCentreBooking: {
+      description:
+        "Für Säle und Eventlocations: ein Angebot, die Buchungsrechnung, dann eine erstattbare Kaution, die du nach der Veranstaltung abrechnest und bei Schäden teilweise einbehältst.",
+      name: "Buchung einer Eventlocation",
+    },
+    shortLetStay: {
+      description:
+        "Für Ferienwohnungen und Airbnb-Gastgeber: die Buchungsrechnung, eine erstattbare Kaution, dann die Rückzahlung nach dem Check-out.",
+      name: "Aufenthalt in einer Ferienwohnung",
+    },
     agencyProject: {
       description:
         "Ein Kostenvoranschlag, den der Kunde freigibt, die Hälfte zum Start und der Rest bei Lieferung. Für Websites, Branding und Kampagnen.",
@@ -243,6 +273,11 @@ export default {
     },
   },
   stepNames: {
+    bookingInvoice: "Buchungsrechnung",
+    bookingPayment: "Buchungszahlung",
+    caution: "Kaution",
+    cautionReceipt: "Kautionsquittung",
+    cautionRefund: "Kautionsrückzahlung",
     balanceInvoice: "Restrechnung",
     balancePayment: "Restzahlung",
     bookingDeposit: "Buchungsanzahlung",

@@ -62,6 +62,8 @@ export function NewDealForm({
   const [workflowId, setWorkflowId] = useState(workflows[0]?.id ?? "");
   const [itemsValid, setItemsValid] = useState(false);
   const workflow = workflows.find((candidate) => candidate.id === workflowId);
+  const takesCaution =
+    workflow?.steps.some((step) => step.kind === "caution") ?? false;
 
   return (
     <Card>
@@ -172,6 +174,37 @@ export function NewDealForm({
                 id={fields.workflowId.errorId}
               />
             </Field>
+
+            {takesCaution ? (
+              <div className="grid gap-6 rounded-lg border bg-muted/30 p-4 sm:grid-cols-2">
+                <Field data-invalid={fields.cautionAmount.ariaInvalid}>
+                  <FieldLabel htmlFor={fields.cautionAmount.id}>
+                    {t("cautionLabel", { currency })}
+                  </FieldLabel>
+                  <Input
+                    {...fields.cautionAmount.inputProps}
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    required
+                  />
+                  <FieldDescription>{t("cautionHint")}</FieldDescription>
+                  <FieldError
+                    errors={fields.cautionAmount.errors}
+                    id={fields.cautionAmount.errorId}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fields.cautionSettleAfter.id}>
+                    {t("settleAfterLabel")}
+                  </FieldLabel>
+                  <Input
+                    {...fields.cautionSettleAfter.inputProps}
+                    type="date"
+                  />
+                  <FieldDescription>{t("settleAfterHint")}</FieldDescription>
+                </Field>
+              </div>
+            ) : null}
 
             <Field data-invalid={fields.items.ariaInvalid}>
               <div className="space-y-1">

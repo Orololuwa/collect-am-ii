@@ -64,6 +64,12 @@ export default {
       title: "Recent activity",
     },
     attention: {
+      dealCautionToSettle: "Settle the caution for {{deal}}",
+      dealCautionToSettleDetail:
+        "Record anything you're keeping, then send {{customer}} the settlement",
+      dealRefundToSend: "Send {{customer}}'s caution refund for {{deal}}",
+      dealRefundToSendDetail:
+        "They gave their account. Pay it from your bank, then mark it as sent",
       allClear: "Nothing needs your attention.",
       dealDeclined: "{{customer}} declined {{document}} in {{deal}}",
       dealDeclinedDetail: "Revise it and send it again, or close the deal",

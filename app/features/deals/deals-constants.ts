@@ -16,6 +16,9 @@ export const DEAL_EVENT_TYPES = [
   "proposalRejected",
   "shareLinkReset",
   "purchaseOrderReceived",
+  "cautionSettlementSent",
+  "refundAccountGiven",
+  "cautionRefunded",
 ] as const;
 export type DealEventType = (typeof DEAL_EVENT_TYPES)[number];
 
@@ -32,6 +35,10 @@ export const APPROVE_PROPOSAL_INTENT = "approveProposal";
 export const REJECT_PROPOSAL_INTENT = "rejectProposal";
 export const RESET_SHARE_LINK_INTENT = "resetShareLink";
 export const PROPOSE_CHANGES_INTENT = "proposeChanges";
+export const SEND_CAUTION_SETTLEMENT_INTENT = "sendCautionSettlement";
+export const MARK_CAUTION_REFUNDED_INTENT = "markCautionRefunded";
+export const GIVE_REFUND_ACCOUNT_INTENT = "giveRefundAccount";
+export const UPLOAD_CAUTION_EVIDENCE_INTENT = "uploadCautionEvidence";
 
 export const DEALS_PAGE_SIZE = 25;
 export const MAX_MESSAGE_LENGTH = 2000;
@@ -97,6 +104,9 @@ export const EVENT_KEYS = {
   proposalRejected: "events.proposalRejected",
   shareLinkReset: "events.shareLinkReset",
   purchaseOrderReceived: "events.purchaseOrderReceived",
+  cautionSettlementSent: "events.cautionSettlementSent",
+  refundAccountGiven: "events.refundAccountGiven",
+  cautionRefunded: "events.cautionRefunded",
 } as const satisfies Record<DealEventType, string>;
 
 export const ERROR_KEYS = {
@@ -115,6 +125,10 @@ export const ERROR_KEYS = {
   noItems: "errors.noItems",
   purchaseOrderRequired: "errors.purchaseOrderRequired",
   changesNotAllowed: "errors.changesNotAllowed",
+  cautionAmountRequired: "errors.cautionAmountRequired",
+  notCautionRefundStep: "errors.notCautionRefundStep",
+  deductionsTooHigh: "errors.deductionsTooHigh",
+  refundAccountMissing: "errors.refundAccountMissing",
 } as const;
 
 /** A customer's purchase order file, attached when they accept. */

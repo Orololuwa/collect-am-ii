@@ -7,10 +7,12 @@ import {
   ExternalLinkIcon,
   EyeIcon,
   FileTextIcon,
+  HandCoinsIcon,
   Link2Icon,
   PencilIcon,
   ReceiptIcon,
   SendIcon,
+  ShieldCheckIcon,
   TrophyIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -42,6 +44,8 @@ import {
 } from "../deals-constants";
 import type { LineChange } from "../proposal-diff";
 import { diffDealItems } from "../proposal-diff";
+import type { CautionSettlementView } from "./caution-refund-step";
+import { CautionRefundStep } from "./caution-refund-step";
 import { DealStatusBadge, DocumentStatusBadge } from "./deal-badges";
 import type { DealProductOption } from "./deal-items-editor";
 import { DealItemsEditor } from "./deal-items-editor";
@@ -143,6 +147,8 @@ export type DealStepView = {
   status: DealStepStatus;
   requiresAcceptance: boolean;
   requestsPurchaseOrder: boolean;
+  /** Caution refund steps: how the caution is being settled. */
+  settlement: CautionSettlementView | null;
   validityDays: number | null;
   amountDueMinor: number | null;
   amountPaidMinor: number | null;
@@ -164,6 +170,8 @@ export type DealView = {
   id: string;
   title: string;
   shareUrl: string;
+  /** When the deal's caution can be settled, if it takes one. */
+  cautionSettleAfter: Date | null;
   /** The customer's purchase order, once they've given one. */
   purchaseOrder: {
     number: string;
@@ -210,6 +218,8 @@ const kindIcons = {
   document: FileTextIcon,
   payment: CreditCardIcon,
   receipt: ReceiptIcon,
+  caution: ShieldCheckIcon,
+  cautionRefund: HandCoinsIcon,
 } as const satisfies Record<WorkflowStepKind, unknown>;
 
 const selectClassName = cn(inputClassName, "read-only:opacity-100");
@@ -1091,7 +1101,11 @@ function PaymentStep({ deal, step }: { deal: DealView; step: DealStepView }) {
           <CreditCardIcon aria-hidden="true" className="size-4" />
           {step.name}
         </CardTitle>
-        <CardDescription>{t("recordPaymentDescription")}</CardDescription>
+        <CardDescription>
+          {step.kind === "caution"
+            ? t("caution.paymentDescription")
+            : t("recordPaymentDescription")}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -1418,7 +1432,16 @@ function Activity({ deal }: { deal: DealView }) {
                         String(event.payload.method ?? ""),
                       ),
                       name: String(event.payload.acceptedByName ?? ""),
+                      bank: String(event.payload.bankName ?? ""),
                       number: String(event.payload.number ?? ""),
+                      refund:
+                        typeof event.payload.refundMinor === "number"
+                          ? formatMoney({
+                              amountMinor: event.payload.refundMinor,
+                              currency: deal.currency,
+                              locale: i18n.language,
+                            })
+                          : "",
                       version: String(event.payload.version ?? ""),
                     },
                   )}
@@ -1515,8 +1538,19 @@ export function DealDetail({
                 <p className="font-medium">{t("dealClosed")}</p>
               </CardContent>
             </Card>
-          ) : activeStep?.kind === "payment" ? (
+          ) : activeStep?.kind === "payment" ||
+            activeStep?.kind === "caution" ? (
             <PaymentStep deal={deal} step={activeStep} />
+          ) : activeStep?.kind === "cautionRefund" && activeStep.settlement ? (
+            <CautionRefundStep
+              currency={deal.currency}
+              customerName={deal.customer.name}
+              key={activeStep.settlement.sentAt ? "sent" : "draft"}
+              settleAfter={deal.cautionSettleAfter}
+              settlement={activeStep.settlement}
+              stepId={activeStep.id}
+              stepName={activeStep.name}
+            />
           ) : activeStep?.document ? (
             <CurrentDocument
               deal={deal}

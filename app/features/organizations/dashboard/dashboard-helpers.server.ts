@@ -42,6 +42,7 @@ async function getSetupProgress(organizationId: string) {
     prisma.payment.count({
       where: {
         organizationId,
+        purpose: "sale",
         status: { in: [...COLLECTED_STATUSES] },
       },
     }),
@@ -111,7 +112,8 @@ async function getPaymentStats({
   now: Date;
 }) {
   const { currentStart, previousStart } = getPeriodRanges(period, now);
-  const inOrganization = { organizationId };
+  // Cautions are held for customers and refunded, so they aren't income.
+  const inOrganization = { organizationId, purpose: "sale" as const };
   const inCurrency = {
     currency: { equals: currency, mode: "insensitive" as const },
   };
@@ -235,7 +237,7 @@ async function getRecentPayments(organizationId: string) {
       status: true,
     },
     take: RECENT_PAYMENTS,
-    where: { organizationId },
+    where: { organizationId, purpose: "sale" },
   });
   return payments.map(({ checkoutPage, deal, ...payment }) => ({
     ...payment,
@@ -274,6 +276,7 @@ async function getDealOverview({
   const deals = await prisma.deal.findMany({
     orderBy: { updatedAt: "desc" },
     select: {
+      cautionSettleAfter: true,
       currency: true,
       customer: { select: { name: true } },
       id: true,
@@ -286,6 +289,9 @@ async function getDealOverview({
         orderBy: { position: "asc" },
         select: {
           carryForward: true,
+          cautionSettlement: {
+            select: { accountGivenAt: true, refundedAt: true, sentAt: true },
+          },
           document: {
             select: {
               dueAt: true,
@@ -317,9 +323,11 @@ async function getDealOverview({
         currency: deal.currency,
         customerName: deal.customer.name,
         id: deal.id,
+        cautionSettleAfter: deal.cautionSettleAfter,
         lastMessageAuthor: deal.messages[0]?.author ?? null,
-        steps: deal.steps.map((step) => ({
+        steps: deal.steps.map(({ cautionSettlement, ...step }) => ({
           ...step,
+          settlement: cautionSettlement,
           document: step.document
             ? {
                 dueAt: step.document.dueAt,
@@ -415,6 +423,7 @@ async function getRecentActivity(
       where: {
         organizationId,
         createdAt: { gte: since },
+        purpose: "sale",
         status: { in: [...COLLECTED_STATUSES] },
       },
     }),

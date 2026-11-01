@@ -200,4 +200,40 @@ describe("normalizeWorkflowStep()", () => {
       expect(negotiable).toEqual([]);
     });
   });
+
+  describe("validateWorkflowSteps() cautions", () => {
+    const caution = documentStep({
+      documentType: null,
+      kind: "caution",
+      name: "Caution",
+    });
+    const refund = documentStep({
+      documentType: null,
+      kind: "cautionRefund",
+      name: "Refund",
+    });
+    const receipt = documentStep({
+      documentType: null,
+      kind: "receipt",
+      name: "Receipt",
+    });
+
+    test("given: a caution, its receipt and its refund, should: pass", () => {
+      expect(
+        validateWorkflowSteps([documentStep(), caution, receipt, refund]),
+      ).toEqual([]);
+    });
+
+    test("given: a refund without a caution, should: flag it", () => {
+      expect(validateWorkflowSteps([documentStep(), refund])).toEqual([
+        { code: "cautionRefundNeedsCaution", stepIndex: 1 },
+      ]);
+    });
+
+    test("given: two cautions, should: flag the second", () => {
+      expect(
+        validateWorkflowSteps([documentStep(), caution, caution, refund]),
+      ).toEqual([{ code: "cautionOnlyOnce", stepIndex: 2 }]);
+    });
+  });
 });

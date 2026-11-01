@@ -68,6 +68,13 @@ export default {
       title: "Letzte Aktivitäten",
     },
     attention: {
+      dealCautionToSettle: "Kaution für {{deal}} abrechnen",
+      dealCautionToSettleDetail:
+        "Trage ein, was du einbehältst, und sende {{customer}} die Abrechnung",
+      dealRefundToSend:
+        "Kautionsrückzahlung an {{customer}} für {{deal}} senden",
+      dealRefundToSendDetail:
+        "Das Konto liegt vor. Überweise von deiner Bank und markiere sie als gesendet",
       allClear: "Gerade ist nichts zu tun.",
       dealDeclined: "{{customer}} hat {{document}} in {{deal}} abgelehnt",
       dealDeclinedDetail:

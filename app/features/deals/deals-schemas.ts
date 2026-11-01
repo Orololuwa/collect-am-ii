@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import {
+  MAX_CAUTION_DEDUCTIONS,
+  MAX_EVIDENCE_PER_DEDUCTION,
+} from "./deal-caution";
+import {
   MAX_DEAL_ITEMS,
   MAX_ITEM_DESCRIPTION_LENGTH,
   MAX_ITEM_NAME_LENGTH,
@@ -12,6 +16,8 @@ import {
   APPROVE_PROPOSAL_INTENT,
   CLOSE_DEAL_INTENT,
   DECLINE_DOCUMENT_INTENT,
+  GIVE_REFUND_ACCOUNT_INTENT,
+  MARK_CAUTION_REFUNDED_INTENT,
   MAX_MESSAGE_LENGTH,
   PAYMENT_METHODS,
   POST_MESSAGE_INTENT,
@@ -23,8 +29,10 @@ import {
   RESEND_DOCUMENT_INTENT,
   RESET_SHARE_LINK_INTENT,
   REVISE_DOCUMENT_INTENT,
+  SEND_CAUTION_SETTLEMENT_INTENT,
   SEND_DOCUMENT_INTENT,
   START_DEAL_INTENT,
+  UPLOAD_CAUTION_EVIDENCE_INTENT,
 } from "./deals-constants";
 import { COMMON_CURRENCIES } from "~/features/templates/shared/common-currencies";
 
@@ -83,6 +91,19 @@ export const startDealFormSchema = z.object({
     .min(1, { message: "deals:new.customerRequired" }),
   intent: z.literal(START_DEAL_INTENT),
   items: itemsField,
+  /** In major units, for workflows that take a caution fee. */
+  cautionAmount: z
+    .string()
+    .trim()
+    .regex(/^\d*(\.\d{0,2})?$/, { message: "deals:new.cautionAmountInvalid" })
+    .optional()
+    .default(""),
+  /** `YYYY-MM-DD`: the event or check-out date. */
+  cautionSettleAfter: z
+    .string()
+    .regex(/^(\d{4}-\d{2}-\d{2})?$/)
+    .optional()
+    .default(""),
   title: z
     .string({ message: "deals:new.titleRequired" })
     .trim()
@@ -238,4 +259,79 @@ export const proposalFormSchema = z.object({
 
 export const resetShareLinkFormSchema = z.object({
   intent: z.literal(RESET_SHARE_LINK_INTENT),
+});
+
+/** The business settling a caution: what it keeps, and why. */
+export const cautionSettlementFormSchema = z.object({
+  deductions: z
+    .string()
+    .transform((value, context) => {
+      try {
+        return JSON.parse(value) as unknown;
+      } catch {
+        context.addIssue({ code: "custom", message: "Invalid deductions" });
+        return z.NEVER;
+      }
+    })
+    .pipe(
+      z
+        .array(
+          z.object({
+            amountMinor: z.number().int().positive(),
+            evidence: z
+              .array(
+                z.object({
+                  id: z.string().min(1).max(300),
+                  kind: z.enum(["image", "video"]),
+                  name: z.string().max(200),
+                }),
+              )
+              .max(MAX_EVIDENCE_PER_DEDUCTION)
+              .optional()
+              .default([]),
+            reason: z.string().trim().min(1).max(200),
+          }),
+        )
+        .max(MAX_CAUTION_DEDUCTIONS),
+    ),
+  intent: z.literal(SEND_CAUTION_SETTLEMENT_INTENT),
+  stepId: z.string().min(1),
+});
+
+export const markCautionRefundedFormSchema = z.object({
+  intent: z.literal(MARK_CAUTION_REFUNDED_INTENT),
+  reference: z.string().trim().max(120).optional().default(""),
+  stepId: z.string().min(1),
+});
+
+/** The customer saying where their caution refund should go. */
+export const refundAccountFormSchema = z.object({
+  accountName: z
+    .string({ message: "dealRoom:refund.accountNameRequired" })
+    .trim()
+    .min(2, { message: "dealRoom:refund.accountNameRequired" })
+    .max(120),
+  accountNumber: z
+    .string({ message: "dealRoom:refund.accountNumberInvalid" })
+    .trim()
+    .regex(/^[0-9][0-9 -]{4,32}[0-9]$/, {
+      message: "dealRoom:refund.accountNumberInvalid",
+    }),
+  bankName: z
+    .string({ message: "dealRoom:refund.bankRequired" })
+    .trim()
+    .min(2, { message: "dealRoom:refund.bankRequired" })
+    .max(80),
+  intent: z.literal(GIVE_REFUND_ACCOUNT_INTENT),
+  stepId: z.string().min(1),
+});
+
+/** Photos or videos backing up a caution deduction, uploaded one batch at a time. */
+export const uploadCautionEvidenceFormSchema = z.object({
+  files: z.preprocess(
+    (value) => (Array.isArray(value) ? value : value ? [value] : []),
+    z.array(z.file()).min(1).max(MAX_EVIDENCE_PER_DEDUCTION),
+  ),
+  intent: z.literal(UPLOAD_CAUTION_EVIDENCE_INTENT),
+  stepId: z.string().min(1),
 });

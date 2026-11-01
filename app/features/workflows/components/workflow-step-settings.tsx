@@ -428,6 +428,18 @@ export function WorkflowStepSettings({
         </div>
       ) : null}
 
+      {step.kind === "caution" || step.kind === "cautionRefund" ? (
+        <div className="p-5">
+          <p className="text-muted-foreground text-sm">
+            {t(
+              step.kind === "caution"
+                ? "editor.cautionDescription"
+                : "editor.cautionRefundDescription",
+            )}
+          </p>
+        </div>
+      ) : null}
+
       {step.kind === "receipt" ? (
         <div className="flex flex-col gap-5 p-5">
           <p className="text-muted-foreground text-sm">

@@ -9,8 +9,8 @@ import { useTranslation } from "react-i18next";
 
 import type { EditorStep } from "./workflow-step-meta";
 import {
-  GATE_DESCRIPTION_KEYS,
-  gateDescription,
+  gateText,
+  hasCustomerGate,
   isAutomaticStep,
   KIND_ICONS,
   KIND_TILE_CLASSES,
@@ -50,6 +50,18 @@ export function AddStepButtons({
       <Button onClick={() => onAdd("receipt")} type="button" variant="outline">
         <PlusIcon aria-hidden="true" />
         {t("editor.addReceipt")}
+      </Button>
+      <Button onClick={() => onAdd("caution")} type="button" variant="outline">
+        <PlusIcon aria-hidden="true" />
+        {t("editor.addCaution")}
+      </Button>
+      <Button
+        onClick={() => onAdd("cautionRefund")}
+        type="button"
+        variant="outline"
+      >
+        <PlusIcon aria-hidden="true" />
+        {t("editor.addCautionRefund")}
       </Button>
     </div>
   );
@@ -165,7 +177,7 @@ export function WorkflowStepsList({
                   </span>
                 </button>
               </li>
-              {step.kind === "document" && step.requiresAcceptance ? (
+              {hasCustomerGate(step) ? (
                 <>
                   <li aria-hidden="true">{connector}</li>
                   <li>
@@ -180,14 +192,10 @@ export function WorkflowStepsList({
                       />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="font-semibold text-sky-950 text-sm dark:text-sky-100">
-                          {t(
-                            step.requestsPurchaseOrder
-                              ? "editor.gate.titleWithPo"
-                              : "editor.gate.title",
-                          )}
+                          {t(gateText(step).title)}
                         </span>
                         <span className="text-sky-900/80 text-xs dark:text-sky-200/80">
-                          {t(GATE_DESCRIPTION_KEYS[gateDescription(step)])}
+                          {t(gateText(step).description)}
                         </span>
                       </span>
                     </button>

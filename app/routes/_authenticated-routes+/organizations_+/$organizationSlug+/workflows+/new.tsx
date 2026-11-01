@@ -78,6 +78,9 @@ function useSampleHighlights() {
         }),
       );
     }
+    if (steps.some((step) => step.kind === "caution")) {
+      highlights.push(t("gallery.highlights.caution"));
+    }
     if (steps.some((step) => step.requestsPurchaseOrder)) {
       highlights.push(t("gallery.highlights.purchaseOrder"));
     }

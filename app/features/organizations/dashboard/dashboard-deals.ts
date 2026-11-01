@@ -5,7 +5,9 @@ export type DealStage = "toSend" | "withCustomer" | "awaitingPayment";
 export const DEAL_ATTENTION_REASONS = [
   "proposal",
   "declined",
+  "refundToSend",
   "overdue",
+  "cautionToSettle",
   "draft",
   "expired",
   "expiring",
@@ -22,6 +24,12 @@ export type DashboardDealStep = {
   status: string;
   requiresAcceptance: boolean;
   carryForward: string;
+  /** Caution refund steps: how far the settlement has got. */
+  settlement?: {
+    sentAt: Date | null;
+    accountGivenAt: Date | null;
+    refundedAt: Date | null;
+  } | null;
   document: {
     type: string;
     number: string | null;
@@ -38,6 +46,8 @@ export type DashboardDeal = {
   customerName: string;
   updatedAt: Date;
   lastMessageAuthor: string | null;
+  /** When the deal's caution can be settled, if it takes one. */
+  cautionSettleAfter?: Date | null;
   /** In position order. */
   steps: DashboardDealStep[];
 };
@@ -80,13 +90,28 @@ export function summarizeDeal(deal: DashboardDeal, now: Date): DealSummary {
       )
       .at(-1)?.document?.totalMinor ?? null;
 
+  const settlement =
+    active?.kind === "cautionRefund" ? active.settlement : null;
   const stage: DealStage | null = !active
     ? null
-    : active.kind === "payment"
+    : active.kind === "payment" || active.kind === "caution"
       ? "awaitingPayment"
-      : document?.status === "draft"
-        ? "toSend"
-        : "withCustomer";
+      : active.kind === "cautionRefund"
+        ? settlement?.sentAt && !settlement.accountGivenAt
+          ? "withCustomer"
+          : "toSend"
+        : document?.status === "draft"
+          ? "toSend"
+          : "withCustomer";
+  const settleAfter = deal.cautionSettleAfter ?? null;
+  const cautionDue =
+    active?.kind === "cautionRefund" &&
+    !settlement?.sentAt &&
+    (settleAfter === null || settleAfter.getTime() <= now.getTime());
+  const refundDue =
+    active?.kind === "cautionRefund" &&
+    Boolean(settlement?.accountGivenAt) &&
+    !settlement?.refundedAt;
 
   const awaitingAnswer =
     active?.requiresAcceptance &&
@@ -101,29 +126,37 @@ export function summarizeDeal(deal: DashboardDeal, now: Date): DealSummary {
       ? { document: ref(document), dueAt: null, reason: "proposal" }
       : document?.status === "declined"
         ? { document: ref(document), dueAt: null, reason: "declined" }
-        : active?.kind === "payment" &&
-            billed?.dueAt &&
-            billed.dueAt.getTime() < now.getTime()
-          ? { document: ref(billed), dueAt: billed.dueAt, reason: "overdue" }
-          : document?.status === "draft"
-            ? { document: ref(document), dueAt: null, reason: "draft" }
-            : awaitingAnswer && dueTime !== null && dueTime < now.getTime()
+        : refundDue
+          ? { document: null, dueAt: null, reason: "refundToSend" }
+          : cautionDue
+            ? { document: null, dueAt: settleAfter, reason: "cautionToSettle" }
+            : active?.kind === "payment" &&
+                billed?.dueAt &&
+                billed.dueAt.getTime() < now.getTime()
               ? {
-                  document: ref(document),
-                  dueAt: document?.dueAt ?? null,
-                  reason: "expired",
+                  document: ref(billed),
+                  dueAt: billed.dueAt,
+                  reason: "overdue",
                 }
-              : awaitingAnswer &&
-                  dueTime !== null &&
-                  dueTime - now.getTime() <= EXPIRING_WITHIN_MS
-                ? {
-                    document: ref(document),
-                    dueAt: document?.dueAt ?? null,
-                    reason: "expiring",
-                  }
-                : deal.lastMessageAuthor === "customer"
-                  ? { document: null, dueAt: null, reason: "message" }
-                  : null;
+              : document?.status === "draft"
+                ? { document: ref(document), dueAt: null, reason: "draft" }
+                : awaitingAnswer && dueTime !== null && dueTime < now.getTime()
+                  ? {
+                      document: ref(document),
+                      dueAt: document?.dueAt ?? null,
+                      reason: "expired",
+                    }
+                  : awaitingAnswer &&
+                      dueTime !== null &&
+                      dueTime - now.getTime() <= EXPIRING_WITHIN_MS
+                    ? {
+                        document: ref(document),
+                        dueAt: document?.dueAt ?? null,
+                        reason: "expiring",
+                      }
+                    : deal.lastMessageAuthor === "customer"
+                      ? { document: null, dueAt: null, reason: "message" }
+                      : null;
 
   return {
     attention,

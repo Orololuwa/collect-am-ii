@@ -117,3 +117,56 @@ export function getPrivateFileUrl(fileId: string) {
     type: "private",
   });
 }
+
+/**
+ * Uploads a photo or video that only people given its signed link can open,
+ * such as evidence for a caution deduction.
+ *
+ * @returns The file's id in storage.
+ */
+export async function uploadEvidenceFile({
+  file,
+  folder,
+  publicId,
+  kind,
+}: {
+  file: File;
+  folder: string;
+  publicId: string;
+  kind: "image" | "video";
+}) {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const result = await new Promise<{ public_id: string }>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        public_id: publicId,
+        resource_type: kind,
+        type: "authenticated",
+      },
+      (error, uploadResult) => {
+        if (error || !uploadResult) {
+          reject(error ?? new Error("Cloudinary upload failed"));
+          return;
+        }
+        resolve(uploadResult);
+      },
+    );
+    stream.end(buffer);
+  });
+  return result.public_id;
+}
+
+/**
+ * A signed link to an evidence file. The signature can't be guessed or
+ * changed, so only pages that hand out the link can show the file.
+ */
+export function getEvidenceUrl(fileId: string, kind: "image" | "video") {
+  return cloudinary.url(fileId, {
+    resource_type: kind,
+    secure: true,
+    sign_url: true,
+    type: "authenticated",
+    ...(kind === "video" ? { format: "mp4" } : {}),
+  });
+}

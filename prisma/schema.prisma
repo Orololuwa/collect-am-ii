@@ -343,6 +343,7 @@ model Payment {
   amountMinor Int
   currency    String
   status      PaymentStatus
+  purpose     PaymentPurpose @default(sale)
 
   customerEmail  String
   customerName   String?
@@ -533,6 +534,16 @@ enum WorkflowStepKind {
   document
   payment
   receipt
+  /// A refundable caution fee (security deposit) the customer pays.
+  caution
+  /// Settling that caution: deductions, the customer's account, the refund.
+  cautionRefund
+}
+
+/// What a payment was for. Cautions are held for the customer, not earned.
+enum PaymentPurpose {
+  sale
+  caution
 }
 
 /// How a step starts once the step before it is done.
@@ -671,6 +682,10 @@ model Deal {
   purchaseOrderFileId     String?
   purchaseOrderFileName   String         @default("")
   purchaseOrderReceivedAt DateTime?
+  /// The refundable caution fee for this deal, if its workflow takes one.
+  cautionAmountMinor      Int?
+  /// When the caution can be settled: the event, or the check-out date.
+  cautionSettleAfter      DateTime?
   createdById             String?
   createdBy               UserAccount?   @relation("DealCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   steps                   DealStep[]
@@ -686,25 +701,25 @@ model Deal {
 /// A copy of a workflow step taken when the deal started, so later changes to
 /// the workflow don't change running deals.
 model DealStep {
-  id                    String           @id @default(cuid(2))
+  id                    String                 @id @default(cuid(2))
   dealId                String
-  deal                  Deal             @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deal                  Deal                   @relation(fields: [dealId], references: [id], onDelete: Cascade)
   position              Int
   kind                  WorkflowStepKind
   name                  String
   documentType          TemplateType?
   templateId            String?
-  template              Template?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  requiresAcceptance    Boolean          @default(false)
-  requestsPurchaseOrder Boolean          @default(false)
+  template              Template?              @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  requiresAcceptance    Boolean                @default(false)
+  requestsPurchaseOrder Boolean                @default(false)
   /// The customer may suggest their own quantities, prices, tax and discounts.
-  negotiable            Boolean          @default(false)
-  advanceMode           StepAdvanceMode  @default(manual)
-  carryForward          StepCarryForward @default(items)
+  negotiable            Boolean                @default(false)
+  advanceMode           StepAdvanceMode        @default(manual)
+  carryForward          StepCarryForward       @default(items)
   depositPercentBps     Int?
   validityDays          Int?
   paymentTermsDays      Int?
-  status                DealStepStatus   @default(pending)
+  status                DealStepStatus         @default(pending)
   startedAt             DateTime?
   completedAt           DateTime?
   /// Payment steps: what's due, set when the step starts.
@@ -712,12 +727,36 @@ model DealStep {
   /// Payment steps: what was paid and how.
   amountPaidMinor       Int?
   paidAt                DateTime?
-  paymentMethod         String           @default("")
-  paymentReference      String           @default("")
+  paymentMethod         String                 @default("")
+  paymentReference      String                 @default("")
   document              DealDocument?
   payments              Payment[]
+  cautionSettlement     DealCautionSettlement?
 
   @@unique([dealId, position])
+}
+
+/// How a caution refund step settles: what was held, what was kept and why,
+/// where the customer wants the rest, and when it was sent.
+model DealCautionSettlement {
+  id              String    @id @default(cuid(2))
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  stepId          String    @unique
+  step            DealStep  @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  heldMinor       Int
+  /// `[{ reason, amountMinor }]`
+  deductions      Json      @default("[]")
+  refundMinor     Int
+  /// When the business sent the settlement to the customer.
+  sentAt          DateTime?
+  bankName        String    @default("")
+  accountNumber   String    @default("")
+  accountName     String    @default("")
+  accountGivenAt  DateTime?
+  /// When the business marked the refund as sent from their bank.
+  refundedAt      DateTime?
+  refundReference String    @default("")
 }
 
 /// The document a document or receipt step produces.

@@ -103,6 +103,7 @@ export async function retrieveDealFromDatabaseById({
       },
       steps: {
         include: {
+          cautionSettlement: true,
           payments: {
             orderBy: { createdAt: "desc" },
             select: {

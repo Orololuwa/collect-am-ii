@@ -20,6 +20,14 @@ export const BLANK_WORKFLOW_KEY = "blank";
 // `t` cheap to type-check; never build these keys with template literals.
 
 export const SAMPLE_TEXT_KEYS = {
+  eventCentreBooking: {
+    description: "samples.eventCentreBooking.description",
+    name: "samples.eventCentreBooking.name",
+  },
+  shortLetStay: {
+    description: "samples.shortLetStay.description",
+    name: "samples.shortLetStay.name",
+  },
   agencyProject: {
     description: "samples.agencyProject.description",
     name: "samples.agencyProject.name",
@@ -62,12 +70,18 @@ export const SAMPLE_TEXT_KEYS = {
 >;
 
 export const SAMPLE_CATEGORY_KEYS = {
+  bookings: "gallery.categories.bookings",
   goods: "gallery.categories.goods",
   projects: "gallery.categories.projects",
   services: "gallery.categories.services",
 } as const satisfies Record<WorkflowSampleCategory, string>;
 
 export const STEP_NAME_KEYS = {
+  bookingInvoice: "stepNames.bookingInvoice",
+  bookingPayment: "stepNames.bookingPayment",
+  caution: "stepNames.caution",
+  cautionReceipt: "stepNames.cautionReceipt",
+  cautionRefund: "stepNames.cautionRefund",
   balanceInvoice: "stepNames.balanceInvoice",
   balancePayment: "stepNames.balancePayment",
   bookingDeposit: "stepNames.bookingDeposit",
@@ -107,6 +121,8 @@ export const STEP_ISSUE_KEYS = {
   nameRequired: "issues.nameRequired",
   nameTooLong: "issues.nameTooLong",
   paymentNeedsDocument: "issues.paymentNeedsDocument",
+  cautionOnlyOnce: "issues.cautionOnlyOnce",
+  cautionRefundNeedsCaution: "issues.cautionRefundNeedsCaution",
   receiptMustFollowPayment: "issues.receiptMustFollowPayment",
   templateNotFound: "issues.templateNotFound",
   tooFewSteps: "issues.tooFewSteps",

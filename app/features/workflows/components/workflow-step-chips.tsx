@@ -2,7 +2,9 @@ import {
   ChevronRightIcon,
   CreditCardIcon,
   FileTextIcon,
+  HandCoinsIcon,
   ReceiptIcon,
+  ShieldCheckIcon,
 } from "lucide-react";
 import { Fragment } from "react";
 
@@ -13,6 +15,8 @@ const kindIcons = {
   document: FileTextIcon,
   payment: CreditCardIcon,
   receipt: ReceiptIcon,
+  caution: ShieldCheckIcon,
+  cautionRefund: HandCoinsIcon,
 } as const satisfies Record<WorkflowStepKind, unknown>;
 
 /**

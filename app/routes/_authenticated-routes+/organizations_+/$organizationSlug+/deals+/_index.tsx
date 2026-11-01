@@ -280,6 +280,14 @@ export default function DealsRoute({
                           <span className="text-muted-foreground text-xs">
                             {t("paymentDue")}
                           </span>
+                        ) : deal.activeStep.kind === "caution" ? (
+                          <span className="text-muted-foreground text-xs">
+                            {t("cautionDue")}
+                          </span>
+                        ) : deal.activeStep.kind === "cautionRefund" ? (
+                          <span className="text-muted-foreground text-xs">
+                            {t("cautionToSettle")}
+                          </span>
                         ) : null}
                       </span>
                     ) : deal.status === "won" ? (

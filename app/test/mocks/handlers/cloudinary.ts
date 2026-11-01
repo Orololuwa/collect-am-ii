@@ -87,6 +87,25 @@ const rawUploadMock = http.post(
   },
 );
 
+const videoUploadMock = http.post(
+  "https://api.cloudinary.com/v1_1/:cloudName/video/upload",
+  async ({ request }) => {
+    await delay(300);
+    const formData = await request.formData();
+    const folder = formData.get("folder");
+    const publicIdField = String(formData.get("public_id") ?? "video");
+    return HttpResponse.json({
+      format: "mp4",
+      public_id:
+        typeof folder === "string" && folder.length > 0
+          ? `${folder}/${publicIdField}`
+          : publicIdField,
+      resource_type: "video",
+      version: 1,
+    });
+  },
+);
+
 const destroyMock = http.post(`${API_BASE_URL}/destroy`, async () => {
   await delay(300);
   return HttpResponse.json({ result: "ok" });
@@ -95,5 +114,6 @@ const destroyMock = http.post(`${API_BASE_URL}/destroy`, async () => {
 export const cloudinaryHandlers: RequestHandler[] = [
   uploadMock,
   rawUploadMock,
+  videoUploadMock,
   destroyMock,
 ];

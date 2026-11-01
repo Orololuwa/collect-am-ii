@@ -3,6 +3,7 @@ import { data, href } from "react-router";
 import type { Route } from "./+types/$dealId";
 import type { DealView } from "~/features/deals/components/deal-detail";
 import { DealDetail } from "~/features/deals/components/deal-detail";
+import { toCautionDeductionViews } from "~/features/deals/deal-caution.server";
 import { parseDealItems } from "~/features/deals/deal-items";
 import { createDealShareUrl } from "~/features/deals/deal-share-link.server";
 import { dealDetailAction } from "~/features/deals/deals-action.server";
@@ -92,6 +93,22 @@ export async function loader({ params, context }: Route.LoaderArgs) {
       return {
         amountDueMinor: step.amountDueMinor,
         amountPaidMinor: step.amountPaidMinor,
+        settlement: step.cautionSettlement
+          ? {
+              accountGivenAt: step.cautionSettlement.accountGivenAt,
+              accountName: step.cautionSettlement.accountName,
+              accountNumber: step.cautionSettlement.accountNumber,
+              bankName: step.cautionSettlement.bankName,
+              deductions: toCautionDeductionViews(
+                step.cautionSettlement.deductions,
+              ),
+              heldMinor: step.cautionSettlement.heldMinor,
+              refundMinor: step.cautionSettlement.refundMinor,
+              refundReference: step.cautionSettlement.refundReference,
+              refundedAt: step.cautionSettlement.refundedAt,
+              sentAt: step.cautionSettlement.sentAt,
+            }
+          : null,
         document:
           document && current
             ? {
@@ -153,6 +170,7 @@ export async function loader({ params, context }: Route.LoaderArgs) {
           receivedAt: deal.purchaseOrderReceivedAt,
         }
       : null,
+    cautionSettleAfter: deal.cautionSettleAfter,
     shareUrl: createDealShareUrl(deal),
     title: deal.title,
     workflowName: deal.workflowName,

@@ -12,8 +12,8 @@ import { useTranslation } from "react-i18next";
 
 import type { EditorStep, StepLane } from "./workflow-step-meta";
 import {
-  GATE_DESCRIPTION_KEYS,
-  gateDescription,
+  gateText,
+  hasCustomerGate,
   isAutomaticStep,
   KIND_ICONS,
   KIND_KEYS,
@@ -58,7 +58,13 @@ type GestureEvent = UIEvent & {
   clientY: number;
 };
 const DRAG_TYPE = "application/x-collectam-step";
-const KINDS = ["document", "payment", "receipt"] as const;
+const KINDS = [
+  "document",
+  "payment",
+  "receipt",
+  "caution",
+  "cautionRefund",
+] as const;
 
 type Row = { kind: "step" | "gate"; stepIndex: number; lane: StepLane };
 type Point = { lane: StepLane; bottom: number };
@@ -73,7 +79,7 @@ type Connector = {
 function buildRows(steps: EditorStep[]): Row[] {
   return steps.flatMap((step, stepIndex): Row[] => [
     { kind: "step", lane: stepLane(step), stepIndex },
-    ...(step.kind === "document" && step.requiresAcceptance
+    ...(hasCustomerGate(step)
       ? [{ kind: "gate" as const, lane: "customer" as const, stepIndex }]
       : []),
   ]);
@@ -437,14 +443,10 @@ export function WorkflowCanvas({
                   </span>
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="truncate font-semibold text-sm">
-                      {t(
-                        step.requestsPurchaseOrder
-                          ? "editor.gate.titleWithPo"
-                          : "editor.gate.title",
-                      )}
+                      {t(gateText(step).title)}
                     </span>
                     <span className="truncate text-muted-foreground text-xs">
-                      {t(GATE_DESCRIPTION_KEYS[gateDescription(step)])}
+                      {t(gateText(step).description)}
                     </span>
                   </span>
                 </button>

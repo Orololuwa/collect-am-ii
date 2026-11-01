@@ -23,6 +23,11 @@ export const SAMPLE_STEP_NAMES = [
   "completionPayment",
   "payment",
   "receipt",
+  "bookingInvoice",
+  "bookingPayment",
+  "caution",
+  "cautionReceipt",
+  "cautionRefund",
 ] as const;
 export type SampleStepName = (typeof SAMPLE_STEP_NAMES)[number];
 
@@ -32,6 +37,7 @@ export type SampleStep = Omit<WorkflowStepInput, "name" | "templateId"> & {
 
 /** The gallery's sections, each listing the kinds of business it suits. */
 export const WORKFLOW_SAMPLE_CATEGORIES = {
+  bookings: ["eventCentreBooking", "shortLetStay"],
   goods: ["retailOrder", "wholesaleOnCredit", "purchaseOrderSupply"],
   projects: ["constructionProject", "madeToOrder"],
   services: [
@@ -46,6 +52,7 @@ export const WORKFLOW_SAMPLE_CATEGORY_ORDER = [
   "services",
   "projects",
   "goods",
+  "bookings",
 ] as const satisfies readonly WorkflowSampleCategory[];
 
 export const WORKFLOW_SAMPLE_KEYS = WORKFLOW_SAMPLE_CATEGORY_ORDER.flatMap(
@@ -73,8 +80,15 @@ const step = (
 
 const payment = (stepName: SampleStepName = "payment") =>
   step(stepName, { kind: "payment" });
-const receipt = () =>
-  step("receipt", { advanceMode: "automatic", kind: "receipt" });
+const receipt = (stepName: SampleStepName = "receipt") =>
+  step(stepName, { advanceMode: "automatic", kind: "receipt" });
+
+/** A refundable caution, its receipt, and its refund once the date passes. */
+const caution = () => [
+  step("caution", { kind: "caution" }),
+  receipt("cautionReceipt"),
+  step("cautionRefund", { kind: "cautionRefund" }),
+];
 
 const document = (
   stepName: SampleStepName,
@@ -129,6 +143,22 @@ export const WORKFLOW_SAMPLES: Record<WorkflowSampleKey, SampleStep[]> = {
     balanceInvoice("completionInvoice", 14),
     payment("completionPayment"),
     receipt(),
+  ],
+  eventCentreBooking: [
+    document("quote", "quote", { requiresAcceptance: true, validityDays: 7 }),
+    document("bookingInvoice", "invoice", {
+      advanceMode: "automatic",
+      paymentTermsDays: 3,
+    }),
+    payment("bookingPayment"),
+    receipt(),
+    ...caution(),
+  ],
+  shortLetStay: [
+    document("bookingInvoice", "invoice", { paymentTermsDays: 1 }),
+    payment("bookingPayment"),
+    receipt(),
+    ...caution(),
   ],
   eventCatering: [
     document("quote", "quote", { requiresAcceptance: true, validityDays: 7 }),

@@ -1,3 +1,5 @@
+import { maskAccountNumber } from "./deal-caution";
+import { toCautionDeductionViews } from "./deal-caution.server";
 import type { DealDocumentType } from "./deal-documents";
 import { DOCUMENT_TYPE_NAMES } from "./deal-emails.server";
 import { parseDealItems } from "./deal-items";
@@ -21,6 +23,9 @@ export const CUSTOMER_EVENT_TYPES = [
   "paymentRecorded",
   "dealWon",
   "purchaseOrderReceived",
+  "cautionSettlementSent",
+  "refundAccountGiven",
+  "cautionRefunded",
 ] as const satisfies readonly DealEventType[];
 
 /**
@@ -67,6 +72,7 @@ export async function retrieveDealRoomFromDatabase(dealId: string) {
       },
       steps: {
         include: {
+          cautionSettlement: true,
           document: {
             include: {
               versions: {
@@ -201,10 +207,35 @@ export function toDealRoomView({ deal, products }: DealRoomData) {
         paidAt: step.paidAt,
         negotiable: step.negotiable,
         requestsPurchaseOrder: step.requestsPurchaseOrder,
+        // The customer only sees the settlement once it's been sent to them.
+        settlement: step.cautionSettlement
+          ? {
+              account: step.cautionSettlement.accountGivenAt
+                ? {
+                    accountName: step.cautionSettlement.accountName,
+                    bankName: step.cautionSettlement.bankName,
+                    masked: maskAccountNumber(
+                      step.cautionSettlement.accountNumber,
+                    ),
+                  }
+                : null,
+              deductions: step.cautionSettlement.sentAt
+                ? toCautionDeductionViews(step.cautionSettlement.deductions)
+                : [],
+              heldMinor: step.cautionSettlement.heldMinor,
+              refundMinor: step.cautionSettlement.sentAt
+                ? step.cautionSettlement.refundMinor
+                : null,
+              refundReference: step.cautionSettlement.refundReference,
+              refundedAt: step.cautionSettlement.refundedAt,
+              sentAt: step.cautionSettlement.sentAt,
+            }
+          : null,
         requiresAcceptance: step.requiresAcceptance,
         status: step.status,
       };
     }),
+    cautionSettleAfter: deal.cautionSettleAfter,
     title: deal.title,
   };
 }

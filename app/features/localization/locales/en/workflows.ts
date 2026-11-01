@@ -10,6 +10,16 @@ export default {
     salesOrder: "Sales order",
   },
   editor: {
+    addCaution: "Add caution fee",
+    addCautionRefund: "Add caution refund",
+    cautionDescription:
+      "A refundable caution fee the customer pays from the deal page. You set the amount on each deal, and it isn't counted as income.",
+    cautionRefundDescription:
+      "After the settle-after date, you record anything you're keeping and why. The customer is asked for the account to refund the rest to, then you send it from your bank and mark it sent.",
+    cautionRefundGate: {
+      description: "Then you refund it from your bank",
+      title: "Customer gives their refund account",
+    },
     advanceReceipt: "When the payment lands",
     auto: "Auto",
     back: "Workflows",
@@ -60,6 +70,8 @@ export default {
     stepOf: "Step {{number}} of {{total}}",
     stepSettings: "Step settings",
     summary: {
+      caution: "Refundable, paid from the share link",
+      cautionRefund: "Deductions, then refund to their account",
       balance: "The balance",
       deposit: "{{percent}}% deposit",
       payment: "Paid online from the share link",
@@ -128,11 +140,13 @@ export default {
   },
   gallery: {
     categories: {
+      bookings: "Bookings and rentals",
       goods: "Selling goods",
       projects: "Projects and custom work",
       services: "Services",
     },
     highlights: {
+      caution: "Refundable caution",
       deposit: "{{percent}}% upfront",
       paidUpfront: "Paid before delivery",
       purchaseOrder: "Asks for their PO",
@@ -149,6 +163,9 @@ export default {
     use: "Use this",
   },
   issues: {
+    cautionOnlyOnce: "A workflow can take one caution fee and refund it once.",
+    cautionRefundNeedsCaution:
+      "A caution refund needs a caution fee before it.",
     depositNeedsEarlierDocument:
       "Deposits and balances need an itemised document before them.",
     depositPercentOutOfRange: "Enter a deposit between 1% and 100%.",
@@ -164,6 +181,8 @@ export default {
     tooManySteps: "A workflow can have at most 15 steps.",
   },
   kinds: {
+    caution: "Caution fee",
+    cautionRefund: "Caution refund",
     document: "Document",
     payment: "Payment",
     receipt: "Receipt",
@@ -190,6 +209,16 @@ export default {
   newPageTitle: "New workflow",
   pageTitle: "Workflows",
   samples: {
+    eventCentreBooking: {
+      description:
+        "For halls and event spaces: a quote, the booking invoice, then a refundable caution you settle after the event, keeping anything for damage.",
+      name: "Event centre booking",
+    },
+    shortLetStay: {
+      description:
+        "For short-let apartments and Airbnb hosts: the booking invoice, a refundable caution, then the caution refund after check-out.",
+      name: "Short-let apartment stay",
+    },
     agencyProject: {
       description:
         "An estimate the client signs off, half upfront to kick off, and the rest when you deliver. For websites, branding and campaigns.",
@@ -237,6 +266,11 @@ export default {
     },
   },
   stepNames: {
+    bookingInvoice: "Booking invoice",
+    bookingPayment: "Booking payment",
+    caution: "Caution fee",
+    cautionReceipt: "Caution receipt",
+    cautionRefund: "Caution refund",
     balanceInvoice: "Balance invoice",
     balancePayment: "Balance payment",
     bookingDeposit: "Booking deposit",

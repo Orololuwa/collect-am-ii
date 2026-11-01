@@ -124,6 +124,9 @@ export default {
     you: "You",
   },
   timeline: {
+    cautionSettlementSent: "{{organization}} sent your caution settlement",
+    refundAccountGiven: "You gave your refund account",
+    cautionRefunded: "{{organization}} sent your caution refund",
     purchaseOrderReceived: "You sent purchase order {{number}}",
     title: "History",
     documentSent: "{{document}} sent to you",
@@ -135,7 +138,42 @@ export default {
     paymentRecorded: "{{organization}} received your payment of {{amount}}",
     dealWon: "All steps done",
   },
+  refund: {
+    evidenceFor: "Photos and videos for {{reason}}",
+    accountGiven:
+      "Thanks. {{organization}} will send your refund to {{account}}. You'll get an email when it's on its way.",
+    accountNameLabel: "Account name",
+    accountNameRequired: "Enter the name on the account.",
+    accountNumberInvalid: "Enter the account number, digits only.",
+    accountNumberLabel: "Account number",
+    accountPrivacy:
+      "Only {{organization}} sees these details, to send your refund. This page only ever shows the last four digits.",
+    askAccount:
+      "{{organization}} will refund {{amount}}. Tell them which account to send it to.",
+    bankLabel: "Bank",
+    bankPlaceholder: "e.g. GTBank",
+    bankRequired: "Enter your bank's name.",
+    cautionDescription:
+      "Refundable. {{organization}} holds it and refunds it after your booking, less anything they need to keep, with the reason.",
+    cautionTitle: "Caution fee (refundable)",
+    changeAccount: "Use a different account",
+    held: "Caution paid",
+    heldDescription:
+      "{{organization}} holds it and will settle it after your booking.",
+    heldTitle: "Your caution of {{amount}} is held",
+    heldUntil:
+      "{{organization}} holds it and will settle it after {{date}}. You'll get an email then.",
+    keptFor: "Kept for {{reason}}",
+    reference: "Transfer reference: {{reference}}",
+    refunded: "Refunded",
+    refundedDescription: "Sent to {{account}} on {{date}}.",
+    refundedTitle: "Your caution refund of {{amount}} was sent",
+    settledDescription: "Settled on {{date}}.",
+    submit: "Send account details",
+    toRefund: "To refund",
+  },
   toasts: {
+    accountSaved: "Thanks. Your refund account was sent",
     accepted: "Accepted. Thank you!",
     declined: "Your answer was sent",
     changesSent: "Your suggestion was sent",
