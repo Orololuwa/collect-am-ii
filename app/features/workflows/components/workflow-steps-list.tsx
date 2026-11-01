@@ -9,6 +9,8 @@ import { useTranslation } from "react-i18next";
 
 import type { EditorStep } from "./workflow-step-meta";
 import {
+  GATE_DESCRIPTION_KEYS,
+  gateDescription,
   isAutomaticStep,
   KIND_ICONS,
   KIND_TILE_CLASSES,
@@ -178,10 +180,14 @@ export function WorkflowStepsList({
                       />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="font-semibold text-sky-950 text-sm dark:text-sky-100">
-                          {t("editor.gate.title")}
+                          {t(
+                            step.requestsPurchaseOrder
+                              ? "editor.gate.titleWithPo"
+                              : "editor.gate.title",
+                          )}
                         </span>
                         <span className="text-sky-900/80 text-xs dark:text-sky-200/80">
-                          {t("editor.gate.description")}
+                          {t(GATE_DESCRIPTION_KEYS[gateDescription(step)])}
                         </span>
                       </span>
                     </button>

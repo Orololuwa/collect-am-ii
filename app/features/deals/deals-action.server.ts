@@ -239,6 +239,13 @@ export async function dealDetailAction(
             acceptedByName: result.data.acceptedByName,
             actor,
             documentId: result.data.documentId,
+            purchaseOrder: result.data.purchaseOrderNumber
+              ? {
+                  fileId: null,
+                  fileName: "",
+                  number: result.data.purchaseOrderNumber,
+                }
+              : undefined,
           })
         ).effects;
       }

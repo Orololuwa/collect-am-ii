@@ -32,7 +32,11 @@ export default {
     carryItemsHint: "Copied from the latest accepted document",
     gate: {
       description: "Or declines, or asks for changes",
+      descriptionWithPo: "With their PO number. Can ask for changes",
       title: "Customer accepts",
+      titleWithPo: "Customer accepts and sends their PO",
+      descriptionFixed: "Or declines",
+      descriptionWithPoFixed: "With their PO number",
     },
     hasProblem: "Has a problem to fix",
     lanes: {
@@ -100,6 +104,12 @@ export default {
     receiptDescription:
       "A receipt for the payment above, emailed to the customer.",
     remove: "Remove {{name}}",
+    negotiable: "Let them negotiate",
+    negotiableHint:
+      "They can suggest their own quantities, prices, tax and discounts. You approve or turn down what they suggest.",
+    requestsPurchaseOrder: "Ask for their purchase order",
+    requestsPurchaseOrderHint:
+      "When they accept, they give their PO number and can attach their PO file. Later documents show the number.",
     requiresAcceptance: "The customer must accept it",
     requiresAcceptanceHint:
       "They can accept, decline or ask for changes from the deal page.",
@@ -125,6 +135,7 @@ export default {
     highlights: {
       deposit: "{{percent}}% upfront",
       paidUpfront: "Paid before delivery",
+      purchaseOrder: "Asks for their PO",
       terms_one: "Invoice due in {{count}} day",
       terms_other: "Invoice due in {{count}} days",
       validity_one: "{{type}} valid {{count}} day",
@@ -208,6 +219,11 @@ export default {
       description:
         "A quote to hold the date, a 30% booking deposit, and the balance just before the shoot or event.",
       name: "Photography or event booking",
+    },
+    purchaseOrderSupply: {
+      description:
+        "For suppliers to companies: they accept your quote with their purchase order number, you confirm the order, then invoice on 30-day terms quoting their PO.",
+      name: "Supplying businesses with purchase orders",
     },
     retailOrder: {
       description:

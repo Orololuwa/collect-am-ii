@@ -35,7 +35,11 @@ export default {
     carryItemsHint: "Aus dem zuletzt angenommenen Dokument übernommen",
     gate: {
       description: "Oder lehnt ab oder bittet um Änderungen",
+      descriptionWithPo: "Mit ihrer Bestellnummer. Kann Änderungen vorschlagen",
       title: "Kundschaft nimmt an",
+      titleWithPo: "Kundschaft nimmt an und schickt ihre Bestellung",
+      descriptionFixed: "Oder lehnt ab",
+      descriptionWithPoFixed: "Mit ihrer Bestellnummer",
     },
     hasProblem: "Hat ein Problem, das behoben werden muss",
     lanes: {
@@ -103,6 +107,12 @@ export default {
     receiptDescription:
       "Eine Quittung für die Zahlung darüber, per E-Mail an den Kunden.",
     remove: "{{name}} entfernen",
+    negotiable: "Verhandeln erlauben",
+    negotiableHint:
+      "Die Kundschaft kann eigene Mengen, Preise, Steuern und Rabatte vorschlagen. Du nimmst die Vorschläge an oder lehnst sie ab.",
+    requestsPurchaseOrder: "Nach ihrer Bestellung fragen",
+    requestsPurchaseOrderHint:
+      "Beim Annehmen gibt die Kundschaft ihre Bestellnummer an und kann ihre Bestellung als Datei anhängen. Spätere Dokumente zeigen die Nummer.",
     requiresAcceptance: "Der Kunde muss es annehmen",
     requiresAcceptanceHint:
       "Er kann es auf der Deal-Seite annehmen, ablehnen oder Änderungen anfragen.",
@@ -128,6 +138,7 @@ export default {
     highlights: {
       deposit: "{{percent}} % im Voraus",
       paidUpfront: "Bezahlt vor Lieferung",
+      purchaseOrder: "Fragt nach ihrer Bestellung",
       terms_one: "Rechnung fällig in {{count}} Tag",
       terms_other: "Rechnung fällig in {{count}} Tagen",
       validity_one: "{{type}} {{count}} Tag gültig",
@@ -214,6 +225,11 @@ export default {
       description:
         "Ein Angebot, um den Termin zu reservieren, 30 % Buchungsanzahlung und der Rest kurz vor dem Shooting oder Event.",
       name: "Fotografie- oder Eventbuchung",
+    },
+    purchaseOrderSupply: {
+      description:
+        "Für Lieferanten von Unternehmen: Sie nehmen dein Angebot mit ihrer Bestellnummer an, du bestätigst den Auftrag und stellst eine Rechnung mit 30 Tagen Zahlungsziel, die ihre Bestellnummer nennt.",
+      name: "Unternehmen mit Bestellungen beliefern",
     },
     retailOrder: {
       description:

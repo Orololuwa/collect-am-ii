@@ -38,7 +38,9 @@ export type DealErrorCode =
   | "notPaymentStep"
   | "versionChanged"
   | "proposalNotFound"
-  | "noItems";
+  | "noItems"
+  | "purchaseOrderRequired"
+  | "changesNotAllowed";
 
 /** A transition that isn't allowed in the deal's current state. */
 export class DealTransitionError extends Error {
@@ -357,6 +359,7 @@ async function sendDocumentInTransaction(
             }
           : undefined,
       paymentTermsDays: step.paymentTermsDays,
+      purchaseOrderNumber: fresh.purchaseOrderNumber,
       totals: calculateDealTotals(items),
       type,
     },
@@ -517,6 +520,8 @@ export async function startDeal({
             name: step.name,
             paymentTermsDays: step.paymentTermsDays,
             position: step.position,
+            negotiable: step.negotiable,
+            requestsPurchaseOrder: step.requestsPurchaseOrder,
             requiresAcceptance: step.requiresAcceptance,
             templateId: step.templateId,
             validityDays: step.validityDays,
@@ -665,6 +670,7 @@ export async function acceptDealDocument({
   documentId,
   acceptedByName,
   expectedVersionId,
+  purchaseOrder,
   actor,
 }: {
   organizationId: string;
@@ -673,6 +679,15 @@ export async function acceptDealDocument({
   acceptedByName: string;
   /** The version the customer looked at; refused if it's no longer current. */
   expectedVersionId?: string;
+  /**
+   * The customer's purchase order. Required from customers when the step asks
+   * for it; the business may add one when recording an acceptance.
+   */
+  purchaseOrder?: {
+    number: string;
+    fileId: string | null;
+    fileName: string;
+  };
   actor: Actor;
 }) {
   return await runTransition(async (tx, effects) => {
@@ -686,6 +701,28 @@ export async function acceptDealDocument({
     }
     if (expectedVersionId && expectedVersionId !== current.id) {
       throw new DealTransitionError("versionChanged");
+    }
+    const poNumber = purchaseOrder?.number.trim() ?? "";
+    if (step.requestsPurchaseOrder && actor.party === "customer" && !poNumber) {
+      throw new DealTransitionError("purchaseOrderRequired");
+    }
+    if (poNumber) {
+      await tx.deal.update({
+        data: {
+          purchaseOrderFileId: purchaseOrder?.fileId ?? null,
+          purchaseOrderFileName: purchaseOrder?.fileName ?? "",
+          purchaseOrderNumber: poNumber,
+          purchaseOrderReceivedAt: new Date(),
+        },
+        where: { id: deal.id },
+      });
+      await recordEvent(tx, deal.id, "purchaseOrderReceived", actor, {
+        documentId: document.id,
+        payload: {
+          fileName: purchaseOrder?.fileName ?? "",
+          number: poNumber,
+        },
+      });
     }
 
     await tx.dealDocument.update({
@@ -1006,6 +1043,9 @@ export async function proposeDealChanges({
       !current
     ) {
       throw new DealTransitionError("documentNotAwaitingAnswer");
+    }
+    if (!step.negotiable) {
+      throw new DealTransitionError("changesNotAllowed");
     }
 
     // The customer's figures are a request, not a price change: the business

@@ -16,6 +16,8 @@ import {
   PAYMENT_METHODS,
   POST_MESSAGE_INTENT,
   PROPOSE_CHANGES_INTENT,
+  PURCHASE_ORDER_FILE_TYPES,
+  PURCHASE_ORDER_MAX_FILE_SIZE,
   RECORD_PAYMENT_INTENT,
   REJECT_PROPOSAL_INTENT,
   RESEND_DOCUMENT_INTENT,
@@ -117,6 +119,7 @@ export const acceptDocumentFormSchema = z.object({
     .max(120),
   documentId: z.string().min(1),
   intent: z.literal(ACCEPT_DOCUMENT_INTENT),
+  purchaseOrderNumber: z.string().trim().max(80).optional().default(""),
 });
 
 export const declineDocumentFormSchema = z.object({
@@ -173,6 +176,13 @@ export const proposedChangesSchema = z.object({
   lines: z.record(z.string().regex(/^\d{1,3}$/), lineFiguresSchema),
 });
 
+/** An empty file input arrives as a nameless, empty file. */
+const optionalFile = <T extends z.ZodType>(schema: T) =>
+  z.preprocess(
+    (value) => (value instanceof File && value.size === 0 ? undefined : value),
+    schema.optional(),
+  );
+
 /** The customer accepting a document on the share link. */
 export const customerAcceptFormSchema = z.object({
   acceptedByName: z
@@ -183,6 +193,17 @@ export const customerAcceptFormSchema = z.object({
   agree: z.literal("on", { message: "dealRoom:accept.agreeRequired" }),
   documentId: z.string().min(1),
   intent: z.literal(ACCEPT_DOCUMENT_INTENT),
+  purchaseOrderFile: optionalFile(
+    z
+      .file()
+      .max(PURCHASE_ORDER_MAX_FILE_SIZE, {
+        message: "dealRoom:accept.poFileTooLarge",
+      })
+      .mime([...PURCHASE_ORDER_FILE_TYPES], {
+        message: "dealRoom:accept.poFileType",
+      }),
+  ),
+  purchaseOrderNumber: z.string().trim().max(80).optional().default(""),
   versionId: z.string().min(1),
 });
 

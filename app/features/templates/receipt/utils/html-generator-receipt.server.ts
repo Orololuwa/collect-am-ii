@@ -66,6 +66,7 @@ function renderReceiptSectionToHTML(
               <h2 class="receipt-title">RECEIPT</h2>
               <div class="receipt-details">
                 ${section.data.receiptNumber ? `<div><span class="receipt-label">Receipt #:</span> ${escapeHtml(String(section.data.receiptNumber))}</div>` : ""}
+                ${section.data.customerPoNumber ? `<div><span class="receipt-label">Your PO #:</span> ${escapeHtml(String(section.data.customerPoNumber))}</div>` : ""}
                 ${section.data.receiptDate ? `<div><span class="receipt-label">Date:</span> ${escapeHtml(String(section.data.receiptDate))}</div>` : ""}
                 ${section.data.transactionId ? `<div><span class="receipt-label">Transaction ID:</span> ${escapeHtml(String(section.data.transactionId))}</div>` : ""}
               </div>

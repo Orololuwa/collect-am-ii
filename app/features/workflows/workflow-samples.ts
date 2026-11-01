@@ -32,7 +32,7 @@ export type SampleStep = Omit<WorkflowStepInput, "name" | "templateId"> & {
 
 /** The gallery's sections, each listing the kinds of business it suits. */
 export const WORKFLOW_SAMPLE_CATEGORIES = {
-  goods: ["retailOrder", "wholesaleOnCredit"],
+  goods: ["retailOrder", "wholesaleOnCredit", "purchaseOrderSupply"],
   projects: ["constructionProject", "madeToOrder"],
   services: [
     "freelanceJob",
@@ -63,6 +63,8 @@ const step = (
   depositPercentBps: null,
   documentType: null,
   paymentTermsDays: null,
+  negotiable: false,
+  requestsPurchaseOrder: false,
   requiresAcceptance: false,
   stepName,
   validityDays: null,
@@ -175,6 +177,20 @@ export const WORKFLOW_SAMPLES: Record<WorkflowSampleKey, SampleStep[]> = {
     document("orderConfirmation", "orderConfirmation", {
       requiresAcceptance: true,
     }),
+    payment(),
+    receipt(),
+  ],
+  // For buyers whose accounts team only pays invoices that quote their PO.
+  purchaseOrderSupply: [
+    document("quote", "quote", {
+      requestsPurchaseOrder: true,
+      requiresAcceptance: true,
+      validityDays: 14,
+    }),
+    document("orderConfirmation", "orderConfirmation", {
+      advanceMode: "automatic",
+    }),
+    document("invoice", "invoice", { paymentTermsDays: 30 }),
     payment(),
     receipt(),
   ],

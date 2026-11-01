@@ -20,6 +20,7 @@ export const CUSTOMER_EVENT_TYPES = [
   "proposalRejected",
   "paymentRecorded",
   "dealWon",
+  "purchaseOrderReceived",
 ] as const satisfies readonly DealEventType[];
 
 /**
@@ -198,6 +199,8 @@ export function toDealRoomView({ deal, products }: DealRoomData) {
         kind: step.kind,
         name: step.name,
         paidAt: step.paidAt,
+        negotiable: step.negotiable,
+        requestsPurchaseOrder: step.requestsPurchaseOrder,
         requiresAcceptance: step.requiresAcceptance,
         status: step.status,
       };

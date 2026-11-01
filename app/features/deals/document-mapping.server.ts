@@ -69,6 +69,8 @@ export type DocumentContent = {
   totals: DealTotals;
   paymentTermsDays: number | null;
   payment?: { method: string; reference: string };
+  /** The customer's purchase order number, once they've given one. */
+  purchaseOrderNumber?: string;
 };
 
 export function formatDocumentDate(date: Date) {
@@ -225,9 +227,19 @@ function buildHeaderData(
     ? `${customer.name}, ${customer.companyName}`
     : customer.name;
 
+  // Documents after the customer's purchase order quote its number.
+  const quotesPurchaseOrder =
+    Boolean(content.purchaseOrderNumber) &&
+    content.type !== "quote" &&
+    content.type !== "estimate" &&
+    content.type !== "purchaseOrder";
+
   return {
     ...data,
     ...company,
+    ...(quotesPurchaseOrder
+      ? { customerPoNumber: content.purchaseOrderNumber }
+      : {}),
     [fields.number]: content.number ?? "DRAFT",
     [fields.date]: formatDocumentDate(content.issuedAt),
     ...(fields.due

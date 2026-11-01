@@ -136,11 +136,23 @@ export async function loader({ params, context }: Route.LoaderArgs) {
         paymentMethod: step.paymentMethod,
         paymentReference: step.paymentReference,
         payments: step.payments,
+        requestsPurchaseOrder: step.requestsPurchaseOrder,
         requiresAcceptance: step.requiresAcceptance,
         status: step.status,
         validityDays: step.validityDays,
       };
     }),
+    purchaseOrder: deal.purchaseOrderNumber
+      ? {
+          downloadUrl: href(
+            "/organizations/:organizationSlug/deals/:dealId/purchase-order",
+            { dealId: deal.id, organizationSlug: params.organizationSlug },
+          ),
+          fileName: deal.purchaseOrderFileId ? deal.purchaseOrderFileName : "",
+          number: deal.purchaseOrderNumber,
+          receivedAt: deal.purchaseOrderReceivedAt,
+        }
+      : null,
     shareUrl: createDealShareUrl(deal),
     title: deal.title,
     workflowName: deal.workflowName,

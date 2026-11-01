@@ -2,7 +2,8 @@ import type { RequestHandler } from "msw";
 import { delay, HttpResponse, http } from "msw";
 
 /*
-Cloudinary handlers. Cover the upload and destroy calls made by
+Cloudinary handlers. Cover the upload (image and private raw files) and
+destroy calls made by
 `app/utils/storage.server.ts`.
 */
 
@@ -66,9 +67,33 @@ const uploadMock = http.post(
   },
 );
 
+const rawUploadMock = http.post(
+  "https://api.cloudinary.com/v1_1/:cloudName/raw/upload",
+  async ({ request }) => {
+    await delay(300);
+    const formData = await request.formData();
+    const folder = formData.get("folder");
+    const publicIdField = String(formData.get("public_id") ?? "file");
+    const publicId =
+      typeof folder === "string" && folder.length > 0
+        ? `${folder}/${publicIdField}`
+        : publicIdField;
+    return HttpResponse.json({
+      public_id: publicId,
+      resource_type: "raw",
+      type: "private",
+      version: 1,
+    });
+  },
+);
+
 const destroyMock = http.post(`${API_BASE_URL}/destroy`, async () => {
   await delay(300);
   return HttpResponse.json({ result: "ok" });
 });
 
-export const cloudinaryHandlers: RequestHandler[] = [uploadMock, destroyMock];
+export const cloudinaryHandlers: RequestHandler[] = [
+  uploadMock,
+  rawUploadMock,
+  destroyMock,
+];

@@ -65,6 +65,7 @@ function renderSalesOrderSectionToHTML(
               <h2 class="so-title">SALES ORDER</h2>
               <div class="so-details">
                 ${section.data.orderNumber ? `<div><span class="so-label">Order #:</span> ${escapeHtml(String(section.data.orderNumber))}</div>` : ""}
+                ${section.data.customerPoNumber ? `<div><span class="so-label">Your PO #:</span> ${escapeHtml(String(section.data.customerPoNumber))}</div>` : ""}
                 ${section.data.orderDate ? `<div><span class="so-label">Order Date:</span> ${escapeHtml(String(section.data.orderDate))}</div>` : ""}
               </div>
             </div>

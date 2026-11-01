@@ -28,6 +28,8 @@ export const workflowStepSchema = z.object({
   name: z.string().max(200),
   paymentTermsDays: optionalDays,
   requiresAcceptance: z.boolean(),
+  negotiable: z.boolean().optional().default(false),
+  requestsPurchaseOrder: z.boolean().optional().default(false),
   templateId: z.string().min(1).nullable(),
   validityDays: optionalDays,
 });

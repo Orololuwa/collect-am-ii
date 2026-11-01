@@ -360,22 +360,62 @@ export function WorkflowStepSettings({
             />
           )}
 
-          <div className="flex items-start gap-3 rounded-lg border p-3">
-            <Switch
-              checked={step.requiresAcceptance}
-              id={fieldId("accept")}
-              onCheckedChange={(checked) =>
-                onChange({ requiresAcceptance: checked })
-              }
-            />
-            <div className="space-y-0.5">
-              <Label htmlFor={fieldId("accept")}>
-                {t("editor.requiresAcceptance")}
-              </Label>
-              <p className="text-muted-foreground text-sm">
-                {t("editor.requiresAcceptanceHint")}
-              </p>
+          <div className="flex flex-col gap-3 rounded-lg border p-3">
+            <div className="flex items-start gap-3">
+              <Switch
+                checked={step.requiresAcceptance}
+                id={fieldId("accept")}
+                onCheckedChange={(checked) =>
+                  onChange({ requiresAcceptance: checked })
+                }
+              />
+              <div className="space-y-0.5">
+                <Label htmlFor={fieldId("accept")}>
+                  {t("editor.requiresAcceptance")}
+                </Label>
+                <p className="text-muted-foreground text-sm">
+                  {t("editor.requiresAcceptanceHint")}
+                </p>
+              </div>
             </div>
+            {step.requiresAcceptance ? (
+              <div className="ml-12 flex items-start gap-3 border-t pt-3">
+                <Switch
+                  checked={step.negotiable}
+                  id={fieldId("negotiable")}
+                  onCheckedChange={(checked) =>
+                    onChange({ negotiable: checked })
+                  }
+                />
+                <div className="space-y-0.5">
+                  <Label htmlFor={fieldId("negotiable")}>
+                    {t("editor.negotiable")}
+                  </Label>
+                  <p className="text-muted-foreground text-sm">
+                    {t("editor.negotiableHint")}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            {step.requiresAcceptance ? (
+              <div className="ml-12 flex items-start gap-3 border-t pt-3">
+                <Switch
+                  checked={step.requestsPurchaseOrder}
+                  id={fieldId("po")}
+                  onCheckedChange={(checked) =>
+                    onChange({ requestsPurchaseOrder: checked })
+                  }
+                />
+                <div className="space-y-0.5">
+                  <Label htmlFor={fieldId("po")}>
+                    {t("editor.requestsPurchaseOrder")}
+                  </Label>
+                  <p className="text-muted-foreground text-sm">
+                    {t("editor.requestsPurchaseOrderHint")}
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

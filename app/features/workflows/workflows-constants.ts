@@ -44,6 +44,10 @@ export const SAMPLE_TEXT_KEYS = {
     description: "samples.photographyBooking.description",
     name: "samples.photographyBooking.name",
   },
+  purchaseOrderSupply: {
+    description: "samples.purchaseOrderSupply.description",
+    name: "samples.purchaseOrderSupply.name",
+  },
   retailOrder: {
     description: "samples.retailOrder.description",
     name: "samples.retailOrder.name",
@@ -91,7 +95,6 @@ export const DOCUMENT_TYPE_KEYS = {
   estimate: "documentTypes.estimate",
   invoice: "documentTypes.invoice",
   orderConfirmation: "documentTypes.orderConfirmation",
-  purchaseOrder: "documentTypes.purchaseOrder",
   quote: "documentTypes.quote",
   salesOrder: "documentTypes.salesOrder",
 } as const satisfies Record<WorkflowDocumentType, string>;

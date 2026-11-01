@@ -134,6 +134,8 @@ export function WorkflowEditor({
             ? t("stepNames.payment")
             : t("stepNames.receipt"),
       paymentTermsDays: kind === "document" ? 14 : null,
+      negotiable: false,
+      requestsPurchaseOrder: false,
       requiresAcceptance: false,
       templateId: null,
       validityDays: null,

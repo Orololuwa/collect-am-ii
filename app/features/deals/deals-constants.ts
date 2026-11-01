@@ -15,6 +15,7 @@ export const DEAL_EVENT_TYPES = [
   "proposalApproved",
   "proposalRejected",
   "shareLinkReset",
+  "purchaseOrderReceived",
 ] as const;
 export type DealEventType = (typeof DEAL_EVENT_TYPES)[number];
 
@@ -95,6 +96,7 @@ export const EVENT_KEYS = {
   proposalApproved: "events.proposalApproved",
   proposalRejected: "events.proposalRejected",
   shareLinkReset: "events.shareLinkReset",
+  purchaseOrderReceived: "events.purchaseOrderReceived",
 } as const satisfies Record<DealEventType, string>;
 
 export const ERROR_KEYS = {
@@ -111,4 +113,14 @@ export const ERROR_KEYS = {
   versionChanged: "errors.versionChanged",
   proposalNotFound: "errors.proposalNotFound",
   noItems: "errors.noItems",
+  purchaseOrderRequired: "errors.purchaseOrderRequired",
+  changesNotAllowed: "errors.changesNotAllowed",
 } as const;
+
+/** A customer's purchase order file, attached when they accept. */
+export const PURCHASE_ORDER_MAX_FILE_SIZE = 5_000_000;
+export const PURCHASE_ORDER_FILE_TYPES = [
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+] as const;

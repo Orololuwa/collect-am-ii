@@ -12,6 +12,8 @@ import { useTranslation } from "react-i18next";
 
 import type { EditorStep, StepLane } from "./workflow-step-meta";
 import {
+  GATE_DESCRIPTION_KEYS,
+  gateDescription,
   isAutomaticStep,
   KIND_ICONS,
   KIND_KEYS,
@@ -435,10 +437,14 @@ export function WorkflowCanvas({
                   </span>
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="truncate font-semibold text-sm">
-                      {t("editor.gate.title")}
+                      {t(
+                        step.requestsPurchaseOrder
+                          ? "editor.gate.titleWithPo"
+                          : "editor.gate.title",
+                      )}
                     </span>
                     <span className="truncate text-muted-foreground text-xs">
-                      {t("editor.gate.description")}
+                      {t(GATE_DESCRIPTION_KEYS[gateDescription(step)])}
                     </span>
                   </span>
                 </button>

@@ -48,6 +48,13 @@ export default {
     },
   },
   accept: {
+    poFileHint: "PDF oder Bild, bis 5 MB. Optional.",
+    poFileLabel: "Deine Bestellung als Datei",
+    poFileTooLarge: "Die Datei darf höchstens 5 MB groß sein.",
+    poFileType: "Hänge eine PDF-, PNG- oder JPG-Datei an.",
+    poNumberHint: "{{organization}} setzt sie auf die folgenden Dokumente.",
+    poNumberLabel: "Deine Bestellnummer",
+    poNumberRequired: "Gib deine Bestellnummer ein.",
     tab: "Annehmen",
     nameLabel: "Dein vollständiger Name",
     nameRequired: "Gib deinen vollständigen Namen ein, um anzunehmen.",
@@ -121,6 +128,7 @@ export default {
     you: "Du",
   },
   timeline: {
+    purchaseOrderReceived: "Du hast die Bestellung {{number}} geschickt",
     title: "Verlauf",
     documentSent: "{{document}} an dich gesendet",
     documentAccepted: "Du hast {{document}} angenommen",
@@ -140,6 +148,9 @@ export default {
     messageSent: "Nachricht gesendet",
   },
   errors: {
+    changesNotAllowed:
+      "Dieses Dokument kann nicht geändert werden. Nimm es an oder lehne es ab.",
+    purchaseOrderRequired: "Gib deine Bestellnummer ein.",
     generic:
       "Etwas ist schiefgelaufen. Lade die Seite neu und versuche es erneut.",
     dealClosed: "Dieser Deal ist geschlossen.",

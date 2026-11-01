@@ -80,6 +80,8 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
             kind: step.kind,
             name: step.name,
             paymentTermsDays: step.paymentTermsDays,
+            negotiable: step.negotiable,
+            requestsPurchaseOrder: step.requestsPurchaseOrder,
             requiresAcceptance: step.requiresAcceptance,
             templateId: step.templateId,
             validityDays: step.validityDays,

@@ -340,6 +340,11 @@ describe("deal payments", () => {
     const { deal, document } = await setupDealAwaitingPayment("retailOrder", {
       accept: false,
     });
+    // Samples don't negotiate by default; let this deal's customer suggest.
+    await prisma.dealStep.updateMany({
+      data: { negotiable: true },
+      where: { dealId: deal.id },
+    });
     await proposeDealChanges({
       actor: { party: "customer", userId: null },
       changes: { additions: [], lines: { 0: { quantity: 1 } } },

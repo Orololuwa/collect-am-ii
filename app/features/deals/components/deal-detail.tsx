@@ -142,6 +142,7 @@ export type DealStepView = {
   name: string;
   status: DealStepStatus;
   requiresAcceptance: boolean;
+  requestsPurchaseOrder: boolean;
   validityDays: number | null;
   amountDueMinor: number | null;
   amountPaidMinor: number | null;
@@ -163,6 +164,14 @@ export type DealView = {
   id: string;
   title: string;
   shareUrl: string;
+  /** The customer's purchase order, once they've given one. */
+  purchaseOrder: {
+    number: string;
+    /** Empty when no file was attached. */
+    fileName: string;
+    downloadUrl: string;
+    receivedAt: Date | null;
+  } | null;
   status: DealStatus;
   currency: string;
   workflowName: string;
@@ -351,11 +360,14 @@ function IntentButton({
 function AcceptDialog({
   documentId,
   defaultName,
+  requestsPurchaseOrder,
   open,
   onOpenChange,
 }: {
   documentId: string;
   defaultName: string;
+  /** The step asks for the customer's PO, so offer to note it here. */
+  requestsPurchaseOrder: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -382,6 +394,20 @@ function AcceptDialog({
               required
             />
           </div>
+          {requestsPurchaseOrder ? (
+            <div className="space-y-2">
+              <Label htmlFor={`${id}-po`}>{t("poNumberLabel")}</Label>
+              <Input
+                aria-describedby={`${id}-po-hint`}
+                id={`${id}-po`}
+                maxLength={80}
+                name="purchaseOrderNumber"
+              />
+              <p className="text-muted-foreground text-xs" id={`${id}-po-hint`}>
+                {t("poNumberHint")}
+              </p>
+            </div>
+          ) : null}
           <DialogFooter>
             <Button
               onClick={() => onOpenChange(false)}
@@ -692,6 +718,7 @@ function CurrentDocument({
         documentId={document.id}
         onOpenChange={setAccepting}
         open={accepting}
+        requestsPurchaseOrder={step.requestsPurchaseOrder}
       />
       <DeclineDialog
         documentId={document.id}
@@ -905,6 +932,45 @@ function ProposalReview({
         </IntentButton>
       </div>
     </div>
+  );
+}
+
+function PurchaseOrderCard({
+  purchaseOrder,
+}: {
+  purchaseOrder: NonNullable<DealView["purchaseOrder"]>;
+}) {
+  const { t } = useTranslation("deals", { keyPrefix: "detail.purchaseOrder" });
+  const formatDate = useFormatDate();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("title")}</CardTitle>
+        <CardDescription>
+          {purchaseOrder.receivedAt
+            ? t("received", { date: formatDate(purchaseOrder.receivedAt) })
+            : null}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="font-semibold text-base tabular-nums">
+          {purchaseOrder.number}
+        </p>
+        {purchaseOrder.fileName ? (
+          <Button asChild size="sm" variant="outline">
+            {/* A plain link: the route redirects to a short-lived download. */}
+            <a href={purchaseOrder.downloadUrl} rel="noopener" target="_blank">
+              <DownloadIcon aria-hidden="true" />
+              <span className="max-w-48 truncate">
+                {purchaseOrder.fileName}
+              </span>
+            </a>
+          </Button>
+        ) : (
+          <p className="text-muted-foreground">{t("noFile")}</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1352,6 +1418,7 @@ function Activity({ deal }: { deal: DealView }) {
                         String(event.payload.method ?? ""),
                       ),
                       name: String(event.payload.acceptedByName ?? ""),
+                      number: String(event.payload.number ?? ""),
                       version: String(event.payload.version ?? ""),
                     },
                   )}
@@ -1485,6 +1552,9 @@ export function DealDetail({
               ) : null}
             </CardContent>
           </Card>
+          {deal.purchaseOrder ? (
+            <PurchaseOrderCard purchaseOrder={deal.purchaseOrder} />
+          ) : null}
           <ShareLink deal={deal} />
           <Messages deal={deal} />
           <Activity deal={deal} />

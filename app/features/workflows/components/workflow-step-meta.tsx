@@ -73,3 +73,18 @@ export function stepSummary(
   }
   return parts.join(" · ");
 }
+
+/** What the customer can do at an accept step, as the canvas and list say it. */
+export function gateDescription(step: WorkflowStepInput) {
+  if (step.requestsPurchaseOrder) {
+    return step.negotiable ? "withPo" : "withPoFixed";
+  }
+  return step.negotiable ? "negotiable" : "fixed";
+}
+
+export const GATE_DESCRIPTION_KEYS = {
+  fixed: "editor.gate.descriptionFixed",
+  negotiable: "editor.gate.description",
+  withPo: "editor.gate.descriptionWithPo",
+  withPoFixed: "editor.gate.descriptionWithPoFixed",
+} as const satisfies Record<ReturnType<typeof gateDescription>, string>;

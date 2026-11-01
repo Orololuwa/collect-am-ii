@@ -574,26 +574,30 @@ model Workflow {
 }
 
 model WorkflowStep {
-  id                 String           @id @default(cuid(2))
-  workflowId         String
-  workflow           Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  position           Int
-  kind               WorkflowStepKind
-  name               String
+  id                    String           @id @default(cuid(2))
+  workflowId            String
+  workflow              Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  position              Int
+  kind                  WorkflowStepKind
+  name                  String
   /// The document to send (document steps); receipt steps always use receipt.
-  documentType       TemplateType?
+  documentType          TemplateType?
   /// The organization's template to use; null means its default for the type.
-  templateId         String?
-  template           Template?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  requiresAcceptance Boolean          @default(false)
-  advanceMode        StepAdvanceMode  @default(manual)
-  carryForward       StepCarryForward @default(items)
+  templateId            String?
+  template              Template?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  requiresAcceptance    Boolean          @default(false)
+  /// Accepting also asks the customer for their purchase order number.
+  requestsPurchaseOrder Boolean          @default(false)
+  /// The customer may suggest their own quantities, prices, tax and discounts.
+  negotiable            Boolean          @default(false)
+  advanceMode           StepAdvanceMode  @default(manual)
+  carryForward          StepCarryForward @default(items)
   /// For deposit steps, in basis points (5000 = 50%).
-  depositPercentBps  Int?
+  depositPercentBps     Int?
   /// Quotes and estimates: days until they expire.
-  validityDays       Int?
+  validityDays          Int?
   /// Invoices: days until payment is due.
-  paymentTermsDays   Int?
+  paymentTermsDays      Int?
 
   @@unique([workflowId, position])
 }
@@ -643,31 +647,37 @@ enum DealVersionState {
 
 /// One run of a workflow for one customer.
 model Deal {
-  id             String         @id @default(cuid(2))
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  workflowId     String?
-  workflow       Workflow?      @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+  id                      String         @id @default(cuid(2))
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  organizationId          String
+  organization            Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workflowId              String?
+  workflow                Workflow?      @relation(fields: [workflowId], references: [id], onDelete: SetNull)
   /// The workflow's name when the deal started.
-  workflowName   String
-  customerId     String
-  customer       Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  title          String
-  currency       String
-  status         DealStatus     @default(open)
-  closedAt       DateTime?
+  workflowName            String
+  customerId              String
+  customer                Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  title                   String
+  currency                String
+  status                  DealStatus     @default(open)
+  closedAt                DateTime?
   /// Signed into the share link. Changing it makes old links stop working.
-  shareNonce     String         @default(cuid(2))
-  shareRevokedAt DateTime?
-  createdById    String?
-  createdBy      UserAccount?   @relation("DealCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  steps          DealStep[]
-  documents      DealDocument[]
-  messages       DealMessage[]
-  events         DealEvent[]
-  payments       Payment[]
+  shareNonce              String         @default(cuid(2))
+  shareRevokedAt          DateTime?
+  /// The customer's purchase order, given when they accepted a document.
+  purchaseOrderNumber     String         @default("")
+  /// Their PO file in private storage, and its original name.
+  purchaseOrderFileId     String?
+  purchaseOrderFileName   String         @default("")
+  purchaseOrderReceivedAt DateTime?
+  createdById             String?
+  createdBy               UserAccount?   @relation("DealCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  steps                   DealStep[]
+  documents               DealDocument[]
+  messages                DealMessage[]
+  events                  DealEvent[]
+  payments                Payment[]
 
   @@index([organizationId, status, updatedAt])
   @@index([customerId])
@@ -676,33 +686,36 @@ model Deal {
 /// A copy of a workflow step taken when the deal started, so later changes to
 /// the workflow don't change running deals.
 model DealStep {
-  id                 String           @id @default(cuid(2))
-  dealId             String
-  deal               Deal             @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  position           Int
-  kind               WorkflowStepKind
-  name               String
-  documentType       TemplateType?
-  templateId         String?
-  template           Template?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  requiresAcceptance Boolean          @default(false)
-  advanceMode        StepAdvanceMode  @default(manual)
-  carryForward       StepCarryForward @default(items)
-  depositPercentBps  Int?
-  validityDays       Int?
-  paymentTermsDays   Int?
-  status             DealStepStatus   @default(pending)
-  startedAt          DateTime?
-  completedAt        DateTime?
+  id                    String           @id @default(cuid(2))
+  dealId                String
+  deal                  Deal             @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  position              Int
+  kind                  WorkflowStepKind
+  name                  String
+  documentType          TemplateType?
+  templateId            String?
+  template              Template?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  requiresAcceptance    Boolean          @default(false)
+  requestsPurchaseOrder Boolean          @default(false)
+  /// The customer may suggest their own quantities, prices, tax and discounts.
+  negotiable            Boolean          @default(false)
+  advanceMode           StepAdvanceMode  @default(manual)
+  carryForward          StepCarryForward @default(items)
+  depositPercentBps     Int?
+  validityDays          Int?
+  paymentTermsDays      Int?
+  status                DealStepStatus   @default(pending)
+  startedAt             DateTime?
+  completedAt           DateTime?
   /// Payment steps: what's due, set when the step starts.
-  amountDueMinor     Int?
+  amountDueMinor        Int?
   /// Payment steps: what was paid and how.
-  amountPaidMinor    Int?
-  paidAt             DateTime?
-  paymentMethod      String           @default("")
-  paymentReference   String           @default("")
-  document           DealDocument?
-  payments           Payment[]
+  amountPaidMinor       Int?
+  paidAt                DateTime?
+  paymentMethod         String           @default("")
+  paymentReference      String           @default("")
+  document              DealDocument?
+  payments              Payment[]
 
   @@unique([dealId, position])
 }

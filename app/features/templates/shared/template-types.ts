@@ -71,7 +71,8 @@ export const TEMPLATE_TYPES: TemplateTypeInfo[] = [
     icon: ShoppingCartIcon,
     label: "Purchase order",
     plural: "Purchase orders",
-    usedInDeals: true,
+    // Customers send purchase orders; deals ask for their PO number instead.
+    usedInDeals: false,
     value: "purchase-order",
   },
   {

@@ -68,3 +68,52 @@ export async function removeImageFromStorage(imageUrl?: string | null) {
     resource_type: "image",
   });
 }
+
+/**
+ * Uploads a file people shouldn't be able to open by guessing its URL, such
+ * as a customer's purchase order. Read it back with `getPrivateFileUrl`.
+ *
+ * @returns The file's id in storage.
+ */
+export async function uploadPrivateFile({
+  file,
+  folder,
+  publicId,
+}: {
+  file: File;
+  folder: string;
+  publicId: string;
+}) {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const result = await new Promise<{ public_id: string }>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        // Raw files keep their extension in the id, so PDFs download as PDFs.
+        public_id: extension ? `${publicId}.${extension}` : publicId,
+        resource_type: "raw",
+        type: "private",
+      },
+      (error, uploadResult) => {
+        if (error || !uploadResult) {
+          reject(error ?? new Error("Cloudinary upload failed"));
+          return;
+        }
+        resolve(uploadResult);
+      },
+    );
+    stream.end(buffer);
+  });
+  return result.public_id;
+}
+
+/** A download link for a private file that works for five minutes. */
+export function getPrivateFileUrl(fileId: string) {
+  return cloudinary.utils.private_download_url(fileId, "", {
+    attachment: true,
+    expires_at: Math.floor(Date.now() / 1000) + 5 * 60,
+    resource_type: "raw",
+    type: "private",
+  });
+}

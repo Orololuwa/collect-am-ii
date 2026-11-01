@@ -119,6 +119,14 @@ export default {
     perUnit: "per {{unit}}",
   },
   detail: {
+    poNumberHint:
+      "If they sent you a purchase order, add its number. Later documents show it.",
+    poNumberLabel: "Their purchase order number (optional)",
+    purchaseOrder: {
+      noFile: "No file attached.",
+      received: "Received {{date}}",
+      title: "Customer's purchase order",
+    },
     customer: "Customer",
     workflow: "Workflow",
     startedBy: "Started {{date}} by {{name}}",
@@ -253,6 +261,7 @@ export default {
     proposalRejected:
       "{{actor}} turned down the suggested changes to {{document}}",
     shareLinkReset: "{{actor}} reset the share link",
+    purchaseOrderReceived: "{{actor}} sent purchase order {{number}}",
     dealWon: "All steps done, the deal is won",
     dealLost: "{{actor}} marked the deal as lost",
     dealCancelled: "{{actor}} cancelled the deal",
@@ -291,5 +300,7 @@ export default {
       "This document changed while you were looking at it. Check the latest version.",
     proposalNotFound: "Those changes were already handled.",
     noItems: "Keep at least one line.",
+    purchaseOrderRequired: "Enter the customer's purchase order number.",
+    changesNotAllowed: "This step doesn't take suggested changes.",
   },
 };

@@ -1,8 +1,14 @@
 import type { TemplateType as BuilderTemplateType } from "~/features/templates/shared/types";
 import type { WorkflowDocumentType } from "~/features/workflows/workflow-steps";
 
-/** Every document a deal can produce: the workflow's types plus receipts. */
-export type DealDocumentType = WorkflowDocumentType | "receipt";
+/**
+ * Every document a deal can hold: the workflow's types plus receipts, and
+ * purchase orders from deals started before workflows stopped sending them.
+ */
+export type DealDocumentType =
+  | WorkflowDocumentType
+  | "receipt"
+  | "purchaseOrder";
 
 export const DOCUMENT_NUMBER_PREFIXES = {
   estimate: "EST",

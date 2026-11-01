@@ -46,6 +46,13 @@ export default {
     },
   },
   accept: {
+    poFileHint: "PDF or image, up to 5 MB. Optional.",
+    poFileLabel: "Your purchase order file",
+    poFileTooLarge: "The file must be 5 MB or smaller.",
+    poFileType: "Attach a PDF, PNG or JPG.",
+    poNumberHint: "{{organization}} will put it on the documents that follow.",
+    poNumberLabel: "Your purchase order (PO) number",
+    poNumberRequired: "Enter your purchase order number.",
     tab: "Accept",
     nameLabel: "Your full name",
     nameRequired: "Type your full name to accept.",
@@ -117,6 +124,7 @@ export default {
     you: "You",
   },
   timeline: {
+    purchaseOrderReceived: "You sent purchase order {{number}}",
     title: "History",
     documentSent: "{{document}} sent to you",
     documentAccepted: "You accepted {{document}}",
@@ -134,6 +142,8 @@ export default {
     messageSent: "Message sent",
   },
   errors: {
+    changesNotAllowed: "This document can't be changed. Accept or decline it.",
+    purchaseOrderRequired: "Enter your purchase order number.",
     generic: "Something went wrong. Refresh the page and try again.",
     dealClosed: "This deal is closed.",
     alreadyAnswered: "This document was already answered. Refresh the page.",

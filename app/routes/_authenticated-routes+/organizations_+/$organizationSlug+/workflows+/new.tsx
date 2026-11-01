@@ -78,6 +78,9 @@ function useSampleHighlights() {
         }),
       );
     }
+    if (steps.some((step) => step.requestsPurchaseOrder)) {
+      highlights.push(t("gallery.highlights.purchaseOrder"));
+    }
     if (invoice?.paymentTermsDays) {
       highlights.push(
         t("gallery.highlights.terms", { count: invoice.paymentTermsDays }),

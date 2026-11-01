@@ -1,3 +1,4 @@
+import { createId } from "@paralleldrive/cuid2";
 import type { RouterContextProvider } from "react-router";
 import { data } from "react-router";
 
@@ -20,6 +21,7 @@ import {
   DECLINE_DOCUMENT_INTENT,
   POST_MESSAGE_INTENT,
   PROPOSE_CHANGES_INTENT,
+  PURCHASE_ORDER_MAX_FILE_SIZE,
 } from "./deals-constants";
 import {
   customerAcceptFormSchema,
@@ -38,6 +40,7 @@ import {
   tooManyRequests,
 } from "~/utils/http-responses.server";
 import { consumeRateLimit, getClientIp } from "~/utils/rate-limit.server";
+import { uploadPrivateFile } from "~/utils/storage.server";
 import { createToastHeaders } from "~/utils/toast.server";
 import { validateFormData } from "~/utils/validate-form-data.server";
 
@@ -56,6 +59,8 @@ const ERROR_KEYS = {
   notCurrentStep: "errors.alreadyAnswered",
   notPaymentStep: "errors.generic",
   proposalNotFound: "errors.generic",
+  purchaseOrderRequired: "errors.purchaseOrderRequired",
+  changesNotAllowed: "errors.changesNotAllowed",
   versionChanged: "errors.versionChanged",
   workflowNotFound: "errors.generic",
 } as const;
@@ -144,14 +149,33 @@ export async function dealRoomAction({
         const result = await validateFormData(
           request,
           customerAcceptFormSchema,
+          { maxFileSize: PURCHASE_ORDER_MAX_FILE_SIZE },
         );
         if (!result.success) return { invalid: result.response };
+        const { purchaseOrderFile, purchaseOrderNumber } = result.data;
+        // Stored privately: only the organization can download it, by a
+        // short-lived link.
+        const fileId =
+          purchaseOrderFile && purchaseOrderNumber
+            ? await uploadPrivateFile({
+                file: purchaseOrderFile,
+                folder: `CollectAm/purchase-orders/${target.organizationId}`,
+                publicId: `${target.dealId}-${createId()}`,
+              })
+            : null;
         const { effects } = await acceptDealDocument({
           ...target,
           acceptedByName: result.data.acceptedByName,
           actor,
           documentId: result.data.documentId,
           expectedVersionId: result.data.versionId,
+          purchaseOrder: purchaseOrderNumber
+            ? {
+                fileId,
+                fileName: fileId ? (purchaseOrderFile?.name ?? "") : "",
+                number: purchaseOrderNumber,
+              }
+            : undefined,
         });
         return {
           effects,

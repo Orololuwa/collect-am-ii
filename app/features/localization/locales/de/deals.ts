@@ -119,6 +119,14 @@ export default {
     perUnit: "pro {{unit}}",
   },
   detail: {
+    poNumberHint:
+      "Wenn die Kundschaft dir eine Bestellung geschickt hat, trage ihre Nummer ein. Spätere Dokumente zeigen sie.",
+    poNumberLabel: "Ihre Bestellnummer (optional)",
+    purchaseOrder: {
+      noFile: "Keine Datei angehängt.",
+      received: "Erhalten am {{date}}",
+      title: "Bestellung der Kundschaft",
+    },
     customer: "Kunde",
     workflow: "Workflow",
     startedBy: "Gestartet am {{date}} von {{name}}",
@@ -255,6 +263,7 @@ export default {
     proposalRejected:
       "{{actor}} hat die vorgeschlagenen Änderungen an {{document}} abgelehnt",
     shareLinkReset: "{{actor}} hat den Freigabelink zurückgesetzt",
+    purchaseOrderReceived: "{{actor}} hat die Bestellung {{number}} geschickt",
     dealWon: "Alle Schritte erledigt, der Deal ist gewonnen",
     dealLost: "{{actor}} hat den Deal als verloren markiert",
     dealCancelled: "{{actor}} hat den Deal abgebrochen",
@@ -295,5 +304,7 @@ export default {
       "Dieses Dokument hat sich geändert, während du es angesehen hast. Prüfe die neueste Version.",
     proposalNotFound: "Diese Änderungen wurden bereits bearbeitet.",
     noItems: "Behalte mindestens eine Position.",
+    purchaseOrderRequired: "Gib die Bestellnummer der Kundschaft ein.",
+    changesNotAllowed: "Dieser Schritt nimmt keine Änderungsvorschläge an.",
   },
 } satisfies typeof import("../en/deals").default;

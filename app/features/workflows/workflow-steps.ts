@@ -10,7 +10,6 @@ export const WORKFLOW_DOCUMENT_TYPES = [
   "estimate",
   "orderConfirmation",
   "salesOrder",
-  "purchaseOrder",
   "invoice",
 ] as const;
 export type WorkflowDocumentType = (typeof WORKFLOW_DOCUMENT_TYPES)[number];
@@ -26,6 +25,10 @@ export type WorkflowStepInput = {
   /** Document and receipt steps; null means the organization's default. */
   templateId: string | null;
   requiresAcceptance: boolean;
+  /** Accepting also asks the customer for their purchase order. */
+  requestsPurchaseOrder: boolean;
+  /** The customer may suggest their own figures before accepting. */
+  negotiable: boolean;
   advanceMode: StepAdvanceMode;
   carryForward: StepCarryForward;
   depositPercentBps: number | null;
@@ -161,6 +164,9 @@ export function normalizeWorkflowStep(
         ? step.paymentTermsDays
         : null,
     requiresAcceptance: isDocument && step.requiresAcceptance,
+    negotiable: isDocument && step.requiresAcceptance && step.negotiable,
+    requestsPurchaseOrder:
+      isDocument && step.requiresAcceptance && step.requestsPurchaseOrder,
     templateId: step.kind === "payment" ? null : step.templateId,
     validityDays:
       isDocument &&
