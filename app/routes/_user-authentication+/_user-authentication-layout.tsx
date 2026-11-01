@@ -38,16 +38,16 @@ export default function UserAuthenticationLayout({
           className="z-10 flex items-center gap-2 font-medium"
           to={href("/")}
         >
-          <CollectAmLogo className="size-6" />
+          <CollectAmLogo alt="" className="size-6" />
           {tCommon("appName")}
         </Link>
-        <div className="z-10 mt-auto">
-          <blockquote className="space-y-2">
-            <p className="text-xl">&ldquo;{t("quote")}&rdquo;</p>
-            <footer className="font-mono text-sm font-semibold">
-              {t("quoteAuthor")}
-            </footer>
-          </blockquote>
+        <div className="z-10 mt-auto max-w-md space-y-3">
+          <p className="text-3xl font-semibold tracking-tight text-balance">
+            {t("panelTitle")}
+          </p>
+          <p className="text-muted-foreground text-pretty">
+            {t("panelDescription")}
+          </p>
         </div>
         <div className="absolute inset-0">
           {shouldShowAnimations && (
@@ -57,6 +57,11 @@ export default function UserAuthenticationLayout({
             </>
           )}
         </div>
+        {/* Covers the paths once public/images/auth-panel.jpg exists; a missing file just leaves them showing. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[url(/images/auth-panel.jpg)] bg-cover bg-center"
+        />
       </div>
 
       {/* Right side */}

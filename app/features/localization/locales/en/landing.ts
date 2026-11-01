@@ -1,175 +1,237 @@
 export default {
   cta: {
     buttons: {
-      primary: "Get started",
-      secondary: "Documentation",
+      primary: "Get started free",
+      secondary: "See pricing",
     },
     description:
-      "Create your first resume or invoice in minutes. No credit card required.",
-    title: "Start Building Documents Today",
+      "Set up your first workflow in minutes. No card needed, and your customers never need an account.",
+    title: "Your next deal can run itself",
   },
-  description: {
-    eyebrow: "Why choose our document builder?",
-    features: [
-      {
-        description:
-          "Intuitive interface lets you build documents without writing code. Drag sections, customize styles, and see changes in real-time.",
-        title: "Visual Drag-and-Drop Builder",
+  dealRoom: {
+    description:
+      "Every deal gets a private link. Your customer opens it on any phone or laptop and handles their side without signing up.",
+    eyebrow: "The deal room",
+    mock: {
+      accept: "Accept quote",
+      business: "Eko Hall",
+      document: "Quote QT-0042",
+      lines: {
+        caution: "Caution fee (refundable)",
+        chairs: "Chiavari chairs × 200",
+        hall: "Main hall, full day",
       },
-      {
-        description:
-          "Currently supports Resumes and Invoices. Coming soon: Quotes, Proposals, Contracts, and more business document types.",
-        title: "Multiple Document Types",
-      },
-      {
-        description:
-          "Generate high-quality PDFs with server-side rendering. Perfect for printing, sharing, or embedding in your applications.",
-        title: "Professional PDF Export",
-      },
-      {
-        description:
-          "Send generated documents directly via email with PDF attachments. Customize email subject and body, then send professional documents to clients, customers, or team members instantly.",
-        title: "Email Integration",
-      },
-    ],
-    image: {
-      dark: "Product screenshot (dark)",
-      light: "Product screenshot (light)",
+      purchaseOrder: "Purchase order number",
+      purchaseOrderPlaceholder: "PO-7781",
+      suggest: "Suggest changes",
+      total: "Total",
+      validUntil: "Valid until 30 November",
     },
-    subtitle:
-      "Build resumes, invoices, and business documents with our intuitive visual builder. No design skills needed—drag, drop, and export.",
-    title: "Create Professional Documents in Minutes",
+    points: {
+      accept: {
+        description: "One tap to accept, with their name on the record.",
+        title: "Accept quotes",
+      },
+      negotiate: {
+        description:
+          "On steps you allow, they can propose different quantities or prices for you to approve.",
+        title: "Negotiate",
+      },
+      pay: {
+        description:
+          "By card or bank transfer through Paystack or Stripe. The deal moves on when the money lands.",
+        title: "Pay online",
+      },
+      purchaseOrder: {
+        description:
+          "Business customers attach their PO number and file when they accept.",
+        title: "Send purchase orders",
+      },
+    },
+    title: "Your customer gets a link, not a login",
   },
   faq: {
     items: [
       {
         answer:
-          "Currently, we support Resumes and Invoices. Coming soon: Certificates, Report Cards, Quotes, Proposals, Contracts, Purchase Orders, Receipts, Estimates, Statements, Letters, Forms, and Labels.",
-        question: "What document types are supported?",
+          "No. Each deal has its own private link. Your customer opens it to read documents, accept, negotiate, pay and download receipts, with no account or password.",
+        question: "Do my customers need an account?",
       },
       {
         answer:
-          "Currently, we support PDF export. Coming soon: DOCX (Word documents), HTML (web-friendly), and PNG/JPG (image formats) export options.",
-        question: "Can I export to formats other than PDF?",
+          "Connect Paystack or Stripe and customers can pay by card or bank transfer from the deal room. You can also record cash or transfers you received yourself, and the deal moves on just the same.",
+        question: "How do customers pay?",
       },
       {
         answer:
-          "Yes! You can send generated documents directly via email with PDF attachments. Simply customize the email subject and body, then send professional documents to recipients instantly. The PDF is automatically generated and attached to your email.",
-        question: "Can I send documents via email?",
+          "Pick one of the ready-made workflows for your trade and adjust it, or build your own from documents, payments, receipts and caution refunds. Edit it as a list of steps or on a canvas.",
+        question: "What is a workflow?",
       },
       {
         answer:
-          "The platform is built with API-ready architecture. REST API endpoints for template management, document generation, and bulk operations are coming soon for developers and B2B integrations.",
-        question: "Is there an API available?",
+          "Add the caution as a line on your quote or invoice. After the booking, list anything you're keeping with photos or videos as proof. Your customer gives the account for the refund, you send it, and they get an email either way.",
+        question: "How do caution fees work?",
+      },
+      {
+        answer:
+          "Yes. Invite teammates as owners, admins or members. Everyone in the organization sees the same deals, customers and products.",
+        question: "Can my team work on deals together?",
+      },
+      {
+        answer:
+          "Deals can be priced in 30 currencies, including naira, cedi, shilling, rand, dollars, pounds and euros. Each product keeps its own price per currency.",
+        question: "Which currencies can I bill in?",
       },
     ],
-    title: "Frequently asked questions",
+    title: "Questions, answered",
   },
   features: {
-    cards: [
-      {
+    eyebrow: "Everything around the deal",
+    items: {
+      caution: {
         description:
-          "Total control over your document's message and structure. Edit inline on the live visual canvas for quick refinements, or switch to the dedicated content editor for deeper customization, supported by intuitive drag-and-drop section control.",
-        eyebrow: "Seamless Editing",
-        image: {
-          dark: "Mobile screenshot (dark)",
-          light: "Mobile screenshot (light)",
-        },
-        title: "Interactive Canvas & Structured Editor",
+          "Hold a refundable caution, deduct for damage with photo and video proof, and refund to the account your customer gives.",
+        title: "Caution fees and refunds",
       },
-      {
+      currencies: {
         description:
-          "See your document changes in real-time as you edit. Preview exactly how your document will look before exporting.",
-        image: {
-          dark: "Real-Time Preview (dark)",
-          light: "Real-Time Preview (light)",
-        },
-        title: "Real-Time Preview",
+          "Bill in naira, dollars, pounds and 27 other currencies, with prices saved per currency.",
+        title: "30 currencies",
       },
-      {
+      dashboard: {
         description:
-          "Send generated documents directly via email with PDF attachments. Customize email subject and body, then deliver professional documents to recipients instantly.",
-        eyebrow: "Email Integration",
-        title: "Send Documents via Email",
+          "Quotes waiting on customers, payments due and cautions to settle, all on one screen.",
+        title: "A dashboard that tells you what's next",
       },
-      {
+      emails: {
         description:
-          "Generate professional PDFs with server-side rendering. High-quality output perfect for printing, emailing, or embedding in your applications.",
-        eyebrow: "Export",
-        image: {
-          dark: "Authentication (dark)",
-          light: "Authentication (light)",
-        },
-        title: "Professional PDF Export",
+          "Documents, receipts and updates go out in your name, and replies land in your inbox.",
+        title: "Emails that send themselves",
       },
-      {
+      products: {
         description:
-          "Create Resumes and Invoices today. Coming soon: Quotes, Proposals, Contracts, Purchase Orders, Receipts, and more business document types.",
-        eyebrow: "Document Types",
-        image: {
-          dark: "Billing (dark)",
-          light: "Billing (light)",
-        },
-        title: "Multiple Document Types",
+          "Save what you sell once and add it to any deal in a click, or type a custom line.",
+        title: "Product catalogue",
       },
-      {
+      team: {
         description:
-          "Built with API-ready architecture for seamless integrations. REST API coming soon for developers and B2B customers.",
-        eyebrow: "API Integration",
-        title: "Developer-Friendly",
+          "Invite teammates as owners, admins or members, each with the right access.",
+        title: "Built for teams",
       },
-      {
+      templates: {
         description:
-          "Built for multi-tenant teams from day one. Create organizations, keep data isolated by workspace, and manage access with roles so every customer stays securely separated.",
-        eyebrow: "Multi-tenancy",
-        image: {
-          dark: "Multi-tenancy (dark)",
-          light: "Multi-tenancy (light)",
-        },
-        title: "Organization Workspaces",
+          "Your logo, colours and terms on every quote, invoice and receipt, with a PDF to download.",
+        title: "Branded documents",
       },
-      {
+      timeline: {
         description:
-          "Invite teammates by link or email, assign roles (Owner, Admin, Member), and collaborate with the right level of access for each person as your team grows.",
-        eyebrow: "Team Management",
-        image: {
-          dark: "Team Management (dark)",
-          light: "Team Management (light)",
-        },
-        title: "Invite & Manage Team Members",
+          "Every view, acceptance, payment and change is recorded, so you always know where a deal stands.",
+        title: "A full history",
       },
-    ],
-    eyebrow: "Features",
-    title: "Everything you need to build documents",
+    },
+    title: "The rest is already taken care of",
   },
   footer: {
-    madeWithLove: "Made with ❤️ by",
+    nav: "Footer",
+    copyright: "© {{year}} CollectAm. All rights reserved.",
+    links: {
+      documentation: "Documentation",
+      pricing: "Pricing",
+      privacy: "Privacy",
+      terms: "Terms",
+    },
     social: {
       github: "Github",
       linkedin: "LinkedIn",
       twitter: "X formerly known as Twitter",
     },
+    tagline: "Quotes, invoices, payments and receipts that run themselves.",
   },
   header: {
-    login: "Login",
+    mainNav: "Main",
+    login: "Log in",
     navLinks: {
+      documentation: "Docs",
+      features: "Features",
+      howItWorks: "How it works",
       pricing: "Pricing",
-      documentation: "Documentation",
     },
-    register: "Register",
+    openMenu: "Open navigation menu",
+    register: "Get started",
   },
   hero: {
-    badge: "Visual document generation platform",
+    badge: "Workflows, deal rooms and online payments",
     cta: {
-      primary: "Get Started",
-      secondary: "Documentation",
+      primary: "Get started free",
+      secondary: "See how it works",
     },
     description:
-      "Create resumes, invoices, and more with our visual builder. Export to PDF, send via email, customize with professional templates, and integrate via API.",
-    image: {
-      dark: "Send Email (dark)",
-      light: "Send Email (light)",
+      "CollectAm runs every sale through your own workflow. Quotes, invoices, payments and receipts go out on their own, and your customer accepts, negotiates and pays from one link.",
+    mock: {
+      amountDue: "{{amount}} due",
+      customer: "Adaeze Okafor",
+      dealTitle: "Hall booking, 14 December",
+      open: "Open",
+      payNow: "Pay {{amount}}",
+      paymentMethods: "Card or bank transfer",
+      shareLink: "Deal link sent to Adaeze",
+      roomBusiness: "Eko Hall",
+      roomLabel: "Amount due",
+      steps: {
+        invoice: "Booking invoice",
+        payment: "Payment",
+        quote: "Quote",
+        receipt: "Receipt",
+        refund: "Caution refund",
+      },
+      states: {
+        accepted: "Accepted",
+        afterEvent: "After the event",
+        automatic: "Sent automatically",
+        sent: "Sent",
+      },
+      toast: "Adaeze accepted the quote",
+      toastTime: "Just now",
+      workflow: "Event centre booking",
     },
-    title: "Build Professional Documents",
+    note: "Free to start. No card needed.",
+    title: "From quote to paid, <1>without the chasing</1>",
+  },
+  howItWorks: {
+    eyebrow: "How it works",
+    steps: {
+      deal: {
+        description:
+          "Pick the customer, add products or custom lines, and the first document is ready to check and send.",
+        title: "Start a deal",
+      },
+      run: {
+        description:
+          "As your customer accepts and pays, the next document goes out by itself. You only step in when something needs you.",
+        title: "Let it run",
+      },
+      workflow: {
+        description:
+          "Choose a ready-made workflow for your trade or build your own, as a list of steps or on a canvas.",
+        title: "Map how you sell",
+      },
+    },
+    title: "Set it up once. Every deal follows it.",
+  },
+  trades: {
+    items: {
+      agency: "Agencies",
+      catering: "Catering",
+      construction: "Construction",
+      eventCentre: "Event centres",
+      freelance: "Freelancers",
+      madeToOrder: "Made to order",
+      photography: "Photography",
+      shop: "Shops",
+      shortLet: "Short-let stays",
+      supply: "B2B supply",
+      wholesale: "Wholesale on credit",
+    },
+    title: "Ready-made workflows for",
   },
 };

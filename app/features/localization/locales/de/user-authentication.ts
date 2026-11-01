@@ -2,9 +2,9 @@ export default {
   layout: {
     backgroundPathsTitle: "Animierte Hintergrundpfade",
     home: "Startseite",
-    quote:
-      "Dieses Authentifizierungssystem hat verändert, wie wir Benutzer-Logins handhaben. Die Anmeldung per E-Mail-Code ist nahtlos und unsere Benutzer lieben es.",
-    quoteAuthor: "Alex Chen, Lead Developer",
+    panelDescription:
+      "Angebote, Rechnungen, Zahlungen und Belege, die von selbst weiterlaufen, und ein Link, über den deine Kunden annehmen, verhandeln und bezahlen.",
+    panelTitle: "Jeder Deal, vom Angebot bis zur Zahlung.",
   },
   login: {
     emailLabel: "E-Mail",
@@ -45,9 +45,10 @@ export default {
     pageTitle: "Anmelden",
     separator: "Oder",
     signupCta: "Noch kein Konto? <signup>Registrieren</signup>",
-    submitButton: "Mit E-Mail anmelden",
-    submitButtonSubmitting: "Wird angemeldet...",
-    subtitle: "Gib deine E-Mail unten ein, um dich bei deinem Konto anzumelden",
+    submitButton: "Code per E-Mail senden",
+    submitButtonSubmitting: "Code wird gesendet...",
+    subtitle:
+      "Gib deine E-Mail ein, und wir senden dir einen 6‑stelligen Code. Kein Passwort nötig.",
     title: "Willkommen zurück",
   },
   register: {
@@ -96,7 +97,8 @@ export default {
     separator: "Oder",
     submitButton: "Konto erstellen",
     submitButtonSubmitting: "Konto wird erstellt...",
-    subtitle: "Gib deine E-Mail unten ein, um dein Konto zu erstellen",
-    title: "Erstelle ein Konto",
+    subtitle:
+      "Starte mit deiner E-Mail. Wir senden dir einen Code zur Bestätigung, ganz ohne Passwort.",
+    title: "Erstelle dein Konto",
   },
 } satisfies typeof import("../en/user-authentication").default;

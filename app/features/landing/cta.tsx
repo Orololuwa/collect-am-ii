@@ -1,6 +1,6 @@
-import { BookTextIcon } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { href, Link } from "react-router";
 
 import { Button } from "~/components/ui/button";
 
@@ -8,46 +8,33 @@ export function CTA() {
   const { t } = useTranslation("landing", { keyPrefix: "cta" });
 
   return (
-    <section className="py-12 lg:px-4">
-      <div className="bg-foreground dark:bg-background border-border relative isolate mx-auto max-w-7xl overflow-hidden px-6 py-16 shadow-2xl sm:rounded-3xl sm:border sm:px-16">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-background dark:text-foreground text-4xl font-semibold text-pretty sm:text-5xl">
-            {t("title")}
-          </h2>
-
-          <p className="text-ring dark:text-muted-foreground mt-4 text-lg text-pretty">
-            {t("description")}
-          </p>
-        </div>
-
-        <div className="mt-8 flex items-center justify-center gap-4">
-          <Button asChild>
-            <Link to="/register">{t("buttons.primary")}</Link>
-          </Button>
-
-          <Button
-            asChild
-            className="text-background dark:text-foreground"
-            variant="link"
-          >
-            <Link to="/docs">
-              {t("buttons.secondary")}
-              <BookTextIcon />
-            </Link>
-          </Button>
-        </div>
-
+    <section className="px-4 pt-8 pb-24">
+      <div className="bg-foreground text-background relative isolate mx-auto max-w-5xl overflow-hidden rounded-3xl px-6 py-16 text-center sm:px-16 sm:py-20">
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 -top-16 -z-10 flex transform-gpu justify-center overflow-hidden blur-3xl"
-        >
-          <div
-            className="from-primary to-primary dark:to-secondary aspect-[1318/752] w-[82.375rem] flex-none bg-gradient-to-r opacity-25"
-            style={{
-              clipPath:
-                "polygon(73.6% 51.7%, 91.7% 11.8%, 100% 46.4%, 97.4% 82.2%, 92.5% 84.9%, 75.7% 64%, 55.3% 47.5%, 46.5% 49.4%, 45% 62.9%, 50.3% 87.2%, 21.3% 64.1%, 0.1% 100%, 5.4% 51.1%, 21.4% 63.9%, 58.9% 0.2%, 73.6% 51.7%)",
-            }}
-          />
+          className="bg-primary/40 absolute -top-24 left-1/2 -z-10 size-96 -translate-x-1/2 rounded-full blur-3xl"
+        />
+        <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          {t("title")}
+        </h2>
+        <p className="text-background/70 mx-auto mt-4 max-w-xl text-lg text-pretty">
+          {t("description")}
+        </p>
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button asChild size="lg">
+            <Link to={href("/register")}>
+              {t("buttons.primary")}
+              <ArrowRightIcon />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            className="text-background hover:bg-background/10 hover:text-background"
+            size="lg"
+            variant="ghost"
+          >
+            <Link to={href("/pricing")}>{t("buttons.secondary")}</Link>
+          </Button>
         </div>
       </div>
     </section>
