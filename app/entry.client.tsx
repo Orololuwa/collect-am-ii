@@ -6,13 +6,23 @@ import { hydrateRoot } from "react-dom/client";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 import { HydratedRouter } from "react-router/dom";
 
+import {
+  LOCALES_VERSION_META,
+  localesLoadPath,
+} from "./features/localization/locales-version";
+
 async function hydrate() {
+  // Versioned so a deploy with new copy never reads stale cached translations.
+  const version = document
+    .querySelector(`meta[name="${LOCALES_VERSION_META}"]`)
+    ?.getAttribute("content");
+
   await i18next
     .use(initReactI18next)
     .use(Fetch)
     .use(I18nextBrowserLanguageDetector)
     .init({
-      backend: { loadPath: "/api/locales/{{lng}}/{{ns}}" },
+      backend: { loadPath: localesLoadPath(version) },
       detection: { caches: [], order: ["htmlTag"] },
       fallbackLng: "en",
       interpolation: { escapeValue: false },

@@ -39,12 +39,28 @@ function staticCacheHeaders(): Plugin {
   };
 }
 
+/**
+ * Translations are fetched once when the page loads, so editing a locale file
+ * would leave the open page showing raw keys for anything new. Reload instead.
+ */
+function reloadOnLocaleChange(): Plugin {
+  return {
+    handleHotUpdate({ file, server }) {
+      if (file.includes("/features/localization/locales/")) {
+        server.ws.send({ type: "full-reload" });
+      }
+    },
+    name: "reload-on-locale-change",
+  };
+}
+
 const rootConfig = defineConfig({
   plugins: [
     tailwindcss(),
     !process.env.VITEST && reactRouter(),
     tsconfigPaths(),
     staticCacheHeaders(),
+    reloadOnLocaleChange(),
     sudoFilesPlugin,
   ],
   server: {
