@@ -31,6 +31,8 @@ import {
   i18nextMiddleware,
   localeCookie,
 } from "./features/localization/i18next-middleware.server";
+import { LOCALES_VERSION_META } from "./features/localization/locales-version";
+import { LOCALES_VERSION } from "./features/localization/locales-version.server";
 import { useToast } from "./hooks/use-toast";
 import { cn } from "./lib/utils";
 import { ClientHintCheck, getHints } from "./utils/client-hints";
@@ -97,6 +99,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       ENV: getEnv(),
       honeypotInputProps,
       locale,
+      localesVersion: LOCALES_VERSION,
       requestInfo: {
         hints: getHints(request),
         origin: getDomainUrl(request),
@@ -147,6 +150,9 @@ export function Layout({
         <ClientHintCheck nonce={nonce} />
         <meta charSet="utf-8" />
         <meta content="width=device-width, initial-scale=1" name="viewport" />
+        {data?.localesVersion ? (
+          <meta content={data.localesVersion} name={LOCALES_VERSION_META} />
+        ) : null}
 
         {/* Prevent search engine indexing when ALLOW_INDEXING=false */}
         {allowIndexing ? null : (
