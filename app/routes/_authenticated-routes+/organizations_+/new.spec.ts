@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: test code */
 import { parseSubmission, report } from "@conform-to/react/future";
+import { createId } from "@paralleldrive/cuid2";
 import { describe, expect, onTestFinished, test } from "vitest";
 
 import { action } from "./new";
@@ -30,6 +31,15 @@ import { toFormData } from "~/utils/to-form-data";
 const createUrl = () => `http://localhost:3000/organizations/new`;
 
 const pattern = "/organizations/new";
+
+/**
+ * Faker's company names repeat often enough to match an organization another
+ * test left in the database, which would (rightly) get a suffixed slug.
+ */
+const createUniqueOrganization = () => {
+  const { name } = createPopulatedOrganization();
+  return createPopulatedOrganization({ name: `${name} ${createId()}` });
+};
 
 async function sendAuthenticatedRequest({
   userAccount,
@@ -106,7 +116,7 @@ describe("/organizations/new route action", () => {
 
     test("given: a valid name for an organization, should: create organization and redirect to organization page", async () => {
       const { userAccount } = await setup();
-      const organization = createPopulatedOrganization();
+      const organization = createUniqueOrganization();
       const formData = toFormData({
         intent,
         name: organization.name,
@@ -211,7 +221,7 @@ describe("/organizations/new route action", () => {
 
     test("given: a valid name and a logo file, should: create organization with logo", async () => {
       const { userAccount } = await setup();
-      const organization = createPopulatedOrganization();
+      const organization = createUniqueOrganization();
 
       // Create a mock File object for the logo
       const logoFile = new File(["logo content"], "logo.png", {
